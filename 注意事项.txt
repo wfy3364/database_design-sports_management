@@ -1,4 +1,0 @@
-调试修改前需要在项目根目录下运行以下命令来安装所需的 NuGet 包：
-dotnet add package Microsoft.EntityFrameworkCore.SqlServer
-dotnet add package Microsoft.EntityFrameworkCore.Tools
-dotnet add package BCrypt.Net-Next
