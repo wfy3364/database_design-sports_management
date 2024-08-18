@@ -34,14 +34,14 @@ import { RouterView } from 'vue-router';
   flex-direction: column;
   border-right: 1px solid lightgray;
   padding: 10px;
-  width: 250px;
+  width: 200px;
   height: 100vh;
 }
 
 .PageArea{
   display: flex;
   flex-direction: column;
-  width: calc(100% - 250px);
+  width: calc(100% - 200px);
 }
 
 .PageTop{
@@ -53,6 +53,8 @@ import { RouterView } from 'vue-router';
 
 .PageContent{
   height: calc(100vh - 50px);
+  background-color: #f0f2f5;
+  overflow: auto;
 }
 
 </style>
