@@ -59,12 +59,12 @@ const repairData = [{
       </div>
     </div>
     <el-table :data="repairData" :show-overflow-tooltip="{ effect: 'light'}">
-      <el-table-column prop="id" label="记录编号"width="90"></el-table-column>
-      <el-table-column prop="deviceId" label="设备编号" width="90"></el-table-column>
-      <el-table-column prop="deviceName" label="设备名称" width="100"></el-table-column>
-      <el-table-column prop="venueId" label="场地编号" width="90"></el-table-column>
-      <el-table-column prop="venueName" label="场地名称" width="100"></el-table-column>
-      <el-table-column prop="time" label="时间"></el-table-column>
+      <el-table-column prop="id" label="记录编号" width="105" sortable></el-table-column>
+      <el-table-column prop="deviceId" label="设备编号" width="105" sortable></el-table-column>
+      <el-table-column prop="deviceName" label="设备名称" width="105" sortable></el-table-column>
+      <el-table-column prop="venueId" label="场地编号" width="105" sortable></el-table-column>
+      <el-table-column prop="venueName" label="场地名称" width="105" sortable></el-table-column>
+      <el-table-column prop="time" label="时间" width="135" sortable></el-table-column>
       <el-table-column prop="description" label="描述"></el-table-column>
       <el-table-column label="状态" width="80">
         <template #default="item">
@@ -103,7 +103,8 @@ const repairData = [{
   display: flex;
   flex-direction: column;
   padding: 10px;
-  border: 1px solid lightgray;
+  border-top: 1px solid lightgray;
+  border-bottom: 1px solid lightgray;
 }
 
 .SearchArea{
@@ -123,7 +124,6 @@ const repairData = [{
   display: flex;
   padding-left: 10px;
   margin-top: 10px;
-  margin-bottom: 10px;
 }
 
 .FilterText{
