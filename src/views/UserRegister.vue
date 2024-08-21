@@ -40,7 +40,7 @@
   
   const handleRegister = () => {
     if (!validateInputs()) {
-      alert('Please ensure all fields are correctly filled out.');
+      alert('请确保所有字段填写正确。');
       return;
     }
     // 模拟生成用户ID
@@ -60,10 +60,10 @@
   setTimeout(() => {
     const success = true; // 模拟后端响应成功
     if (success) {
-      alert('Registration successful');
+      alert('注册成功');
       router.push('/login'); // 跳转到登录页面
     } else {
-      alert('Registration failed');
+      alert('注册失败');
     }
   },); 
 };
@@ -75,7 +75,7 @@
     }
     // 检查密码和确认密码是否匹配
     if (password.value !== confirmPassword.value) {
-      alert('Passwords do not match.');
+      alert('密码不匹配.');
       return false;
     }
     return true;

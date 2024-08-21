@@ -16,7 +16,6 @@
   </div>
 </template>
 
-
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -32,16 +31,13 @@ const handleLogin = () => {
     password: encryptedPassword,
   };
 
-  // 模拟服务器的响应
-  const mockResponse = {
-    success: loginData.username === 'username' && loginData.password === CryptoJS.SHA256('password').toString()
-  };
+  const success = true; // 模拟后端响应成功
 
-  if (mockResponse.success) {
+  if (success) {
     // 跳转到home页面
     router.push('/');
   } else {
-    alert('Login failed');
+    alert('用户名或密码错误');
   }
 };
 </script>
