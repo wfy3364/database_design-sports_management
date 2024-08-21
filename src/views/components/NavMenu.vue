@@ -9,8 +9,7 @@
 
 <style scoped>
 .NavMenu{
-  width: 230px;
-  
+  width: 100%;
 }
 
 </style>

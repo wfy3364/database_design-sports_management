@@ -128,7 +128,7 @@
   
   // 处理取消预约的函数
   const cancelReservation = () => {
-    router.push('/venues'); // 跳转回场地信息页面
+    router.push('/VenueBrowser'); // 跳转回场地信息页面
   };
   </script>
   

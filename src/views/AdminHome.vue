@@ -1,5 +1,9 @@
 <script setup>
 
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+
 // 此处用常量数组暂时模拟从后端获取到的数据
 const publicNoticeData = [{
   id: 1,
@@ -47,6 +51,15 @@ const venueData = [{
   state: 0,
 }];
 
+function viewPublicNoticeDetail(notice){
+  console.log(notice);
+}
+
+function viewVenueDetail(venue){
+  router.push("AdminVenueDetail");
+  console.log(venue);
+}
+
 
 </script>
 
@@ -55,9 +68,10 @@ const venueData = [{
     <div class="LargeCard">
       <div class="CardHeader">
         <div class="CardTitle">公告管理</div>
-        <el-button class="CardButton">更多</el-button>
+        <el-button class="CardButton" size="small">更多</el-button>
       </div>
-      <div class="NoticeContent" v-for="publicNotice in publicNoticeData">
+      <div class="NoticeContent" v-for="publicNotice in publicNoticeData" 
+        @click="viewPublicNoticeDetail(publicNotice)">
         <div class="NoticeItem">
           <el-tooltip effect="light" placement="bottom" :content="publicNotice.title">
             <div class="NoticeTitle">{{ publicNotice.title }}</div>
@@ -71,7 +85,7 @@ const venueData = [{
     <div class="LargeCard">
       <div class="CardHeader">
         <div class="CardTitle">个人通知</div>
-        <el-button class="CardButton">更多</el-button>
+        <el-button class="CardButton" size="small">更多</el-button>
       </div>
       <div class="NoticeContent" v-for="userNotice in userNoticeData">
         <div class="NoticeItem">
@@ -82,9 +96,10 @@ const venueData = [{
     <div class="VenueCard">
       <div class="CardHeader">
         <div class="CardTitle">场地总览</div>
+        <el-button class="CardButton" size="small">更多</el-button>
       </div>
       <div class="VenueContent">
-        <div class="VenueItem" v-for="venue in venueData">
+        <div class="VenueItem" v-for="venue in venueData" @click="viewVenueDetail(venue)">
           <img class="VenueImg" :src="venue.img" :alt="venue.name">
           <div class="VenueText">名称：{{ venue.name }}</div>
           <div class="VenueText">类型：{{ venue.type }}</div>
@@ -93,7 +108,7 @@ const venueData = [{
             <span>状态：</span>
             <span v-if="venue.state === 0" style="color: green">开放</span>
             <span v-if="venue.state === 1" style="color: red">关闭</span>
-            <span v-if="venue.state === 2" style="color: orange">维修</span>
+            <span v-if="venue.state === 2" style="color: orange">保养</span>
           </div>
         </div>
       </div>
@@ -138,7 +153,9 @@ const venueData = [{
 .CardButton{
   margin-right: 5px;
   margin-left: auto;
-  height: 25px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  height: 20px;
 }
 
 .NoticeContent{
@@ -225,6 +242,12 @@ const venueData = [{
   margin: 10px;
   padding: 10px;
   border: 1px solid lightgray;
+  border-radius: 3px;
+}
+
+.VenueItem:hover{
+  background-color: #f6f6f6;
+  cursor: pointer;
 }
 
 .VenueImg{
