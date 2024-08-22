@@ -5,6 +5,7 @@ import AdminVenue from '@/views/AdminVenue.vue'
 import AdminVenueDetail from '@/views/AdminVenueDetail.vue'
 import AdminDeviceDetail from '@/views/AdminDeviceDetail.vue'
 import AdminDeviceRepair from '@/views/AdminDeviceRepair.vue'
+import AdminVenueMaintenance from '@/views/AdminVenueMaintenance.vue'
 import NotificationList from '@/views/NotificationList.vue'
 import UserRegister from '@/views/UserRegister.vue'
 import VenueBrowser from '@/views/VenueBrowser.vue'
@@ -39,6 +40,10 @@ const router = createRouter({
         {
           path: '/AdminDeviceRepair',
           component: AdminDeviceRepair,
+        },
+        {
+          path: '/AdminVenueMaintenance',
+          component: AdminVenueMaintenance
         },
         {
           path: '/NotificationList',

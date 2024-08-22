@@ -3,16 +3,14 @@
 import { ref, computed } from 'vue';
 import { Search } from '@element-plus/icons-vue'
 
-const searchType = ref('0');
+const searchType = ref('1');
 const searchContent = ref('');
 const searchPlaceholder = ['设备名称或ID', '场地名称或ID'];
 const stateOption = ref('3');
 const isSearching = ref(false);
 
-const repairData = [{
+const maintenanceData = [{
   id: 1,
-  deviceId: 1,
-  deviceName: '设备1',
   venueId: 1,
   venueName: '场地1',
   time: '2024-08-20 13:00',
@@ -21,18 +19,14 @@ const repairData = [{
 },
 {
   id: 2,
-  deviceId: 2,
-  deviceName: '设备名称过长时的展示',
   venueId: 2,
   venueName: '场地名称过长时的展示',
   time: '2024-08-20 13:00',
-  description: '维修描述过长时以提示框的方式显示',
+  description: '维修描述过长时以提示框的方式显示维修描述过长时以提示框的方式显示',
   state: 1,
 },
 {
   id: 3,
-  deviceId: 3,
-  deviceName: '设备2',
   venueId: 3,
   venueName: '场地2',
   time: '2024-08-21 13:00',
@@ -41,8 +35,6 @@ const repairData = [{
 },
 {
   id: 4,
-  deviceId: 1,
-  deviceName: '设备1',
   venueId: 2,
   venueName: '场地名称过长时的展示',
   time: '2024-08-20 15:00',
@@ -52,7 +44,7 @@ const repairData = [{
 
 // 计算属性: 根据状态和搜索内容筛选数据
 const filteredData = computed(() => {
-  let data = repairData;
+  let data = maintenanceData;
 
   if (stateOption.value !== '3') {
     data = data.filter(item => item.state === +stateOption.value);
@@ -61,8 +53,7 @@ const filteredData = computed(() => {
   if (isSearching.value && searchContent.value) {
     data = data.filter(item => {
       const searchTerm = searchContent.value.toLowerCase();
-      return (searchType.value === '0' && item.deviceName.toLowerCase().includes(searchTerm)) ||
-             (searchType.value === '1' && item.venueName.toLowerCase().includes(searchTerm));
+      return item.venueName.toLowerCase().includes(searchTerm);
     });
     //isSearching.value = false;
   }
@@ -77,14 +68,10 @@ function handleSearch() {
 </script>
 
 <template>
-  <div class="AdminDeviceRepair">
-    <div class="RepairHeader">维修记录</div>
+  <div class="AdminVenueMaintenance">
+    <div class="MaintenanceHeader">维修记录</div>
     <div class="FilterArea">
       <div class="SearchArea">
-        <el-radio-group v-model="searchType">
-          <el-radio value="0">设备搜索</el-radio>
-          <el-radio value="1">场地搜索</el-radio>
-        </el-radio-group>
         <el-input v-model="searchContent" class="SearchBox" 
           :placeholder="searchPlaceholder[+searchType]">
           <template #prefix>
@@ -97,25 +84,23 @@ function handleSearch() {
         <div class="FilterText">状态</div>
         <el-radio-group v-model="stateOption">
           <el-radio-button value="3">全部</el-radio-button>
-          <el-radio-button value="2">待维修</el-radio-button>
-          <el-radio-button value="1">维修中</el-radio-button>
-          <el-radio-button value="0">已维修</el-radio-button>
+          <el-radio-button value="2">待保养</el-radio-button>
+          <el-radio-button value="1">保养中</el-radio-button>
+          <el-radio-button value="0">已保养</el-radio-button>
         </el-radio-group>
       </div>
     </div>
     <el-table :data="filteredData" :show-overflow-tooltip="{ effect: 'light'}">
       <el-table-column prop="id" label="记录编号" width="105" sortable></el-table-column>
-      <el-table-column prop="deviceId" label="设备编号" width="105" sortable></el-table-column>
-      <el-table-column prop="deviceName" label="设备名称" width="105" sortable></el-table-column>
       <el-table-column prop="venueId" label="场地编号" width="105" sortable></el-table-column>
       <el-table-column prop="venueName" label="场地名称" width="105" sortable></el-table-column>
-      <el-table-column prop="time" label="时间" width="135" sortable></el-table-column>
+      <el-table-column prop="time" label="保养时间" width="135" sortable></el-table-column>
       <el-table-column prop="description" label="描述"></el-table-column>
       <el-table-column label="状态" width="80">
         <template #default="item">
-          <div v-if="item.row.state === 0" style="color: green">已维修</div>
-          <div v-if="item.row.state === 1" style="color: orange">维修中</div>
-          <div v-if="item.row.state === 2" style="color: red">待维修</div>
+          <div v-if="item.row.state === 0" style="color: green">已保养</div>
+          <div v-if="item.row.state === 1" style="color: orange">保养中</div>
+          <div v-if="item.row.state === 2" style="color: red">待保养</div>
         </template>
       </el-table-column>
     </el-table>
@@ -123,7 +108,7 @@ function handleSearch() {
 </template>
 
 <style scoped>
-.AdminDeviceRepair{
+.AdminVenueMaintenance{
   display: flex;
   flex-direction: column;
   width: calc(100% - 20px);
@@ -134,7 +119,7 @@ function handleSearch() {
   border: 1px solid lightgray;
 }
 
-.RepairHeader{
+.MaintenanceHeader{
   display: flex;
   justify-content: center;
   padding: 10px;
