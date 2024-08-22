@@ -4,63 +4,50 @@ import { ref } from 'vue';
 const deviceInfo = {
   id: 1,
   name: "设备01",
-  device: "场地1",
+  venue: "场地1",
   state: 0,
-  intro_time: "2024-08-20 13:00"
+  introTime: "2024-08-20 13:00"
 };
-
-const deviceVenues = [{
-  id: 1,
-  name: "场地1",
-}, {
-  id: 2,
-  name: "场地2",
-}];
 
 const overviewDisplay = {
   "设备ID：": deviceInfo.id,
   "设备名称：": deviceInfo.name,
-  "设备引入时间：": deviceInfo.intro_time, 
+  "设备引入时间：": deviceInfo.introTime, 
 }
 
-const openDate = ref(new Date);
-
-const maintainenceRecord = [{
+// time属性暂时使用字符串方式，之后根据后端需求改成number类型
+const repairRecord = [{
   id: 1,
   time: "2024-08-19 19:00",
-  description: "这里是保养描述文字",
+  description: "这里是维修描述文字",
   state: 2,
 },
 {
   id: 2,
   time: "2024-08-19 20:00",
-  description: "保养描述过长时，多余内容隐藏，当鼠标移动到对应位置时以提示框的方式显示保养描述过长时，多余内容隐藏，当鼠标移动到对应位置时以提示框的方式显示",
+  description: "维修描述过长时，多余内容隐藏，当鼠标移动到对应位置时以提示框的方式显示保养描述过长时，多余内容隐藏，当鼠标移动到对应位置时以提示框的方式显示",
   state: 0,
 },
 {
   id: 3,
   time: "2024-08-20 19:00",
-  description: "这里是保养描述文字",
+  description: "这里是维修描述文字",
   state: 0,
 },
 {
   id: 4,
   time: "2024-08-19 21:00",
-  description: "这里是保养描述文字",
+  description: "这里是维修描述文字",
   state: 0,
 },
 ];
-
-function handleDateChange(){
-  
-}
 
 </script>
 
 <template>
   <div class="AdminDeviceDetail">
     <div class="AdminDeviceHeader">
-      <el-button class="BackButton">&lt;&nbsp;&nbsp;场地总览</el-button>
+      <el-button class="BackButton">&lt;&nbsp;&nbsp;设备总览</el-button>
       <div class="AdminDeviceTitle">{{ deviceInfo.name }}</div>
       <el-button class="EditButton">编辑</el-button>
     </div>
@@ -73,7 +60,8 @@ function handleDateChange(){
         </div>
         <div class="OverviewLine">
           <div class="OverviewDescription">设备所在场地：</div>
-          <el-button v-for="vdevice in deviceVenues" size="small">{{ vdevice.name }}</el-button>
+          <!-- <el-button v-for="vdevice in deviceVenues" size="small">{{ vdevice.name }}</el-button> -->
+          <el-button size="small">{{ deviceInfo.venue }}</el-button>
         </div>
         <div class="OverviewLine">
           <div class="OverviewDescription">状态：</div>
@@ -87,7 +75,7 @@ function handleDateChange(){
     <div class="DetailArea">
       <div class="MaintainenceArea">
         <div class="MaintainenceTitle">维修记录</div>
-        <el-table :data="maintainenceRecord" border>
+        <el-table :data="repairRecord" border>
           <el-table-column prop="id" label="编号" width="55"></el-table-column>
           <el-table-column prop="time" label="时间" width="140"></el-table-column>
           <el-table-column prop="description" label="描述" 
@@ -134,8 +122,7 @@ function handleDateChange(){
 }
 
 .AdminDeviceTitle{
-  position: absolute;
-  left: 50%;
+  align-self: center;
   font-size: 18px;
   font-weight: 700;
 }

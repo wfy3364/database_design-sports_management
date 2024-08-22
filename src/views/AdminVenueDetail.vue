@@ -34,7 +34,7 @@ const overviewDisplay = {
   "场地容量：": venueInfo.capacity, 
 }
 
-const openDate = ref(new Date);
+const openDate = ref(Date.now());
 
 const maintainenceRecord = [{
   id: 1,
@@ -47,6 +47,10 @@ const maintainenceRecord = [{
   description: "保养描述过长时，多余内容隐藏，当鼠标移动到对应位置时以提示框的方式显示",
   state: 1,
 }];
+
+function setDate(val){
+  openDate.value += val * 3600 * 1000 * 24;
+}
 
 function handleDateChange(){
   
@@ -84,10 +88,10 @@ function handleDateChange(){
       <div class="OpenTimeArea">
         <div class="OpenTimeHeader">
           <div class="OpenTimeTitle">开放时间表</div>
-          <el-button size="small">&lt;</el-button>
+          <el-button size="small" @click="setDate(-1)">&lt;</el-button>
           <el-date-picker v-model="openDate" class="OpenTimeDate" size="small" 
           @change="handleDateChange()"></el-date-picker>
-          <el-button size="small">&gt;</el-button>
+          <el-button size="small" @click="setDate(1)">&gt;</el-button>
         </div>
         <el-table :data="openTime" border :default-sort="{ prop: 'period'} ">
           <el-table-column prop="period" label="时间" sortable></el-table-column>
@@ -144,8 +148,7 @@ function handleDateChange(){
 }
 
 .AdminVenueTitle{
-  position: absolute;
-  left: 50%;
+  align-self: center;
   font-size: 18px;
   font-weight: 700;
 }
