@@ -1,24 +1,32 @@
 <template>
-  <div class="login">
-    <h1>登入</h1>
-    <form @submit.prevent="handleLogin">
-      <div>
-        <label for="username">用户名:</label>
-        <input v-model="username" id="username" type="text" required />
+  <div class="loginOuterPage">
+    <div class="loginPage">
+      <div class="loginLogoArea">
+        <div>此处放场地管理系统Logo</div>
       </div>
-      <div>
-        <label for="password">密码:</label>
-        <input v-model="password" id="password" type="password" required />
+      <div class="loginBox">
+        <div class="loginTitle">登录</div>
+        <form @submit.prevent="handleLogin">
+          <div>
+            <label for="username">用户名:</label>
+            <el-input v-model="username" id="username" type="text" required />
+          </div>
+          <div>
+            <label for="password">密码:</label>
+            <el-input v-model="password" id="password" type="password" show-password required />
+          </div>
+          <div>没有账号? <router-link to="/UserRegister">点此注册</router-link></div>
+          <button type="submit">登录</button>
+        </form>
       </div>
-      <button type="submit">登入</button>
-    </form>
-    <p>是否没有账号? <router-link to="/register">注册</router-link></p>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import CryptoJS from 'crypto-js';
 
 const username = ref('');
 const password = ref('');
@@ -50,12 +58,38 @@ export default {
 
 
 <style scoped>
-.login {
-  max-width: 300px;
-  margin: auto;
+
+.loginOuterPage{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100vh;
+}
+
+.loginPage{
+  display: flex;
+  padding: 20px;
+}
+
+.loginLogoArea{
+  padding: 1em;
+  width: calc(100% - 300px);
+  border: 1px solid black;
+}
+
+.loginBox {
+  width: 300px;
   padding: 1em;
   border-radius: 5px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.loginTitle{
+  display: flex;
+  justify-content: center;
+  font-size: 30px;
+  font-weight: 700;
+  margin-bottom: 10px;
 }
 
 div {

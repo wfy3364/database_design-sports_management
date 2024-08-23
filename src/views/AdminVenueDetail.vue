@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue';
+import { dayjs } from 'element-plus';
 
 const venueInfo = {
   id: 1,
@@ -38,7 +39,7 @@ const overviewDisplay = {
   "场地容量：": venueInfo.capacity, 
 }
 
-const openDate = ref(Date.now());
+const openDate = ref(dayjs().format("YYYY-MM-DD"));
 
 const maintainenceRecord = [{
   id: 1,
@@ -55,7 +56,7 @@ const maintainenceRecord = [{
 }];
 
 function setDate(val){
-  openDate.value += val * 3600 * 1000 * 24;
+  openDate.value = dayjs(openDate.value).add(val, "day").format("YYYY-MM-DD");
 }
 
 function handleDateChange(){
@@ -99,20 +100,20 @@ function handleDateChange(){
           @change="handleDateChange()"></el-date-picker>
           <el-button size="small" @click="setDate(1)">&gt;</el-button>
         </div>
-        <el-table :data="openTime" border :default-sort="{ prop: 'period'} ">
-          <el-table-column prop="period" label="时间" sortable></el-table-column>
-          <el-table-column prop="remain" label="剩余容量" width="105" sortable></el-table-column>
-          <el-table-column prop="price" label="价格" width="80" sortable></el-table-column>
+        <el-table :data="openTime" border :default-sort="{ prop: 'period'}">
+          <el-table-column prop="period" label="时间" sortable :resizable="false"></el-table-column>
+          <el-table-column prop="remain" label="剩余容量" width="105" sortable :resizable="false"></el-table-column>
+          <el-table-column prop="price" label="价格" width="80" sortable :resizable="false"></el-table-column>
         </el-table>
       </div>
       <div class="MaintainenceArea">
         <div class="MaintainenceTitle">保养记录</div>
         <el-table :data="maintainenceRecord" border>
-          <el-table-column prop="id" label="编号" width="55"></el-table-column>
-          <el-table-column prop="start_time" label="时间" width="140"></el-table-column>
-          <el-table-column prop="description" label="描述" 
+          <el-table-column prop="id" label="编号" width="55" :resizable="false"></el-table-column>
+          <el-table-column prop="start_time" label="时间" width="140" :resizable="false"></el-table-column>
+          <el-table-column prop="description" label="描述" :resizable="false"
           :show-overflow-tooltip="{ effect: 'light'}"></el-table-column>
-          <el-table-column label="状态" width="80">
+          <el-table-column label="状态" width="80" :resizable="false">
             <template #default="item">
               <div v-if="item.row.state === 0" style="color: green">完成</div>
               <div v-if="item.row.state === 1" style="color: orange">保养中</div>
@@ -216,9 +217,6 @@ function handleDateChange(){
   width: 120px;
 }
 
-.OpenTimeDate{
-  width: 200px;
-}
 
 .MaintainenceTitle{
   display: flex;

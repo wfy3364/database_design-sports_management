@@ -7,7 +7,12 @@ import AdminDeviceDetail from '@/views/AdminDeviceDetail.vue'
 import AdminDeviceRepair from '@/views/AdminDeviceRepair.vue'
 import AdminVenueMaintenance from '@/views/AdminVenueMaintenance.vue'
 import NotificationList from '@/views/NotificationList.vue'
+import ReservationList from '@/views/ReservationList.vue'
+import TeamAdmin from '@/views/TeamAdmin.vue'
+import TeamCreate from '@/views/TeamCreate.vue'
+import TeamManagement from '@/views/TeamManagement.vue'
 import UserRegister from '@/views/UserRegister.vue'
+import UserInfo from '@/views/UserInfo.vue'
 import VenueBrowser from '@/views/VenueBrowser.vue'
 import VenueReservation from '@/views/VenueReservation.vue'
 import Login from '@/views/Login.vue'
@@ -56,7 +61,27 @@ const router = createRouter({
         {
           path: '/VenueReservation',
           component: VenueReservation,
-        }
+        },
+        {
+          path: '/ReservationList',
+          component: ReservationList,
+        },
+        {
+          path: '/TeamAdmin',
+          component: TeamAdmin,
+        },
+        {
+          path: '/TeamCreate',
+          component: TeamCreate,
+        },
+        {
+          path: '/TeamManagement',
+          component: TeamManagement,
+        },
+        {
+          path: '/UserInfo',
+          component: UserInfo,
+        },
       ]
     },
     {

@@ -1,30 +1,38 @@
 <template>
-    <div class="register">
-      <h1>注册</h1>
-      <form @submit.prevent="handleRegister">
-        <div>
-          <label for="fullName">真实姓名:</label>
-          <input v-model="fullName" id="fullName" type="text" required />
-        </div>
-        <div>
-          <label for="nickname">用户名:</label>
-          <input v-model="nickname" id="nickname" type="text" required />
-        </div>
-        <div>
-          <label for="password">密码:</label>
-          <input v-model="password" id="password" type="password" required />
-        </div>
-        <div>
-          <label for="confirmPassword">确认密码:</label>
-          <input v-model="confirmPassword" id="confirmPassword" type="password" required />
-        </div>
-        <div>
-          <label for="phone">电话号码:</label>
-          <input v-model="phone" id="phone" type="text" required />
-        </div>
-        <button type="submit">注册</button>
-      </form>
+  <div class="registerOuterPage">
+    <div class="registerPage">
+      <div class="registerLogoArea">
+        <div>此处放场地管理系统Logo</div>
+      </div>
+      <div class="registerBox">
+        <div class="registerTitle">注册</div>
+        <form @submit.prevent="handleRegister">
+          <div>
+            <label for="fullName">真实姓名:</label>
+            <el-input v-model="fullName" id="fullName" type="text" required />
+          </div>
+          <div>
+            <label for="nickname">用户名:</label>
+            <el-input v-model="nickname" id="nickname" type="text" required />
+          </div>
+          <div>
+            <label for="password">密码:</label>
+            <el-input v-model="password" id="password" type="password" show-password required />
+          </div>
+          <div>
+            <label for="confirmPassword">确认密码:</label>
+            <el-input v-model="confirmPassword" id="confirmPassword" type="password" show-password required />
+          </div>
+          <div>
+            <label for="phone">电话号码:</label>
+            <el-input v-model="phone" id="phone" type="text" required />
+          </div>
+          <div>已有账号? <router-link to="/login">点此登录</router-link></div>
+          <button type="submit">注册</button>
+        </form>
+      </div>
     </div>
+  </div>
   </template>
   
   <script setup>
@@ -82,17 +90,44 @@
   };
   </script>
   
-  <style scoped>
-  .register {
-    max-width: 400px;
+<style scoped>
+
+  .registerOuterPage{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100vh;
+  }
+
+  .registerPage{
+    display: flex;
+    padding: 20px;
+  }
+
+  .registerLogoArea{
+    padding: 1em;
+    width: calc(100% - 400px);
+    border: 1px solid black;
+  }
+
+  .registerBox {
+    width: 400px;
     margin: auto;
     padding: 1em;
     border-radius: 5px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   }
   
+  .registerTitle{
+    display: flex;
+    justify-content: center;
+    font-size: 30px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
   div {
-    margin-bottom: 1em;
+    margin-bottom: 10px;
   }
   
   label {

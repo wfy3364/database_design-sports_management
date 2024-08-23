@@ -1,6 +1,6 @@
 <template>
     <div class="announcement-notification">
-      <h1>通知与公告</h1>
+      <div class="notificationTitle">通知与公告</div>
   
       <div class="sections">
         <!-- 用户加入团体成功的通知部分 -->
@@ -103,11 +103,24 @@
   
   <style scoped>
   .announcement-notification {
+    display: flex;
+    flex-direction: column;
+    border-radius: 5px;
+    background-color: white;
+    border: 1px solid lightgray;
+    margin: 10px;
     max-width: 1200px;
-    margin: auto;
-    padding: 1em;
   }
   
+  .notificationTitle{
+    display: flex;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    padding: 10px;
+    border-bottom: 1px solid black;
+  }
+
   .sections {
     display: grid;
     grid-template-columns: 1fr 1fr; /* 两列布局 */

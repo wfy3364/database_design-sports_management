@@ -1,6 +1,6 @@
 <template>
     <div class="reservation-page">
-      <h1>场地预约</h1>
+      <div class="reservationTitle">场地预约</div>
   
       <!-- 检查用户是否登录 -->
       <div v-if="!isLoggedIn">
@@ -17,31 +17,74 @@
           <form @submit.prevent="handleReservation">
             
             <!-- 选择预约类型 -->
-            <div class="field">
-              <label>预约类型：</label>
-              <select v-model="reservationType" @change="handleReservationTypeChange">
-                <option value="individual">个人</option>
-                <option v-if="userGroups.length > 0" value="group">团体</option>
-              </select>
-            </div>
-  
-            <!-- 显示团体列表（仅当选择团体时） -->
-            <div v-if="reservationType === 'group'" class="field">
-              <label>选择团体：</label>
-              <select v-model="selectedGroup">
-                <option v-for="group in userGroups" :key="group.id" :value="group.id">{{ group.name }}</option>
-              </select>
-            </div>
+            <div class="infoSection">
+              <div class="infoTitle">预约信息</div>
+              <div class="infoLine">
+                <label class="infoLabel">预约类型：</label>
+                <!-- <select v-model="reservationType" @change="handleReservationTypeChange">
+                  <option value="individual">个人</option>
+                  <option v-if="userGroups.length > 0" value="group">团体</option>
+                </select> -->
+                <el-radio-group v-model="reservationType" @change="handleReservationTypeChange">
+                  <el-radio-button size="small" value="individual">个人</el-radio-button>
+                  <el-radio-button size="small" :disabled="userGroups.length == 0" value="group">团体</el-radio-button>
+                </el-radio-group>
+              </div>
+
+              <!-- 显示团体列表（仅当选择团体时） -->
+              <div v-if="reservationType === 'group'">
+                <div class="infoLine">
+                  <label class="infoLabel">预约团体：</label>
+                  <!-- <select v-model="selectedGroup">
+                    <option v-for="group in userGroups" :key="group.id" :value="group.id">{{ group.name }}</option>
+                  </select> -->
+                  <div class="infoContent">
+                    <div v-if="!selectedGroup" class="noSelectInfo">未选择团体</div>
+                    <div v-else>{{ selectedGroup.name }}</div>
+                  </div>
+                  <el-button size="small" class="infoOption">选择团体</el-button>
+                </div>
+              </div>
   
             <!-- 用户信息或团体信息 -->
-            <div class="field">
-              <h3>预约信息</h3>
-              <p><strong>用户：</strong> {{ user.name }}</p>
-              <p v-if="reservationType === 'group'"><strong>团体：</strong> {{ selectedGroupName }}</p>
-              <p><strong>场地：</strong> {{ venueName }}</p>
-              <p><strong>时间段：</strong> {{ selectedTimeslot }}</p>
+              <!-- <h3>预约信息</h3> -->
+              <!-- <p><strong>用户：</strong> {{ user.name }}</p> -->
+              <div v-if="reservationType === 'individual'">
+                <div class="infoLine">
+                  <div class="infoLabel">用户ID：</div>
+                  <div>{{ user.id }}</div>
+                </div>
+                <div class="infoLine">
+                  <div class="infoLabel">用户名：</div>
+                  <div>{{ user.name }}</div>
+                </div>
+              </div>
+              <!-- <p v-if="reservationType === 'group'"><strong>团体：</strong> {{ selectedGroupName }}</p> -->
+              <div v-if="reservationType === 'group'">
+                <!-- 团体信息 -->
+              </div>
             </div>
-  
+            <div class="infoSection">
+              <div class="infoTitle">场地信息</div>
+              <!-- <p><strong>场地：</strong> {{ venueName }}</p>
+              <p><strong>时间段：</strong> {{ selectedTimeslot }}</p> -->
+              <div class="infoLine">
+                <div class="infoLabel">场地：</div>
+                <div class="infoContent">
+                  <div v-if="venueName === ''" class="noSelectInfo">未选择场地</div>
+                  <div v-else>{{ venueName }}</div>
+                </div>
+                <el-button size="small" class="infoOption">选择场地</el-button>
+              </div>
+              <div class="infoLine">
+                <div class="infoLabel">时间段：</div>
+                <div class="infoContent">
+                  <div v-if="selectedTimeslot === ''" class="noSelectInfo">未选择时间段</div>
+                  <div v-else>{{ selectedTimeslot }}</div>
+                </div>
+                <el-button size="small" class="infoOption">选择时间</el-button>
+              </div>
+            </div>
             <!-- 违约处理办法 -->
             <div class="field">
               <label>
@@ -52,8 +95,8 @@
   
             <!-- 预约和取消按钮 -->
             <div class="buttons">
-              <button type="submit" :disabled="!agreedToTerms">预约</button>
-              <button type="button" @click="cancelReservation">取消</button>
+              <el-button type="primary" @click="handleReservation" :disabled="!agreedToTerms">预约</el-button>
+              <el-button type="button" @click="cancelReservation">取消</el-button>
             </div>
   
           </form>
@@ -97,8 +140,8 @@
       selectedTimeslot.value = timeslot;
     } else {
       // 如果没有传递参数，则设置默认值
-      venueName.value = '请选择场地';
-      selectedTimeslot.value = '请选择时间段';
+      venueName.value = '';
+      selectedTimeslot.value = '';
     }
   });
   
@@ -113,7 +156,7 @@
     if (reservationType.value === 'individual') {
       selectedGroup.value = null; // 如果选择个人预约，清空选中的团体
     } else if (userGroups.value.length > 0) {
-      selectedGroup.value = userGroups.value[0].id; // 如果选择团体预约，默认选中第一个团体
+      selectedGroup.value = userGroups.value[0]; // 如果选择团体预约，默认选中第一个团体
     }
   };
   
@@ -134,15 +177,60 @@
   
   <style scoped>
   .reservation-page {
-    max-width: 600px;
+    /* max-width: 600px;
     margin: auto;
-    padding: 2em;
-    background-color: #f9f9f9;
+    padding: 2em; */
+    margin: 10px;
+    padding-bottom: 10px;
+    background-color: white;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   }
   
-  .field {
+  .reservationTitle{
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+    font-size: 20px;
+    font-weight: 700;
+    border-bottom: 1px solid black;
+  }
+
+  .infoSection{
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    line-height: 2em;
+    border: 1px solid lightgray;
+  }
+
+  .infoTitle{
+    line-height: 2em;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .infoLine{
+    display: flex;
+    align-items: center;
+  }
+
+  .infoLabel{
+    width: 100px;
+    font-weight: 700;
+  }
+
+  .infoContent{
+    width: 200px;
+  }
+
+  .noSelectInfo{
+    color: #aaa;
+  }
+
+
+
+  /* .field {
     margin-bottom: 1.5em;
   }
   
@@ -167,6 +255,6 @@
   
   button:hover:not(:disabled) {
     background-color: #0056b3;
-  }
+  } */
   </style>
   

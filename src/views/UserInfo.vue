@@ -1,7 +1,7 @@
 <template>
     <div class="container">
-      <h1>用户账号信息</h1>
-      <div class="user-info">
+      <div class="userInfoTitle">用户账号信息</div>
+      <!-- <div class="user-info">
         <div class="info-item">
           <label>用户 ID:</label>
           <span>{{ userInfo.id }}</span>
@@ -34,14 +34,39 @@
           <label>注册时间:</label>
           <span>{{ userInfo.registrationTime }}</span>
         </div>
-      </div>
+      </div> -->
+      <el-descriptions column="2" border>
+        <el-descriptions-item label="用户ID" label-class-name="itemLabel">
+          <div class="itemContent">{{ userInfo.id }}</div>
+        </el-descriptions-item>
+        <el-descriptions-item min-width="">
+          <template #label>
+            <div class="itemLabel">用户昵称</div>
+          </template>
+          {{ userInfo.nickname }}
+        </el-descriptions-item>
+        <el-descriptions-item width="">
+          <template #label>
+            <div class="itemLabel">用户姓名</div>
+          </template>
+          {{ userInfo.name }}
+        </el-descriptions-item>
+        <el-descriptions-item width="">
+          <template #label>
+            <div class="itemLabel">联系电话</div>
+          </template>
+          {{ userInfo.phone }}
+        </el-descriptions-item>
+      </el-descriptions>
     </div>
   </template>
   
   <script setup>
   import { ref, onMounted } from 'vue';
   
-  const userInfo = ref({});
+  const userInfo = ref({
+
+  });
   
   // 从后端获取用户信息
   onMounted(async () => {
@@ -58,11 +83,24 @@
   
   <style scoped>
   .container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    margin: 10px;
+    background-color: white;
+    border-radius: 5px;
+    border: 1px solid lightgray;
+    /* padding: 20px; */
   }
   
+  .userInfoTitle{
+    display: flex;
+    justify-content: center;
+    font-size: 25px;
+    font-weight: 700;
+    padding: 10px;
+    border-bottom: 1px solid black;
+  }
+
   .user-info {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -82,4 +120,10 @@
   .info-item span {
   color: red;
   }
+
+  .itemLabel{
+    font-weight: 700;
+    /* width: 100px; */
+  }
+
   </style>
