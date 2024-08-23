@@ -15,28 +15,32 @@ const overviewDisplay = {
   "设备引入时间：": deviceInfo.introTime, 
 }
 
-// time属性暂时使用字符串方式，之后根据后端需求改成number类型
+// start_time属性暂时使用字符串方式，之后根据后端需求改成number类型
 const repairRecord = [{
   id: 1,
-  time: "2024-08-19 19:00",
+  start_time: "2024-08-19 19:00",
+  end_time: "2024-08-19 20:00",
   description: "这里是维修描述文字",
   state: 2,
 },
 {
   id: 2,
-  time: "2024-08-19 20:00",
+  start_time: "2024-08-19 20:00",
+  end_time: "2024-08-19 21:00",
   description: "维修描述过长时，多余内容隐藏，当鼠标移动到对应位置时以提示框的方式显示保养描述过长时，多余内容隐藏，当鼠标移动到对应位置时以提示框的方式显示",
   state: 0,
 },
 {
   id: 3,
-  time: "2024-08-20 19:00",
+  start_time: "2024-08-20 19:00",
+  end_time: "2024-08-20 20:00",
   description: "这里是维修描述文字",
   state: 0,
 },
 {
   id: 4,
-  time: "2024-08-19 21:00",
+  start_time: "2024-08-19 21:00",
+  end_time: "2024-08-19 22:00",
   description: "这里是维修描述文字",
   state: 0,
 },
@@ -77,7 +81,7 @@ const repairRecord = [{
         <div class="MaintainenceTitle">维修记录</div>
         <el-table :data="repairRecord" border>
           <el-table-column prop="id" label="编号" width="55"></el-table-column>
-          <el-table-column prop="time" label="时间" width="140"></el-table-column>
+          <el-table-column prop="start_time" label="时间" width="140"></el-table-column>
           <el-table-column prop="description" label="描述" 
           :show-overflow-tooltip="{ effect: 'light'}"></el-table-column>
           <el-table-column label="状态" width="80">

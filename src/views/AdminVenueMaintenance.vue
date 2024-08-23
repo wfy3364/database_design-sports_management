@@ -13,7 +13,8 @@ const maintenanceData = [{
   id: 1,
   venueId: 1,
   venueName: '场地1',
-  time: '2024-08-20 13:00',
+  start_time: '2024-08-20 13:00',
+  end_time: '2024-08-20 14:00',
   description: '设备正常维修',
   state: 0,
 },
@@ -21,7 +22,8 @@ const maintenanceData = [{
   id: 2,
   venueId: 2,
   venueName: '场地名称过长时的展示',
-  time: '2024-08-20 13:00',
+  start_time: '2024-08-20 13:00',
+  end_time: '2024-08-20 14:00',
   description: '维修描述过长时以提示框的方式显示维修描述过长时以提示框的方式显示',
   state: 1,
 },
@@ -29,7 +31,8 @@ const maintenanceData = [{
   id: 3,
   venueId: 3,
   venueName: '场地2',
-  time: '2024-08-21 13:00',
+  start_time: '2024-08-21 13:00',
+  end_time: '2024-08-21 14:00',
   description: '设备正常维修',
   state: 2,
 },
@@ -37,10 +40,43 @@ const maintenanceData = [{
   id: 4,
   venueId: 2,
   venueName: '场地名称过长时的展示',
-  time: '2024-08-20 15:00',
+  start_time: '2024-08-20 15:00',
+  end_time: '2024-08-20 16:00',
   description: '设备正常维修',
   state: 2,
 }];
+
+const shortcuts = [
+  {
+    text: '最近一周',
+    value: () => {
+      const end = new Date()
+      const start = new Date()
+      start.setTime(start.getTime() - 3600 * 1000 * 24 * 7)
+      return [start, end]
+    },
+  },
+  {
+    text: '最近一个月',
+    value: () => {
+      const end = new Date()
+      const start = new Date()
+      start.setTime(start.getTime() - 3600 * 1000 * 24 * 30)
+      return [start, end]
+    },
+  },
+  {
+    text: '最近三个月',
+    value: () => {
+      const end = new Date()
+      const start = new Date()
+      start.setTime(start.getTime() - 3600 * 1000 * 24 * 90)
+      return [start, end]
+    },
+  },
+]
+
+const dateRange = ref([]);
 
 // 计算属性: 根据状态和搜索内容筛选数据
 // const filteredData = computed(() => {
@@ -81,7 +117,7 @@ function handleSearch(){
     const startTime = dateRange.value[0].getTime() || 0;
     const endTime = dateRange.value[1].getTime() + 3600 * 1000 * 24 || Infinity;
     filteredData.value = filteredData.value.filter(item => {
-      return item.time.getTime() >= startTime && item.time.getTime() < endTime;
+      return item.start_time.getTime() >= startTime && item.start_time.getTime() < endTime;
     });
   }
 }
@@ -138,7 +174,7 @@ function FilterReset(){
       <el-table-column prop="id" label="记录编号" width="105" sortable></el-table-column>
       <el-table-column prop="venueId" label="场地编号" width="105" sortable></el-table-column>
       <el-table-column prop="venueName" label="场地名称" width="105" sortable></el-table-column>
-      <el-table-column prop="time" label="保养时间" width="135" sortable></el-table-column>
+      <el-table-column prop="start_time" label="保养开始时间" width="135" sortable></el-table-column>
       <el-table-column prop="description" label="描述"></el-table-column>
       <el-table-column label="状态" width="80">
         <template #default="item">
@@ -203,6 +239,12 @@ function FilterReset(){
 .FilterText{
   line-height: var(--el-component-size);
   margin-right: 20px;
+}
+
+.FilterControl{
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
 }
 
 </style>

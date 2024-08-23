@@ -11,10 +11,14 @@ const venueInfo = {
 
 const openTime = [{
   period: "13:00-14:00",
+  start_time: "13:00",
+  end_time: "14:00",
   remain: 10,
   price: 19.99,
 },{
   period: "09:00-10:00",
+  start_time: "9:00",
+  end_time: "10:00",
   remain: 5,
   price: 9.99,
 }];
@@ -38,12 +42,14 @@ const openDate = ref(Date.now());
 
 const maintainenceRecord = [{
   id: 1,
-  time: "2024-08-19 19:00",
+  start_time: "2024-08-19 19:00",
+  end_time: "2024-08-19 20:00",
   description: "这里是保养描述文字",
   state: 0,
 },{
   id: 2,
-  time: "2024-08-19 20:00",
+  start_time: "2024-08-19 20:00",
+  end_time: "2024-08-19 21:00",
   description: "保养描述过长时，多余内容隐藏，当鼠标移动到对应位置时以提示框的方式显示",
   state: 1,
 }];
@@ -103,7 +109,7 @@ function handleDateChange(){
         <div class="MaintainenceTitle">保养记录</div>
         <el-table :data="maintainenceRecord" border>
           <el-table-column prop="id" label="编号" width="55"></el-table-column>
-          <el-table-column prop="time" label="时间" width="140"></el-table-column>
+          <el-table-column prop="start_time" label="时间" width="140"></el-table-column>
           <el-table-column prop="description" label="描述" 
           :show-overflow-tooltip="{ effect: 'light'}"></el-table-column>
           <el-table-column label="状态" width="80">

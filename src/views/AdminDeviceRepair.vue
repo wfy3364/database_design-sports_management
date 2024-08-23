@@ -15,7 +15,8 @@ const repairData = [{
   deviceName: '设备1',
   venueId: 1,
   venueName: '场地1',
-  time: new Date("August 20, 2024 13:00:00"),
+  start_time: new Date("August 20, 2024 13:00:00"),
+  end_time: new Date("August 20, 2024 14:00:00"),
   description: '设备正常维修',
   state: 0,
 },
@@ -25,7 +26,8 @@ const repairData = [{
   deviceName: '设备名称过长时的展示',
   venueId: 2,
   venueName: '场地名称过长时的展示',
-  time: new Date("August 20, 2024 14:00:00"),
+  start_time: new Date("August 20, 2024 14:00:00"),
+  end_time: new Date("August 20, 2024 14:00:00"),
   description: '维修描述过长时以提示框的方式显示',
   state: 1,
 },
@@ -35,7 +37,8 @@ const repairData = [{
   deviceName: '设备2',
   venueId: 3,
   venueName: '场地2',
-  time: new Date("August 21, 2024 13:00:00"),
+  start_time: new Date("August 21, 2024 13:00:00"),
+  end_time: new Date("August 21, 2024 14:00:00"),
   description: '设备正常维修',
   state: 2,
 },
@@ -45,7 +48,8 @@ const repairData = [{
   deviceName: '设备1',
   venueId: 2,
   venueName: '场地名称过长时的展示',
-  time: new Date("August 21, 2024 14:00:00"),
+  start_time: new Date("August 21, 2024 14:00:00"),
+  end_time: new Date("August 21, 2024 15:00:00"),
   description: '设备正常维修',
   state: 2,
 }];
@@ -131,7 +135,7 @@ function handleSearch(){
     const startTime = dateRange.value[0].getTime() || 0;
     const endTime = dateRange.value[1].getTime() + 3600 * 1000 * 24 || Infinity;
     filteredData.value = filteredData.value.filter(item => {
-      return item.time.getTime() >= startTime && item.time.getTime() < endTime;
+      return item.start_time.getTime() >= startTime && item.start_time.getTime() < endTime;
     });
   }
 }
@@ -191,13 +195,13 @@ function FilterReset(){
       <el-table-column prop="deviceName" label="设备名称" width="105" sortable></el-table-column>
       <el-table-column prop="venueId" label="场地编号" width="105" sortable></el-table-column>
       <el-table-column prop="venueName" label="场地名称" width="105" sortable></el-table-column>
-      <el-table-column prop="time" label="时间" width="135" sortable>
+      <el-table-column prop="start_time" label="时间" width="135" sortable>
         <template #default="item">
-          <span>{{ item.row.time.getFullYear() }}-</span>
-          <span>{{ zeroCheck(item.row.time.getMonth() + 1) }}-</span>
-          <span>{{ zeroCheck(item.row.time.getDate()) }}&nbsp;</span>
-          <span>{{ zeroCheck(item.row.time.getHours()) }}:</span>
-          <span>{{ zeroCheck(item.row.time.getMinutes()) }}</span>
+          <span>{{ item.row.start_time.getFullYear() }}-</span>
+          <span>{{ zeroCheck(item.row.start_time.getMonth() + 1) }}-</span>
+          <span>{{ zeroCheck(item.row.start_time.getDate()) }}&nbsp;</span>
+          <span>{{ zeroCheck(item.row.start_time.getHours()) }}:</span>
+          <span>{{ zeroCheck(item.row.start_time.getMinutes()) }}</span>
         </template>
       </el-table-column>
       <el-table-column prop="description" label="描述"></el-table-column>
