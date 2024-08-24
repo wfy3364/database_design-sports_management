@@ -6,6 +6,7 @@ import AdminVenueDetail from '@/views/AdminVenueDetail.vue'
 import AdminDeviceDetail from '@/views/AdminDeviceDetail.vue'
 import AdminDeviceRepair from '@/views/AdminDeviceRepair.vue'
 import AdminVenueMaintenance from '@/views/AdminVenueMaintenance.vue'
+import Statistics from '@/views/Statistics.vue'
 import NotificationList from '@/views/NotificationList.vue'
 import ReservationList from '@/views/ReservationList.vue'
 import TeamAdmin from '@/views/TeamAdmin.vue'
@@ -16,6 +17,7 @@ import UserInfo from '@/views/UserInfo.vue'
 import VenueBrowser from '@/views/VenueBrowser.vue'
 import VenueReservation from '@/views/VenueReservation.vue'
 import Login from '@/views/Login.vue'
+
 
 
 const router = createRouter({
@@ -49,6 +51,10 @@ const router = createRouter({
         {
           path: '/AdminVenueMaintenance',
           component: AdminVenueMaintenance
+        },
+        {
+          path: '/Statistics',
+          component: Statistics
         },
         {
           path: '/NotificationList',
