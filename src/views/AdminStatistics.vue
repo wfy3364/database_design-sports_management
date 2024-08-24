@@ -30,15 +30,18 @@ const reserveDescription = {
 const revenueDescription = {
   sum: {
     title: '总营收',
-    value: 123.456
+    date: ['2024-08-01', '2024-08-02'],
+    value: [123.456, 234.567],
   },
   max: {
     title: '最高营收',
-    value: 23.456
+    date: ['2024-08-01', '2024-08-02'],
+    value: [23.456, 34.567],
   },
   avg: {
     title: '平均营收',
-    value: 3.456
+    date: ['2024-08-01', '2024-08-02'],
+    value: [3.456, 4.567],
   },
 }
 
