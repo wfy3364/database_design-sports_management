@@ -215,7 +215,7 @@
   // });
 
   const handleSearch = () => {
-    filteredAppointments = appointments.value;
+    filteredAppointments.value = appointments.value;
 
     if(searchContent.value){
       filteredAppointments.value = filteredAppointments.filter(appointment => {

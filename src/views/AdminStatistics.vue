@@ -7,51 +7,72 @@ ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Filler, 
 
 const sportsOption = ref('0');
 const venueOption = ref('0');
-const revenueTypeOption = ref('2');
-const reserveTypeOption = ref('2');
+// const revenueTypeOption = ref('2');
+// const reserveTypeOption = ref('2');
 const revenueType = ref('daily');
 const reserveType = ref('daily');
 
 const reserveDescription = {
   sum: {
     title: '总预约人次',
-    value: 123.456
+    value: {
+      daily: 123.456,
+      monthly: 456.789,
+      yearly: 1111.11,
+    }  
   },
   max: {
     title: '最高预约人次',
-    value: 23.456
+    value: {
+      daily: 23.456,
+      monthly: 234.56,
+      yearly: 2345.56,
+    }
   },
   avg: {
     title: '平均预约人次',
-    value: 3.456
+    value: {
+      daily: 3.456,
+      monthly: 23.45,
+      yearly: 234.56,
+    }
   },
 }
 
 const revenueDescription = {
   sum: {
     title: '总营收',
-    date: ['2024-08-01', '2024-08-02'],
-    value: [123.456, 234.567],
+    value: {
+      daily: 123.456,
+      monthly: 0,
+      yearly: 0,
+    },
   },
   max: {
     title: '最高营收',
-    date: ['2024-08-01', '2024-08-02'],
-    value: [23.456, 34.567],
+    value: {
+      daily: 123.456,
+      monthly: 0,
+      yearly: 0,
+    },
   },
   avg: {
     title: '平均营收',
-    date: ['2024-08-01', '2024-08-02'],
-    value: [3.456, 4.567],
+    value: {
+      daily: 123.456,
+      monthly: 0,
+      yearly: 0,
+    },
   },
 }
 
-const changeRevenueType = (newView) => {
-  revenueType.value = newView;
-};
+// const changeRevenueType = (newView) => {
+//   revenueType.value = newView;
+// };
 
-const changeReserveType = (newView) => {
-  reserveType.value = newView;
-};
+// const changeReserveType = (newView) => {
+//   reserveType.value = newView;
+// };
 
 const reserveDataList = {
   daily: {
@@ -203,54 +224,82 @@ const revenueChart = {
           <el-radio-button value="7">篮球</el-radio-button>
           <el-radio-button value="8">排球</el-radio-button>
         </el-radio-group>
-      
-        <div v-if="sportsOption === '0'">
-          <div class="FilterText">场地</div>
-          <el-radio-group v-model="venueOption">
-            <el-radio-button value="0">场地1</el-radio-button>
-            <el-radio-button value="1">场地2</el-radio-button>
-            <el-radio-button value="2">场地3</el-radio-button>
-            <el-radio-button value="3">场地4</el-radio-button>
-          </el-radio-group>
+      </div>
+      <div class="FilterOption" v-if="sportsOption === '0'">
+        <div class="FilterText">场地</div>
+        <el-radio-group v-model="venueOption">
+          <el-radio-button value="0">场地1</el-radio-button>
+          <el-radio-button value="1">场地2</el-radio-button>
+          <el-radio-button value="2">场地3</el-radio-button>
+          <el-radio-button value="3">场地4</el-radio-button>
+        </el-radio-group>
+      </div>
+    </div>
+    <div class="StatisticsContent">
+      <div class="subTitleHeader">
+        <div class="subTitleText">用户预约数据</div>
+        <div class="controls">
+            <el-radio-group v-model="reserveType">
+              <el-radio-button value="daily">按日</el-radio-button>
+              <el-radio-button value="monthly">按月</el-radio-button>
+              <el-radio-button value="yearly">按年</el-radio-button>
+            </el-radio-group>
         </div>
       </div>
+      <!-- <div class="stats-container">
+        <div class="stat-item">{{reserveDescription.sum.title}}: {{reserveDescription.sum.value}}</div>
+        <div class="stat-item">{{reserveDescription.max.title}}: {{reserveDescription.max.value}}</div>
+        <div class="stat-item">{{reserveDescription.avg.title}}: {{reserveDescription.avg.value}}</div>
+      </div> -->
+      <div class="stats-container">
+        <el-descriptions direction="vertical" :column="3" size="large" border>
+          <el-descriptions-item :label="reserveDescription.sum.title">
+            {{ reserveDescription.sum.value[reserveType] }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="reserveDescription.max.title">
+            {{ reserveDescription.max.value[reserveType] }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="reserveDescription.avg.title">
+            {{ reserveDescription.avg.value[reserveType] }}
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+      <div class="chart-container">
+        <Line :data="reserveData" :options="reserveChart" class="line-chart" />
+      </div>
+    </div>
 
-      <div>
-        <div class="subTitleText">用户预约数据</div>
-        <div class="stats-container">
-          <div class="stat-item">{{reserveDescription.sum.title}}: {{reserveDescription.sum.value}}</div>
-          <div class="stat-item">{{reserveDescription.max.title}}: {{reserveDescription.max.value}}</div>
-          <div class="stat-item">{{reserveDescription.avg.title}}: {{reserveDescription.avg.value}}</div>
-        </div>
-        <div class="chart-container">
-          <div class="controls">
-            <el-radio-group v-model="reserveTypeOption">
-              <el-radio-button value="2" @click="changeReserveType('daily')">按日</el-radio-button>
-              <el-radio-button value="1" @click="changeReserveType('monthly')">按月</el-radio-button>
-              <el-radio-button value="0" @click="changeReserveType('yearly')">按年</el-radio-button>
+    <div class="StatisticsContent">
+      <div class="subTitleHeader">
+        <div class="subTitleText">营收数据</div>
+        <div class="controls">
+            <el-radio-group v-model="revenueType">
+              <el-radio-button value="daily">按日</el-radio-button>
+              <el-radio-button value="monthly">按月</el-radio-button>
+              <el-radio-button value="yearly">按年</el-radio-button>
             </el-radio-group>
-          </div>
-          <Line :data="reserveData" :options="reserveChart" class="line-chart" />
         </div>
       </div>
-
-      <div>
-        <div class="subTitleText">用户预约数据</div>
-        <div class="stats-container">
-          <div class="stat-item">{{revenueDescription.sum.title}}: {{revenueDescription.sum.value}}</div>
-          <div class="stat-item">{{revenueDescription.max.title}}: {{revenueDescription.max.value}}</div>
-          <div class="stat-item">{{revenueDescription.avg.title}}: {{revenueDescription.avg.value}}</div>
-        </div>
-        <div class="chart-container">
-          <div class="controls">
-            <el-radio-group v-model="revenueTypeOption">
-              <el-radio-button value="2" @click="changeRevenueType('daily')">按日</el-radio-button>
-              <el-radio-button value="1" @click="changeRevenueType('monthly')">按月</el-radio-button>
-              <el-radio-button value="0" @click="changeRevenueType('yearly')">按年</el-radio-button>
-            </el-radio-group>
-          </div>
-          <Line :data="revenueData" :options="revenueChart" class="line-chart" />
-        </div>
+      <!-- <div class="stats-container">
+        <div class="stat-item">{{revenueDescription.sum.title}}: {{revenueDescription.sum.value}}</div>
+        <div class="stat-item">{{revenueDescription.max.title}}: {{revenueDescription.max.value}}</div>
+        <div class="stat-item">{{revenueDescription.avg.title}}: {{revenueDescription.avg.value}}</div>
+      </div> -->
+      <div class="stats-container">
+        <el-descriptions direction="vertical" :column="3" size="large" border>
+          <el-descriptions-item :label="revenueDescription.sum.title">
+            {{ revenueDescription.sum.value[revenueType] }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="revenueDescription.max.title">
+            {{ revenueDescription.max.value[revenueType] }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="revenueDescription.avg.title">
+            {{ revenueDescription.avg.value[revenueType] }}
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+      <div class="chart-container">
+        <Line :data="revenueData" :options="revenueChart" class="line-chart" />
       </div>
     </div>
   </div>
@@ -274,31 +323,40 @@ const revenueChart = {
   justify-content: center;
   padding: 10px;
   /* border-bottom: 1px solid black; */
-  font-size: 30px;
+  font-size: 20px;
   font-weight: 700;
 }
 
-.subTitleText{
+.subTitleHeader{
   display: flex;
   justify-content: center;
+  line-height: var(--el-component-size);
+  border-bottom: 1px solid black;
+}
+
+.subTitleText{
+  /* justify-content: center; */
+  margin-right: auto;
   padding: 10px;
-  /* border-bottom: 1px solid black; */
-  font-size: 25px;
+  font-size: 18px;
   font-weight: 700;
 }
 
 .chart-container {
+  display: flex; /* 使用 Flexbox 布局 */
+  justify-content: center; /* 横向居中 */
+  align-items: center; /* 垂直居中 */
   width: 90%;
-  margin: auto; /* 确保容器居中 */
-  padding: 20px;
-  height: 600px;
+  margin-left: auto; /* 确保容器居中 */
+  margin-right: auto;
+  margin-top: 30px;
+  margin-bottom: 30px;
+  padding: 10px;
+  /* height: 600px; */
   /* border-top: 1px solid lightgray;
   border-bottom: 1px solid lightgray;
   border-left: 1px solid lightgray;
   border-right: 1px solid lightgray; */
-  display: flex; /* 使用 Flexbox 布局 */
-  justify-content: center; /* 横向居中 */
-  align-items: center; /* 垂直居中 */
 }
 
 
@@ -310,33 +368,43 @@ const revenueChart = {
 }
 
 .controls {
-  position: absolute; /* 绝对定位 */
-  top: 10px; /* 距离容器顶部的距离 */
-  left: 80%; /* 水平居中 */
-  transform: translateX(-50%); /* 居中对齐 */
-  z-index: 10; /* 确保按钮在图表上方 */
+  /* position: absolute; */
+  /* top: 10px; */
+  /* left: 80%; */
+  /* transform: translateX(-50%); */
+  /* z-index: 10; */
   display: flex;
+  margin-left: auto;
   gap: 10px; /* 按钮之间的间距 */
   width: 200px;
-}
-
-.FilterOption{
-  margin-bottom: 50px;
-  border-top: 1px solid lightgray;
-  border-bottom: 1px solid lightgray;
-  padding: 20px;
-  padding-left: 10%;
 }
 
 .FilterArea{
   display: flex;
   flex-direction: column;
+  border-top: 1px solid lightgray;
+  border-bottom: 1px solid lightgray;
+  padding: 10px;
+}
+
+.FilterOption{
+  display: flex;
+  line-height: var(--el-component-size);
+  padding: 10px;
+  padding-left: 10%;
+}
+
+.FilterText{
+  width: 100px;
+}
+
+.StatisticsContent{
   padding: 10px;
 }
 
 .stats-container {
-  display: flex;
-  justify-content: space-between;
+  /* display: flex; */
+  /* justify-content: space-between; */
   margin-bottom: 10px; /* 间距调整 */
   margin-top: 10px; /* 间距调整 */
   width: 70%;
