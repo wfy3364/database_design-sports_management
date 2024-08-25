@@ -7,10 +7,27 @@ ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Filler, 
 
 const sportsOption = ref('0');
 const venueOption = ref('0');
-// const revenueTypeOption = ref('2');
-// const reserveTypeOption = ref('2');
 const revenueType = ref('daily');
 const reserveType = ref('daily');
+
+const sportsOptions = [ //新增运动类型选择
+  { value: '0', label: '全部' },
+  { value: '1', label: '羽毛球' },
+  { value: '2', label: '乒乓球' },
+  { value: '3', label: '网球' },
+  { value: '4', label: '健身' },
+  { value: '5', label: '田径' },
+  { value: '6', label: '足球' },
+  { value: '7', label: '篮球' },
+  { value: '8', label: '排球' },
+];
+
+const venueOptions = [ //新增场地选择
+  { value: '0', label: '场地1' },
+  { value: '1', label: '场地2' },
+  { value: '2', label: '场地3' },
+  { value: '3', label: '场地4' },
+];
 
 const reserveDescription = {
   sum: {
@@ -44,64 +61,57 @@ const revenueDescription = {
     title: '总营收',
     value: {
       daily: 123.456,
-      monthly: 0,
-      yearly: 0,
-    },
+      monthly: 456.789,
+      yearly: 1111.11,
+    }  
   },
   max: {
     title: '最高营收',
     value: {
-      daily: 123.456,
-      monthly: 0,
-      yearly: 0,
-    },
+      daily: 23.456,
+      monthly: 234.56,
+      yearly: 2345.56,
+    }
   },
   avg: {
     title: '平均营收',
     value: {
-      daily: 123.456,
-      monthly: 0,
-      yearly: 0,
-    },
+      daily: 3.456,
+      monthly: 23.45,
+      yearly: 234.56,
+    }
   },
 }
 
-// const changeRevenueType = (newView) => {
-//   revenueType.value = newView;
-// };
-
-// const changeReserveType = (newView) => {
-//   reserveType.value = newView;
-// };
 
 const reserveDataList = {
   daily: {
-    labels: ['2024-08-01', '2024-08-02', '2024-08-03', '2024-08-04', '2024-08-05', '2024-08-06', '2024-08-07', '2024-08-08', '2024-08-09'],
+    labels: ['08-01', '08-02', '08-03', '08-04', '08-05', '08-06', '08-07'],
     data: [100, 200, 150, 100, 200, 150, 100, 200, 150],
   },
   monthly: {
-    labels: ['2024-08', '2024-07', '2024-06'],
-    data: [3000, 2800, 3200],
+    labels: ['07-27', '07-28', '07-29', '07-30', '07-31', '08-01', '08-02', '08-03', '08-04', '08-05', '08-06', '08-07', '08-08', '08-09', '08-10', '08-11', '08-12', '08-13', '08-14', '08-15', '08-16', '08-17', '08-18', '08-19', '08-20', '08-21', '08-22', '08-23', '08-24', '08-25'],
+    data: [3000, 2800, 3200, 3000, 2800, 3200, 3000, 2800, 3200, 3000, 2800, 3200, 3000, 2800, 3200, 3000, 2800, 3200, 3000, 2800, 3200, 3000, 2800, 3200, 3000, 2800, 3200, 3000, 2800, 3200],
   },
   yearly: {
-    labels: ['2024', '2023', '2022'],
-    data: [36000, 34000, 33000],
-  },
+    labels: ['2023-09', '2023-10', '2023-11', '2023-12', '2024-01', '2024-02', '2024-03', '2024-04', '2024-05', '2024-06', '2024-07', '2024-08'],
+    data: [36000, 34000, 33000, 36000, 34000, 33000, 36000, 34000, 33000, 36000, 34000, 33000],
+  }
 };
 
 const revenueDataList = {
   daily: {
-    labels: ['2024-08-01', '2024-08-02', '2024-08-03', '2024-08-04', '2024-08-05', '2024-08-06', '2024-08-07', '2024-08-08', '2024-08-09'],
+    labels: ['08-01', '08-02', '08-03', '08-04', '08-05', '08-06', '08-07'],
     data: [100, 200, 150, 100, 200, 150, 100, 200, 150],
   },
   monthly: {
-    labels: ['2024-08', '2024-07', '2024-06'],
-    data: [3000, 2800, 3200],
+    labels: ['07-27', '07-28', '07-29', '07-30', '07-31', '08-01', '08-02', '08-03', '08-04', '08-05', '08-06', '08-07', '08-08', '08-09', '08-10', '08-11', '08-12', '08-13', '08-14', '08-15', '08-16', '08-17', '08-18', '08-19', '08-20', '08-21', '08-22', '08-23', '08-24', '08-25'],
+    data: [3000, 2800, 3200, 3000, 2800, 3200, 3000, 2800, 3200, 3000, 2800, 3200, 3000, 2800, 3200, 3000, 2800, 3200, 3000, 2800, 3200, 3000, 2800, 3200, 3000, 2800, 3200, 3000, 2800, 3200],
   },
   yearly: {
-    labels: ['2024', '2023', '2022'],
-    data: [36000, 34000, 33000],
-  },
+    labels: ['2023-09', '2023-10', '2023-11', '2023-12', '2024-01', '2024-02', '2024-03', '2024-04', '2024-05', '2024-06', '2024-07', '2024-08'],
+    data: [36000, 34000, 33000, 36000, 34000, 33000, 36000, 34000, 33000, 36000, 34000, 33000],
+  }
 };
 
 const reserveData = computed(() => ({
@@ -132,7 +142,9 @@ const revenueData = computed(() => ({
   ],
 }));
 
-const reserveChart = {
+const getMaxValue = (data) => Math.max(...data); //
+
+const reserveChart = computed(() => ({
   responsive: true,
   plugins: {
     legend: { position: 'top' },
@@ -149,8 +161,8 @@ const reserveChart = {
   scales: {
     y: {
       min: 0,
-      max: 500,
-      ticks: { stepSize: 100 },
+      max: getMaxValue(reserveData.value.datasets[0].data) * 1.2, //上限改变
+      ticks: { stepSize: Math.max(100, getMaxValue(reserveData.value.datasets[0].data) / 5) },
       title: { display: true, text: '预约量' }
     },
     x: {
@@ -166,9 +178,9 @@ const reserveChart = {
       borderWidth: 2,
     },
   },
-};
+}));
 
-const revenueChart = {
+const revenueChart = computed(() => ({
   responsive: true,
   plugins: {
     legend: { position: 'top' },
@@ -185,8 +197,8 @@ const revenueChart = {
   scales: {
     y: {
       min: 0,
-      max: 500,
-      ticks: { stepSize: 100 },
+      max: getMaxValue(revenueData.value.datasets[0].data) * 1.2, //上限改变
+      ticks: { stepSize: Math.max(100, getMaxValue(revenueData.value.datasets[0].data) / 5) },
       title: { display: true, text: '营收量' }
     },
     x: {
@@ -202,7 +214,7 @@ const revenueChart = {
       borderWidth: 2,
     },
   },
-};
+}));
 </script>
 
 
@@ -214,24 +226,17 @@ const revenueChart = {
       <div class="FilterOption">
         <div class="FilterText">运动类型</div>
         <el-radio-group v-model="sportsOption">
-          <el-radio-button value="0">全部</el-radio-button>
-          <el-radio-button value="1">羽毛球</el-radio-button>
-          <el-radio-button value="2">乒乓球</el-radio-button>
-          <el-radio-button value="3">网球</el-radio-button>
-          <el-radio-button value="4">健身</el-radio-button>
-          <el-radio-button value="5">田径</el-radio-button>
-          <el-radio-button value="6">足球</el-radio-button>
-          <el-radio-button value="7">篮球</el-radio-button>
-          <el-radio-button value="8">排球</el-radio-button>
+          <el-radio-button v-for="option in sportsOptions" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </el-radio-button>
         </el-radio-group>
       </div>
-      <div class="FilterOption" v-if="sportsOption === '0'">
+      <div class="FilterOption" v-if="sportsOption !== '0'">
         <div class="FilterText">场地</div>
         <el-radio-group v-model="venueOption">
-          <el-radio-button value="0">场地1</el-radio-button>
-          <el-radio-button value="1">场地2</el-radio-button>
-          <el-radio-button value="2">场地3</el-radio-button>
-          <el-radio-button value="3">场地4</el-radio-button>
+          <el-radio-button v-for="option in venueOptions" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </el-radio-button>
         </el-radio-group>
       </div>
     </div>
@@ -240,17 +245,12 @@ const revenueChart = {
         <div class="subTitleText">用户预约数据</div>
         <div class="controls">
             <el-radio-group v-model="reserveType">
-              <el-radio-button value="daily">按日</el-radio-button>
-              <el-radio-button value="monthly">按月</el-radio-button>
-              <el-radio-button value="yearly">按年</el-radio-button>
+              <el-radio-button value="daily">前一周</el-radio-button>
+              <el-radio-button value="monthly">前一月</el-radio-button>
+              <el-radio-button value="yearly">前一年</el-radio-button>
             </el-radio-group>
         </div>
       </div>
-      <!-- <div class="stats-container">
-        <div class="stat-item">{{reserveDescription.sum.title}}: {{reserveDescription.sum.value}}</div>
-        <div class="stat-item">{{reserveDescription.max.title}}: {{reserveDescription.max.value}}</div>
-        <div class="stat-item">{{reserveDescription.avg.title}}: {{reserveDescription.avg.value}}</div>
-      </div> -->
       <div class="stats-container">
         <el-descriptions direction="vertical" :column="3" size="large" border>
           <el-descriptions-item :label="reserveDescription.sum.title">
@@ -274,17 +274,12 @@ const revenueChart = {
         <div class="subTitleText">营收数据</div>
         <div class="controls">
             <el-radio-group v-model="revenueType">
-              <el-radio-button value="daily">按日</el-radio-button>
-              <el-radio-button value="monthly">按月</el-radio-button>
-              <el-radio-button value="yearly">按年</el-radio-button>
+              <el-radio-button value="daily">前一周</el-radio-button>
+              <el-radio-button value="monthly">前一月</el-radio-button>
+              <el-radio-button value="yearly">前一年</el-radio-button>
             </el-radio-group>
         </div>
       </div>
-      <!-- <div class="stats-container">
-        <div class="stat-item">{{revenueDescription.sum.title}}: {{revenueDescription.sum.value}}</div>
-        <div class="stat-item">{{revenueDescription.max.title}}: {{revenueDescription.max.value}}</div>
-        <div class="stat-item">{{revenueDescription.avg.title}}: {{revenueDescription.avg.value}}</div>
-      </div> -->
       <div class="stats-container">
         <el-descriptions direction="vertical" :column="3" size="large" border>
           <el-descriptions-item :label="revenueDescription.sum.title">
@@ -376,7 +371,7 @@ const revenueChart = {
   display: flex;
   margin-left: auto;
   gap: 10px; /* 按钮之间的间距 */
-  width: 200px;
+  width: 300px;
 }
 
 .FilterArea{
