@@ -7,6 +7,7 @@ import AdminDeviceDetail from '@/views/AdminDeviceDetail.vue'
 import AdminDeviceRepair from '@/views/AdminDeviceRepair.vue'
 import AdminVenueMaintenance from '@/views/AdminVenueMaintenance.vue'
 import AdminStatistics from '@/views/AdminStatistics.vue'
+import PublicNotice from '@/views/PublicNotice.vue'
 import NotificationList from '@/views/NotificationList.vue'
 import ReservationList from '@/views/ReservationList.vue'
 import TeamAdmin from '@/views/TeamAdmin.vue'
@@ -55,6 +56,10 @@ const router = createRouter({
         {
           path: '/AdminStatistics',
           component: AdminStatistics
+        },
+        {
+          path: '/PublicNotice',
+          component: PublicNotice
         },
         {
           path: '/NotificationList',

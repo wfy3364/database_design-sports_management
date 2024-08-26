@@ -1,6 +1,8 @@
 <script setup>
-
+import convertTime from '@/apis/utils';
 import { useRouter } from 'vue-router';
+import { ref } from 'vue'
+import PublicNoticeModal from './components/PublicNoticeModal.vue';
 
 const router = useRouter();
 
@@ -8,11 +10,17 @@ const router = useRouter();
 const publicNoticeData = [{
   id: 1,
   title: "公告标题1",
-  time: "2024-08-18",
+  content: "这里是公告内容",
+  time: new Date('18 August, 2024 18:00'),
+  venues: [{ id: 1, name: '场地1'}],
+  adminName: "张三",
 },{
   id: 2,
   title: "长标题测试，这个公告的标题很长",
-  time: "2024-08-18"
+  content: "标题很长，但是公告内容不知道该写什么",
+  time: new Date('18 August, 2024 19:00'),
+  venues: [{ id: 2, name: '场地2'}],
+  adminName: "张三",
 }];
 
 const userNoticeData = [{
@@ -51,13 +59,31 @@ const venueData = [{
   state: 0,
 }];
 
-function viewPublicNoticeDetail(notice){
-  console.log(notice);
+const showPublicNotice = ref(false);
+const PublicNoticeMode = ref('');
+const SelectedPublicNotice = ref(null);
+
+function viewPublicNoticeDetail(notice, mode){
+  PublicNoticeMode.value = mode;
+  SelectedPublicNotice.value = notice;
+  showPublicNotice.value = true;
+}
+
+function closePublicNoticeDetail(){
+  showPublicNotice.value = false;
+}
+
+function switchEditMode(){
+  PublicNoticeMode.value = 'edit';
 }
 
 function viewVenueDetail(venue){
   router.push("AdminVenueDetail");
   console.log(venue);
+}
+
+function changeRoute(path){
+  router.push(path);
 }
 
 
@@ -68,16 +94,17 @@ function viewVenueDetail(venue){
     <div class="LargeCard">
       <div class="CardHeader">
         <div class="CardTitle">公告管理</div>
-        <el-button class="CardButton" size="small">更多</el-button>
+        <el-button class="CardButton" size="small" 
+          @click="changeRoute('/PublicNotice')">更多</el-button>
       </div>
-      <div class="NoticeContent" v-for="publicNotice in publicNoticeData" 
-        @click="viewPublicNoticeDetail(publicNotice)">
+      <div class="NoticeContent" v-for="publicNotice in publicNoticeData" >
         <div class="NoticeItem">
           <el-tooltip effect="light" placement="bottom" :content="publicNotice.title">
-            <div class="NoticeTitle">{{ publicNotice.title }}</div>
+            <div class="NoticeTitle" @click="viewPublicNoticeDetail(publicNotice, 'view')">
+              {{ publicNotice.title }}</div>
           </el-tooltip>
-          <div class="NoticeTime">{{ publicNotice.time }}</div>
-          <div class="NoticeEdit">编辑</div>
+          <div class="NoticeTime">{{ convertTime(publicNotice.time) }}</div>
+          <div class="NoticeEdit" @click="viewPublicNoticeDetail(publicNotice, 'edit')">编辑</div>
           <div class="NoticeDelete">删除</div>
         </div>
       </div>
@@ -85,7 +112,8 @@ function viewVenueDetail(venue){
     <div class="LargeCard">
       <div class="CardHeader">
         <div class="CardTitle">个人通知</div>
-        <el-button class="CardButton" size="small">更多</el-button>
+        <el-button class="CardButton" size="small"
+          @click="changeRoute('/AdminNotice')">更多</el-button>
       </div>
       <div class="NoticeContent" v-for="userNotice in userNoticeData">
         <div class="NoticeItem">
@@ -96,7 +124,8 @@ function viewVenueDetail(venue){
     <div class="VenueCard">
       <div class="CardHeader">
         <div class="CardTitle">场地总览</div>
-        <el-button class="CardButton" size="small">更多</el-button>
+        <el-button class="CardButton" size="small"
+          @click="changeRoute('/AdminVenue')">更多</el-button>
       </div>
       <div class="VenueContent">
         <div class="VenueItem" v-for="venue in venueData" @click="viewVenueDetail(venue)">
@@ -114,6 +143,9 @@ function viewVenueDetail(venue){
       </div>
     </div>
   </div>
+  <PublicNoticeModal v-if="showPublicNotice" :mode="PublicNoticeMode"
+    :notice="SelectedPublicNotice" @closeModal="closePublicNoticeDetail"
+    @editModal="switchEditMode"></PublicNoticeModal>
 </template>
 
 <style>
@@ -185,7 +217,7 @@ function viewVenueDetail(venue){
 }
 
 .NoticeTime{
-  flex: 3;
+  flex: 4;
   margin-right: 5px;
   overflow: hidden;
   text-wrap: nowrap;
