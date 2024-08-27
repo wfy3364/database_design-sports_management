@@ -1,7 +1,7 @@
 <script setup>
 import NavMenu from './components/NavMenu.vue';
 import CornerLogo from './components/CornerLogo.vue';
-import PageHeader from './components/PageHeader.vue';
+// import PageHeader from './components/PageHeader.vue';
 import { RouterView } from 'vue-router';
 </script>
 
@@ -12,9 +12,9 @@ import { RouterView } from 'vue-router';
       <NavMenu></NavMenu>
     </div>
     <div class="PageArea">
-      <div class="PageTop">
+      <!-- <div class="PageTop">
         <PageHeader></PageHeader>
-      </div>
+      </div> -->
       <div class="PageContent">
         <RouterView></RouterView>
       </div>
@@ -52,7 +52,7 @@ import { RouterView } from 'vue-router';
 }
 
 .PageContent{
-  height: calc(100vh - 50px);
+  height: 100vh;
   background-color: #f0f2f5;
   overflow: auto;
 }
