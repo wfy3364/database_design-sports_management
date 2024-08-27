@@ -2,17 +2,9 @@
 import convertTime from '@/apis/utils';
 import { useRouter } from 'vue-router';
 import { ref } from 'vue'
-import { storeToRefs } from 'pinia';
 import PublicNoticeModal from './components/PublicNoticeModal.vue';
-import { useUserStore } from '@/stores/userStore';
 
 const router = useRouter();
-const userStore = useUserStore();
-const { userId, userName, adminType, adminPermission } = storeToRefs(userStore);
-console.log(userId.value);
-console.log(userName.value);
-console.log(adminType.value);
-console.log(adminPermission.value);
 
 // 此处用常量数组暂时模拟从后端获取到的数据
 const publicNoticeData = [{
