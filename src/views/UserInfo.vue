@@ -36,8 +36,14 @@
         </div>
       </div> -->
       <el-descriptions column="2" border>
-        <el-descriptions-item label="用户ID" label-class-name="itemLabel">
+        <!-- <el-descriptions-item label="用户ID" label-class-name="itemLabel">
           <div class="itemContent">{{ userInfo.id }}</div>
+        </el-descriptions-item> -->
+        <el-descriptions-item min-width="">
+          <template #label>
+            <div class="itemLabel">用户ID</div>
+          </template>
+          {{ userInfo.id }}
         </el-descriptions-item>
         <el-descriptions-item min-width="">
           <template #label>
@@ -57,6 +63,30 @@
           </template>
           {{ userInfo.phone }}
         </el-descriptions-item>
+        <el-descriptions-item width="">
+          <template #label>
+            <div class="itemLabel">等级</div>
+          </template>
+          {{ userInfo.vipLevel }}
+        </el-descriptions-item>
+        <el-descriptions-item width="">
+          <template #label>
+            <div class="itemLabel">预约权限</div>
+          </template>
+          {{ userInfo.appointmentPermission }}
+        </el-descriptions-item>
+        <el-descriptions-item width="">
+          <template #label>
+            <div class="itemLabel">违约次数</div>
+          </template>
+          {{ userInfo.violationCount }}
+        </el-descriptions-item>
+        <el-descriptions-item width="">
+          <template #label>
+            <div class="itemLabel">注册时间</div>
+          </template>
+          {{ userInfo.registrationTime }}
+        </el-descriptions-item>
       </el-descriptions>
     </div>
   </template>
@@ -64,9 +94,22 @@
   <script setup>
   import { ref, onMounted } from 'vue';
   
-  const userInfo = ref({
+  //真实数据
+  // const userInfo = ref({
 
-  });
+  // });
+  
+  //测试数据
+  const userInfo = {
+    id: 'U001',
+    nickname: '小明',
+    name: '王明',
+    phone: '13800138000',
+    vipLevel: '普通会员',
+    appointmentPermission: '允许',
+    violationCount: 0,
+    registrationTime: '2024-03-15 10:00:00'
+  }
   
   // 从后端获取用户信息
   onMounted(async () => {
