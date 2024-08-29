@@ -30,9 +30,9 @@
             </div>
             <div class="FilterOption">
               <div class="FilterText">预约类型</div>
-              <el-radio-group v-model="reservationType">
-                <el-radio-button value="0">个人</el-radio-button>
-                <el-radio-button value="1">团体</el-radio-button>
+              <el-radio-group v-model="reservationTypeFilter">
+                <el-radio-button value="1">个人</el-radio-button>
+                <el-radio-button value="2">团体</el-radio-button>
               </el-radio-group>
             </div>
             <div class="FilterOption">
@@ -44,49 +44,52 @@
               </div>
             </div>
             <!-- 还需要添加的筛选选项：状态、类型 -->
+            <div class="FilterOption">
+              <div class="FilterText">操作时间</div>
+              <div>
+                <el-date-picker v-model="operationDateRangeFilter" type="daterange" unlink-panels
+                range-separator="到" start-placeholder="开始日期"
+                end-placeholder="结束日期"/>
+              </div>
+            </div>
+            <div class="FilterOption">
+              <div class="FilterText">预约状态</div>
+              <el-radio-group v-model="statusFilter">
+                <el-radio-button value="1">已预约</el-radio-button>
+                <el-radio-button value="2">已取消</el-radio-button>
+                <el-radio-button value="3">已完成</el-radio-button>
+                <el-radio-button value="4">违约</el-radio-button>
+              </el-radio-group>
+            </div>
+
             <div class="FilterControl">
               <el-button @click="handleSearch" type="primary">确认筛选</el-button>
               <el-button @click="FilterReset">重置条件</el-button>
             </div>
           </div>
 
-          <!-- <table>
-            <thead>
-              <tr>
-                <th>场地名称</th>
-                <th>预约时间</th>
-                <th>支付价格</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="appointment in filteredAppointments" :key="appointment.id">
-                <td>{{ appointment.venueName }}</td>
-                <td>{{ formatDateTime(appointment.startTime) }} - {{ formatDateTime(appointment.endTime) }}</td>
-                <td>{{ appointment.price }}</td>
-                <td>
-                  <button @click="showAppointmentDetails(appointment)">查看详细</button>
-                  <button @click="cancelAppointment(appointment)">取消预约</button>
-                </td>
-              </tr>
-            </tbody>
-          </table> -->
+          
           <el-table :data="filteredAppointments" :key="filteredAppointments.id" :show-overflow-tooltip="{ effect: 'light'}">
             <el-table-column label="记录号" prop="id" width="100" sortable></el-table-column>
             <el-table-column label="场地名称" prop="venueName" width="110" sortable></el-table-column>
             <el-table-column label="操作时间" sortable>
-              <!-- 预约记录的操作时间 -->
+              <template #default="{ row }">
+                {{formatDateTime(row.operationTime)}}
+              </template>
             </el-table-column>
             <el-table-column label="预约时间段" sortable>
-              <template #default="item">
+              <template #default="{ row }">
                 <!-- 此处改成：日期+开始时间+结束时间，格式如下 -->
-                2024-08-23 09:00-10:00
+                {{formatAppointmentTime(row.startTime,row.endTime)}}
                 <!-- {{ formatDateTime(item.row.startTime) }} - {{ formatDateTime(item.row.endTime) }} -->
               </template>
             </el-table-column>
             <el-table-column prop="price" label="支付价格" width="110" sortable></el-table-column>
             <el-table-column label="状态" width="100" sortable>
               <!-- 状态类型：已预约、已取消、已完成、违约 -->
+              <template #default="{ row }">
+                {{ getStatusName(row.statusCode) }}
+              </template>
             </el-table-column>
             <el-table-column label="操作" width="190">
               <template #default="item">
@@ -122,6 +125,22 @@
             <div class="detailLabel">场地名称：</div>
             <div class="detailContent">{{ selectedAppointment.venueName }}</div>
           </div>
+          <div class="detailLine">
+            <div class="detailLabel">预约时间：</div>
+            <div class="detailContent">{{ formatAppointmentTime(selectedAppointment.startTime, selectedAppointment.endTime) }}</div>
+          </div>
+          <div class="detailLine">
+            <div class="detailLabel">支付价格：</div>
+            <div class="detailContent">{{ selectedAppointment.price }}</div>
+          </div>
+          <div class="detailLine">
+            <div class="detailLabel">状态：</div>
+            <div class="detailContent">{{ getStatusName(selectedAppointment.statusCode) }}</div>
+          </div>
+          <div class="detailLine">
+            <div class="detailLabel">操作时间：</div>
+            <div class="detailContent">{{ formatDateTime(selectedAppointment.operationTime) }}</div>
+          </div>
         </div>
       </div>
   
@@ -139,6 +158,22 @@
           <div class="detailLine">
             <div class="detailLabel">场地名称：</div>
             <div class="detailContent">{{ cancellingAppointment.venueName }}</div>
+          </div>
+          <div class="detailLine">
+            <div class="detailLabel">预约时间：</div>
+            <div class="detailContent">{{ formatAppointmentTime(selectedAppointment.startTime, selectedAppointment.endTime) }}</div>
+          </div>
+          <div class="detailLine">
+            <div class="detailLabel">支付价格：</div>
+            <div class="detailContent">{{ selectedAppointment.price }}</div>
+          </div>
+          <div class="detailLine">
+            <div class="detailLabel">状态：</div>
+            <div class="detailContent">{{ getStatusName(selectedAppointment.statusCode) }}</div>
+          </div>
+          <div class="detailLine">
+            <div class="detailLabel">操作时间：</div>
+            <div class="detailContent">{{ formatDateTime(selectedAppointment.operationTime) }}</div>
           </div>
           <el-input type="textarea" v-model="cancelReason" class="cancelInput" placeholder="请输入取消原因"></el-input>
           <el-button type="primary" @click="confirmCancel">确认</el-button>
@@ -168,8 +203,14 @@
   const searchContent = ref('');
   const searchPlaceholder = ref(['预约记录ID', '场地名称或ID'])
   const reservationType = ref('0');
+  const reservationTypeFilter = ref('0');
+  const statusCode = ref('0');
+  const statusFilter = ref('0');
+  const operationDateRange = ref([]);
+  const operationDateRangeFilter = ref([]);
+  const filteredRecords = ref([]);
 
-    // begin test
+  // begin test
   appointments.value = [
   {
     id: '12345',
@@ -177,7 +218,10 @@
     venueName: '体育场',
     startTime: '2023-08-21T10:00:00',
     endTime: '2023-08-21T12:00:00',
-    price: 100
+    price: 100,
+    statusCode: 1, // 1: 已预约, 2: 已取消, 3: 已完成, 4: 违约
+    operationTime: '2024-08-20T14:30:00',
+    reservationType: 1,
   },
   {
     id: '67890',
@@ -185,7 +229,10 @@
     venueName: '游泳馆',
     startTime: '2023-08-22T14:00:00',
     endTime: '2023-08-22T16:00:00',
-    price: 80
+    price: 80,
+    statusCode: 2, // 1: 已预约, 2: 已取消, 3: 已完成, 4: 违约
+    operationTime: '2024-08-20T14:30:00',
+    reservationType: 2,
   },
   {
     id: '11111',
@@ -193,12 +240,28 @@
     venueName: '篮球场',
     startTime: '2023-08-23T09:00:00',
     endTime: '2023-08-23T11:00:00',
-    price: 90
+    price: 90,
+    statusCode: 3, // 1: 已预约, 2: 已取消, 3: 已完成, 4: 违约
+    operationTime: '2024-08-20T14:30:00',
+    reservationType: 1,
   }
   ];
   // end test
 
   const filteredAppointments = ref(appointments.value);
+
+  const getStatusName = (statusCode) => {
+    const statusMap = {
+      1: '已预约',
+      2: '已取消',
+      3: '已完成',
+      4: '违约'
+    };
+    const result = statusMap[statusCode] || '未知状态';
+    console.log('Result:', statusCode);
+    return result;
+  };
+
   // const filteredAppointments = computed(() => {
     // return appointments.value.filter(appointment => {
       // const appointmentDate = new Date(appointment.startTime);
@@ -238,18 +301,55 @@
         );
       });
     }
+
+    // 新增的状态筛选
+    if (statusFilter.value) {
+      filteredAppointments.value = filteredAppointments.value.filter(item => {
+        //console.log("比较:", item.statusCode, parseInt(statusFilter.value));
+        return item.statusCode === parseInt(statusFilter.value);
+      });
+    }
+
+    // 新增的操作时间筛选
+    if (operationDateRange.value.length > 0) {
+      const opStartDate = operationDateRangeFilter.value[0].getTime();
+      const opEndDate = operationDateRangeFilter.value[1].getTime() + 3600 * 1000 * 24;
+      filteredAppointments.value = filteredAppointments.value.filter(item => {
+        const opDate = new Date(item.operationTime).getTime();
+        return opDate >= opStartDate && opDate <= opEndDate;
+      });
+    }
+
+    // 新增的预约类型筛选
+    filteredAppointments.value = appointments.value.filter(item => {
+      if (!reservationTypeFilter.value) return true;
+      console.log("比较:", item.reservationType, parseInt(reservationTypeFilter.value));
+      return item.reservationType === parseInt(reservationTypeFilter.value);
+    });
   }
 
   const FilterReset = () => {
+    dateRange.value = [];
     searchType.value = '0';
+    statusFilter.value = '0';
     searchContent.value = '';
+    reservationType.value = '';
+    operationDateRange.value = [];
     filteredAppointments.value = appointments.value;
+    operationDateRangeFilter.value = [];
+    reservationTypeFilter.value = '0';
   }
 
   // add time 
-  const formatDateTime = (dateTime) => {
-    const date = new Date(dateTime);
+  const formatDateTime = (operationTime) => {
+    const date = new Date(operationTime);
     return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+  };
+
+  const formatAppointmentTime = (startTime, endTime) => {
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    return `${start.getFullYear()}-${(start.getMonth() + 1).toString().padStart(2, '0')}-${start.getDate().toString().padStart(2, '0')} ${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}-${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`;
   };
 
   const goToLogin = () => {
@@ -290,44 +390,44 @@
     showCancelModal.value = true;
   };
 
-    const confirmCancel = () => {
-      // 将取消原因插入预约记录
-      axios.post('/api/appointments/cancel', {
-        id: cancellingAppointment.value.id,
-        reason: cancelReason.value
-      })
-      .then(response => {
-        showCancelModal.value = false;
-        cancelReason.value = '';
-        cancellingAppointment.value = null;
-        // 刷新预约列表
-        searchAppointments();
-      })
-      .catch(error => {
-        console.error('Error canceling appointment:', error);
-      });
-    };
+  const confirmCancel = () => {
+    // 将取消原因插入预约记录
+    axios.post('/api/appointments/cancel', {
+      id: cancellingAppointment.value.id,
+      reason: cancelReason.value
+    })
+    .then(response => {
+      showCancelModal.value = false;
+      cancelReason.value = '';
+      cancellingAppointment.value = null;
+      // 刷新预约列表
+      searchAppointments();
+    })
+    .catch(error => {
+      console.error('Error canceling appointment:', error);
+    });
+  };
 
   //test cancel begin
-//   const confirmCancel = () => {
-//     // 模拟将取消原因插入预约记录
-//     const cancelledAppointment = {
-//       ...cancellingAppointment.value,
-//       cancelled: true,
-//       cancelReason: cancelReason.value
-//     };
-//     appointments.value = appointments.value.map(appointment => {
-//       if (appointment.id === cancelledAppointment.id) {
-//         return cancelledAppointment;
-//       }
-//       return appointment;
-//     });
-//     showCancelModal.value = false;
-//     cancelReason.value = '';
-//     cancellingAppointment.value = null;
-//   };
+  //   const confirmCancel = () => {
+  //     // 模拟将取消原因插入预约记录
+  //     const cancelledAppointment = {
+  //       ...cancellingAppointment.value,
+  //       cancelled: true,
+  //       cancelReason: cancelReason.value
+  //     };
+  //     appointments.value = appointments.value.map(appointment => {
+  //       if (appointment.id === cancelledAppointment.id) {
+  //         return cancelledAppointment;
+  //       }
+  //       return appointment;
+  //     });
+  //     showCancelModal.value = false;
+  //     cancelReason.value = '';
+  //     cancellingAppointment.value = null;
+  //   };
   //test cancel end
-  
+
   </script>
   
   <style scoped>

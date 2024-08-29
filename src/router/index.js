@@ -1,12 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '@/views/HomeView.vue'
-import AdminHome from '@/views/AdminHome.vue'
+import HomeLayout from '@/views/HomeLayout.vue'
+import Home from '@/views/Home.vue'
 import AdminVenue from '@/views/AdminVenue.vue'
 import AdminVenueDetail from '@/views/AdminVenueDetail.vue'
 import AdminDeviceDetail from '@/views/AdminDeviceDetail.vue'
 import AdminDeviceRepair from '@/views/AdminDeviceRepair.vue'
 import AdminVenueMaintenance from '@/views/AdminVenueMaintenance.vue'
 import AdminStatistics from '@/views/AdminStatistics.vue'
+import PublicNotice from '@/views/PublicNotice.vue'
 import NotificationList from '@/views/NotificationList.vue'
 import ReservationList from '@/views/ReservationList.vue'
 import TeamAdmin from '@/views/TeamAdmin.vue'
@@ -17,8 +18,8 @@ import UserInfo from '@/views/UserInfo.vue'
 import VenueBrowser from '@/views/VenueBrowser.vue'
 import VenueReservation from '@/views/VenueReservation.vue'
 import Login from '@/views/Login.vue'
-
-
+import { storeToRefs } from 'pinia'
+import { useUserStore } from '@/stores/userStore'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,11 +27,11 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomeView,
+      component: HomeLayout,
       children: [
         {
-          path: '/AdminHome',
-          component: AdminHome,
+          path: '/',
+          component: Home,
         },
         {
           path: '/AdminVenue',
@@ -55,6 +56,10 @@ const router = createRouter({
         {
           path: '/AdminStatistics',
           component: AdminStatistics
+        },
+        {
+          path: '/PublicNotice',
+          component: PublicNotice
         },
         {
           path: '/NotificationList',
@@ -91,15 +96,25 @@ const router = createRouter({
       ]
     },
     {
-      path: '/login',
+      path: '/Login',
       name: 'login',
       component: Login,
     },
     {
       path: '/UserRegister',
+      name: 'register',
       component: UserRegister,
     },
   ]
+})
+
+router.beforeEach(async (to, from) => {
+  const userStore = useUserStore();
+  const { isAuthenticated } = storeToRefs(userStore);
+  if (!isAuthenticated.value && to.name != 'login' && to.name != 'register') {
+    return { path: '/Login' };
+  }
+  return true;
 })
 
 export default router

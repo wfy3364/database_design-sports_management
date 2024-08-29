@@ -26,11 +26,15 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
 import CryptoJS from 'crypto-js';
+import { useUserStore } from '@/stores/userStore';
 
 const username = ref('');
 const password = ref('');
-const router = useRouter(); 
+const router = useRouter();
+const userStore = useUserStore();
+const { isAuthenticated, userId, userName, adminType, adminPermission } = storeToRefs(userStore);
 
 const handleLogin = () => {
   const encryptedPassword = CryptoJS.SHA256(password.value).toString();
@@ -42,6 +46,10 @@ const handleLogin = () => {
   const success = true; // 模拟后端响应成功
 
   if (success) {
+    isAuthenticated.value = true;
+    userId.value = 1;
+    userName.value = 'testName';
+    adminType.value = 'system';
     // 跳转到home页面
     router.push('/');
   } else {
