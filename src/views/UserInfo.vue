@@ -43,49 +43,51 @@
           <template #label>
             <div class="itemLabel">用户ID</div>
           </template>
-          {{ userInfo.id }}
+          {{ userData.userId }}
         </el-descriptions-item>
         <el-descriptions-item min-width="">
           <template #label>
             <div class="itemLabel">用户昵称</div>
           </template>
-          {{ userInfo.nickname }}
+          {{ userData.username }}
         </el-descriptions-item>
         <el-descriptions-item width="">
           <template #label>
             <div class="itemLabel">用户姓名</div>
           </template>
-          {{ userInfo.name }}
+          {{ userData.realName }}
         </el-descriptions-item>
         <el-descriptions-item width="">
           <template #label>
             <div class="itemLabel">联系电话</div>
           </template>
-          {{ userInfo.phone }}
+          {{ userData.contactNumber }}
         </el-descriptions-item>
         <el-descriptions-item width="">
           <template #label>
-            <div class="itemLabel">等级</div>
+            <div class="itemLabel">是否是VIP</div>
           </template>
-          {{ userInfo.vipLevel }}
+          <div v-if="+userData.isVip">是</div>
+          <div v-else>否</div>
         </el-descriptions-item>
         <el-descriptions-item width="">
           <template #label>
             <div class="itemLabel">预约权限</div>
           </template>
-          {{ userInfo.appointmentPermission }}
+          <div v-if="userData.reservationPermission === 'y'">有</div>
+          <div v-else>无</div>
         </el-descriptions-item>
         <el-descriptions-item width="">
           <template #label>
             <div class="itemLabel">违约次数</div>
           </template>
-          {{ userInfo.violationCount }}
+          {{ userData.violationCount }}
         </el-descriptions-item>
         <el-descriptions-item width="">
           <template #label>
             <div class="itemLabel">注册时间</div>
           </template>
-          {{ userInfo.registrationTime }}
+          {{ convertTime(userData.registrationDate) }}
         </el-descriptions-item>
       </el-descriptions>
     </div>
@@ -93,34 +95,48 @@
   
   <script setup>
   import { ref, onMounted } from 'vue';
-  
+  import { getUserInfo } from '@/apis/requests'
+  import convertTime from '@/apis/utils'
   //真实数据
   // const userInfo = ref({
 
   // });
   
   //测试数据
-  const userInfo = {
-    id: 'U001',
-    nickname: '小明',
-    name: '王明',
-    phone: '13800138000',
-    vipLevel: '普通会员',
-    appointmentPermission: '允许',
+  // const userInfo = {
+  //   id: 'U001',
+  //   nickname: '小明',
+  //   name: '王明',
+  //   phone: '13800138000',
+  //   vipLevel: '普通会员',
+  //   appointmentPermission: '允许',
+  //   violationCount: 0,
+  //   registrationTime: '2024-03-15 10:00:00'
+  // }
+  const userData = ref({
+    userId: '',
+    username: '',
+    realName: '',
+    contactNumber: '',
+    isVip: '',
+    reservationPermission: '',
+    registrationDate: '',
     violationCount: 0,
-    registrationTime: '2024-03-15 10:00:00'
-  }
+  });
   
   // 从后端获取用户信息
+  // onMounted(async () => {
+  //   try {
+  //     const response = await fetch('/api/user-info');
+  //     userInfo.value = await response.json();
+  //     console.error('成功');
+  //   } catch (error) {
+  //     console.error('获取用户信息失败:', error);
+  //     console.log('失败');
+  //   }
+  // });
   onMounted(async () => {
-    try {
-      const response = await fetch('/api/user-info');
-      userInfo.value = await response.json();
-      console.error('成功');
-    } catch (error) {
-      console.error('获取用户信息失败:', error);
-      console.log('失败');
-    }
+    await getUserInfo(userData);
   });
   </script>
   

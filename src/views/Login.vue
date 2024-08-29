@@ -4,17 +4,18 @@
       <div class="loginLogoArea">
         <div>此处放场地管理系统Logo</div>
       </div>
-      <div class="loginBox">
+      <div class="loginBox" v-loading="isLogging">
         <div class="loginTitle">登录</div>
         <form @submit.prevent="handleLogin">
           <div>
             <label for="username">用户名:</label>
-            <el-input v-model="username" id="username" type="text" required />
+            <el-input v-model="username" id="username" type="text" />
           </div>
           <div>
             <label for="password">密码:</label>
-            <el-input v-model="password" id="password" type="password" show-password required />
+            <el-input v-model="password" id="password" type="password" show-password />
           </div>
+          <div class="errDisplay">{{ errMsg }}</div>
           <div>没有账号? <router-link to="/UserRegister">点此注册</router-link></div>
           <button type="submit">登录</button>
         </form>
@@ -25,36 +26,45 @@
 
 <script setup>
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { storeToRefs } from 'pinia';
+// import { useRouter } from 'vue-router';
+// import { storeToRefs } from 'pinia';
 import CryptoJS from 'crypto-js';
-import { useUserStore } from '@/stores/userStore';
+// import { useUserStore } from '@/stores/userStore';
+import { userLogin } from '@/apis/requests';
 
 const username = ref('');
 const password = ref('');
-const router = useRouter();
-const userStore = useUserStore();
-const { isAuthenticated, userId, userName, adminType, adminPermission } = storeToRefs(userStore);
+const isLogging = ref(false);
+const errMsg = ref('');
 
-const handleLogin = () => {
+const handleLogin = async () => {
+  if(!username.value){
+    errMsg.value = '用户名不能为空';
+    return;
+  }
+
+  if(!password.value){
+    errMsg.value = '密码不能为空';
+    return;
+  }
+
+  isLogging.value = true;
+  errMsg.value = '';
   const encryptedPassword = CryptoJS.SHA256(password.value).toString();
   const loginData = {
-    username: username.value,
-    password: encryptedPassword,
+    Username: '',
+    UserId: '',
+    Password: encryptedPassword,
   };
 
-  const success = true; // 模拟后端响应成功
-
-  if (success) {
-    isAuthenticated.value = true;
-    userId.value = 1;
-    userName.value = 'testName';
-    adminType.value = 'system';
-    // 跳转到home页面
-    router.push('/');
-  } else {
-    alert('用户名或密码错误');
+  if(isNaN(+username.value)){
+    loginData.Username = username.value;
   }
+  else{
+    loginData.UserId = username.value;
+  }
+
+  await userLogin(loginData, isLogging, errMsg);
 };
 </script>
 
@@ -131,4 +141,10 @@ button {
 button:hover {
   background-color: #0056b3;
 }
+
+.errDisplay{
+  color: red;
+  height: 2em;
+}
+
 </style>

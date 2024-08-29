@@ -1,4 +1,7 @@
 function convertTime(time) {
+  if (!time) {
+    return '';
+  }
   const targetDate = new Date(time);
   return targetDate.getFullYear() + '-'
     + (targetDate.getMonth() + 1).toString().padStart(2, '0') + '-'
