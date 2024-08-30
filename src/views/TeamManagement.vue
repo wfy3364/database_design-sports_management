@@ -4,7 +4,7 @@
       <div v-if="isLoading" class="loading-message">
         加载中...
       </div>
-      <div v-else-if="!team || team.length == 0" class="no-team-message">
+      <div v-else-if="!teams || teams.length == 0" class="no-team-message">
         您还没有加入任何团体
       </div>
       <div v-else class="team-info">
@@ -23,12 +23,15 @@
           height="750" 
           :header-cell-style="{ background: '#f5f7fa' }"
         >
-        <el-table-column label="团体编号" prop="id" width="100" fixed></el-table-column>
-        <el-table-column label="团体名称" prop="name" fixed></el-table-column>
+        <el-table-column label="团体编号" prop="groupId" width="100" fixed></el-table-column>
+        <el-table-column label="团体名称" prop="groupName" fixed></el-table-column>
+        <el-table-column label="加入时间" width="150">
+            {{ convertTime(filteredTeam.joinDate) }}
+          </el-table-column>
         <el-table-column label="角色" width="120" fixed>
           <template #default="scope">
-            <el-tag :type="getRoleTagType(scope.row.role)">
-              {{ scope.row.role }}
+            <el-tag :type="getRoleTagType(scope.row.roleInGroup)">
+              {{ scope.row.roleInGroup }}
             </el-tag>
           </template>
         </el-table-column>
@@ -136,7 +139,7 @@
     <el-dialog
       v-model="leaveTeamDialogVisible"
       title="确认退出团体"
-      width="30%"
+      width="50%"
       :before-close="handleCloseLeaveTeamDialog"
     >
       <div v-if="teamToLeave">
@@ -155,7 +158,7 @@
     <el-dialog
       title="加入团体"
       v-model="joinTeamDialogVisible"
-      width="30%"
+      width="50%"
       :before-close="handleCloseJoinTeamDialog"
     >
       <div class="search-container">
@@ -167,11 +170,11 @@
         <el-button type="primary" @click="searchTeams">搜索</el-button>
       </div>
 
-      <el-table :data="teamDataTest" style="width: 100%">
-        <el-table-column prop="id" label="团体ID" width="180"></el-table-column>
-        <el-table-column prop="name" label="名称" width="180"></el-table-column>
+      <el-table :data="teamData" style="width: 100%" v-loading="isSearching" :show-overflow-tooltip="{ effect: light }" >
+        <el-table-column prop="groupId" label="团体ID" width="100"></el-table-column>
+        <el-table-column prop="groupName" label="名称" width="120"></el-table-column>
         <el-table-column prop="description" label="描述"></el-table-column>
-        <el-table-column label="操作" width="120">
+        <el-table-column label="操作" width="100">
           <template #default="scope">
             <el-button type="primary" size="small" @click="joinTeam(scope.row)">加入</el-button>
           </template>
@@ -183,14 +186,15 @@
     <el-dialog
       v-model="createTeamDialogVisible"
       title="创建团体"
-      width="30%"
+      width="50%"
+      v-loading="isCreating"
       :before-close="handleCloseCreateTeamDialog"
     >
       <div class = "team-info">
         <h3>团体名称</h3>
         <el-input
           v-model="teamName"
-          type="textarea"
+          type="text"
           placeholder="请输入团体名称"
         ></el-input>
         <h3>团体描述</h3>
@@ -220,7 +224,7 @@
             <el-table-column prop="id" label="用户ID" width="100"></el-table-column>
             <el-table-column prop="nickname" label="昵称"></el-table-column>
             <el-table-column label="操作" width="120">
-              <!-- <template #default="{ row }">
+              <template #default="{ row }">
                 <el-button 
                   size="small" 
                   type="primary" 
@@ -229,40 +233,48 @@
                 >
                   {{ isMemberAlreadyInTeam(row.id) ? '已在团队中' : '添加' }}
                 </el-button>
-              </template> -->
+              </template>
             </el-table-column>
           </el-table>
         </div>
       </div>
-
+      <div class="errDisplay">{{ errMsg }}</div>
       <template #footer>
         <span class="dialog-footer">
           <el-button type="primary" @click="submitForm">确定</el-button>
         </span>
       </template>
-    </el-dialog> 
+    </el-dialog>
+    <el-dialog v-model="successDialog" title="创建信息" width="50%">
+      <div>团队创建成功！指定的成员在确认后将加入该团体。</div>
+      <div>团队ID：{{ resTeamId }}</div>
+      <div>团体名称：{{ teamName }}</div>
+      <el-button type="primary" @click="successDialog = false">确定</el-button>
+    </el-dialog>
 
   </template>
   
   <script setup>
   import { ref, onMounted } from 'vue'
   import axios from 'axios'
+  import { fetchTeam, createTeam, getAllTeams } from '@/apis/requests';
+  import convertTime from '@/apis/utils';
 
 //------------------------测试数据----------------------------
 
-  const team = ref([
-    { id: 1, name: '团体A', role: '创建者' },
-    { id: 2, name: '团体B', role: '管理员' },
-    { id: 3, name: '团体C', role: '普通成员' },
-    // 可以添加更多测试数据
-  ]);
+  // const team = ref([
+  //   { id: 1, name: '团体A', role: '创建者' },
+  //   { id: 2, name: '团体B', role: '管理员' },
+  //   { id: 3, name: '团体C', role: '普通成员' },
+  //   // 可以添加更多测试数据
+  // ]);
 
-  const filteredTeam = ref([
-    { id: 1, name: '团体A', role: '创建者' },
-    { id: 2, name: '团体B', role: '管理员' },
-    { id: 3, name: '团体C', role: '普通成员' },
-    // 可以添加更多测试数据
-  ]);
+  // const filteredTeam = ref([
+  //   { id: 1, name: '团体A', role: '创建者' },
+  //   { id: 2, name: '团体B', role: '管理员' },
+  //   { id: 3, name: '团体C', role: '普通成员' },
+  //   // 可以添加更多测试数据
+  // ]);
 
   const teamDetailsData = {
     id: 1,
@@ -281,12 +293,12 @@
     ]
   };
 
-  const teamDataTest = ref([
-    { id: 1, name: '团体A', description: '创建者' },
-    { id: 2, name: '团体B', description: '管理员' },
-    { id: 3, name: '团体C', description: '普通成员' },
-    // 可以添加更多测试数据
-  ]);
+  // const teamDataTest = ref([
+  //   { id: 1, name: '团体A', description: '创建者' },
+  //   { id: 2, name: '团体B', description: '管理员' },
+  //   { id: 3, name: '团体C', description: '普通成员' },
+  //   // 可以添加更多测试数据
+  // ]);
 
 //------------------------测试数据----------------------------
 
@@ -305,36 +317,54 @@
   const teamData = ref([])
   const createTeamDialogVisible = ref(false)
   const formRef = ref(null)
+  const teamName = ref('');
+  const teamDescription = ref('');
+  const isLoading = ref(false);
+  const filteredTeam = ref([]);
+  const errMsg = ref('');
+  const successDialog = ref(false);
+  const resTeamId = ref('');
+  const isCreating = ref(false);
+  const isSearching = ref(false);
 
-  // 从后端获取团队数据
-  const fetchTeams = async () => {
-    try {
-      isLoading.value = true
-      const response = await axios.get('/api/teams') // 替换为实际的API端点
-      teams.value = response.data
-    } catch (error) {
-      console.error('获取团队数据失败:', error)
-      ElMessage.error('获取团队数据失败，请稍后重试')
-    } finally {
-      isLoading.value = false
-    }
-  }
+  // // 从后端获取团队数据
+  // const fetchTeams = async () => {
+  //   try {
+  //     isLoading.value = true
+  //     const response = await axios.get('/api/teams') // 替换为实际的API端点
+  //     teams.value = response.data
+  //   } catch (error) {
+  //     console.error('获取团队数据失败:', error)
+  //     ElMessage.error('获取团队数据失败，请稍后重试')
+  //   } finally {
+  //     isLoading.value = false
+  //   }
+  // }
 
   // 在组件挂载时获取数据
-  onMounted(fetchTeams)
+  onMounted(async () => {
+    isLoading.value = true;
+    fetchTeam(teams, filteredTeam, isLoading);
+  })
 
   //tag color
   const getRoleTagType = (role) => {
-    switch (role) {
-      case '创建者':
-        return 'danger'
-      case '管理员':
-        return 'warning'
-      case '普通成员':
-        return 'info'
-      default:
-        return ''
-    }
+    const RoleTags = {
+      '创建者': 'danger',
+      '管理员': 'warning',
+      '普通成员': 'info',
+    };
+    return RoleTags[role] || 'info';
+    // switch (role) {
+    //   case '创建者':
+    //     return 'danger'
+    //   case '管理员':
+    //     return 'warning'
+    //   case '普通成员':
+    //     return 'info'
+    //   default:
+    //     return ''
+    // }
   }
 
   //打开团体详情模态框
@@ -481,8 +511,10 @@
   }
 
   //打开加入团体模态框
-  const showJoinModal = () => {
+  const showJoinModal = async () => {
     joinTeamDialogVisible.value = true
+    isSearching.value = true;
+    await getAllTeams(teamData, isSearching);
     console.log('open sucessfully')
   }
 
@@ -524,43 +556,61 @@
 
   //关闭创建团体模态框
   const handleCloseCreateTeamDialog = () => {
+    errMsg.value = '';
     createTeamDialogVisible.value = false
     formRef.value = null
     searchResults.value = null
   }
 
   //提交表单
+  // const submitForm = async () => {
+  //   console.log("submitstart");
+  //   if (!formRef.value) return
+  //   console.log("submitting");
+  //   try {
+  //     await formRef.value.validate()
+  //     loading.value = true
+
+  //     // 发送POST请求到后端API
+  //     const response = await axios.post('/api/teams', form)
+      
+  //     console.log('Team created:', response.data)
+  //     ElMessage.success('团体创建成功')
+  //     createTeamDialogVisible.value = false
+      
+  //     // 重置表单
+  //     formRef.value.resetFields()
+      
+  //   } catch (error) {
+  //     if (error.name === 'ValidationError') {
+  //       console.log('Form validation failed')
+  //       createTeamDialogVisible.value = false
+  //       searchResults.value = null
+  //     } else {
+  //       console.error('Error creating team:', error)
+  //       ElMessage.error('创建团体失败，请稍后重试')
+  //       createTeamDialogVisible.value = false
+  //       searchResults.value = null
+  //     }
+  //   } finally {
+  //     loading.value = false
+  //   }
+  // }
   const submitForm = async () => {
-    if (!formRef.value) return
-
-    try {
-      await formRef.value.validate()
-      loading.value = true
-
-      // 发送POST请求到后端API
-      const response = await axios.post('/api/teams', form)
-      
-      console.log('Team created:', response.data)
-      ElMessage.success('团体创建成功')
-      createTeamDialogVisible.value = false
-      
-      // 重置表单
-      formRef.value.resetFields()
-      
-    } catch (error) {
-      if (error.name === 'ValidationError') {
-        console.log('Form validation failed')
-        createTeamDialogVisible.value = false
-        searchResults.value = null
-      } else {
-        console.error('Error creating team:', error)
-        ElMessage.error('创建团体失败，请稍后重试')
-        createTeamDialogVisible.value = false
-        searchResults.value = null
-      }
-    } finally {
-      loading.value = false
+    errMsg.value = '';
+    if(!teamName.value){
+      errMsg.value = '团体名称不能为空';
+      return;
     }
+    if(!teamDescription.value){
+      teamDescription.value = '该团队暂无描述';
+    }
+    const newTeam = {
+      GroupName: teamName.value,
+      Description: teamDescription.value,
+    }
+    isCreating.value = true;
+    await createTeam(newTeam, successDialog, resTeamId, createTeamDialogVisible, isCreating, errMsg);
   }
 
   // onMounted(fetchTeamInfo)
@@ -668,4 +718,10 @@
   .search-input {
     width: 300px;
   }
+
+  .errDisplay{
+    height: 2em;
+    color: red;
+  }
+
   </style>
