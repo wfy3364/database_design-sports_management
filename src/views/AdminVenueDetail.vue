@@ -8,6 +8,7 @@ const venueInfo = {
   type: "羽毛球",
   state: 0,
   capacity: 100,
+  address: "曹安公路4800号"
 };
 
 const openTime = [{
@@ -36,7 +37,8 @@ const overviewDisplay = {
   "场地ID：": venueInfo.id,
   "场地名称：": venueInfo.name,
   "运动类型：": venueInfo.type,
-  "场地容量：": venueInfo.capacity, 
+  "场地容量：": venueInfo.capacity,
+  "场地地址：": venueInfo.address,
 }
 
 const openDate = ref(dayjs().format("YYYY-MM-DD"));
@@ -162,6 +164,7 @@ function handleDateChange(){
 
 .VenueOverview{
   display: flex;
+  justify-content: center;
   height: 320px;
   padding: 10px;
 }
