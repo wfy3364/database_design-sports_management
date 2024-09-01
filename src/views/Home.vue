@@ -1,5 +1,5 @@
 <script setup>
-import convertTime from '@/apis/utils';
+import { convertTime } from '@/apis/utils';
 import { useRouter } from 'vue-router';
 import { ref } from 'vue'
 import PublicNoticeModal from './components/PublicNoticeModal.vue';

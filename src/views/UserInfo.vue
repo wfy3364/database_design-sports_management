@@ -96,7 +96,7 @@
   <script setup>
   import { ref, onMounted } from 'vue';
   import { getUserInfo } from '@/apis/requests'
-  import convertTime from '@/apis/utils'
+  import { convertTime } from '@/apis/utils'
   //真实数据
   // const userInfo = ref({
 

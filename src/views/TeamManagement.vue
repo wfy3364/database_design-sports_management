@@ -258,7 +258,7 @@
   import { ref, onMounted } from 'vue'
   import axios from 'axios'
   import { fetchTeam, createTeam, getAllTeams } from '@/apis/requests';
-  import convertTime from '@/apis/utils';
+  import { convertTime } from '@/apis/utils';
 
 //------------------------测试数据----------------------------
 

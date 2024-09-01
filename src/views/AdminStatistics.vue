@@ -10,6 +10,31 @@ const venueOption = ref('0');
 const revenueType = ref('daily');
 const reserveType = ref('daily');
 
+
+const value = ref([])  //new! 已选列表
+const venueOptions = [  //new! 可选场地列表
+  {
+    value: '场地1',
+    label: '场地1',
+  },
+  {
+    value: '场地2',
+    label: '场地2',
+  },
+  {
+    value: '场地3',
+    label: '场地3',
+  },
+  {
+    value: '场地4',
+    label: '场地4',
+  },
+  {
+    value: '场地5',
+    label: '场地5',
+  },
+]
+
 const sportsOptions = [ //新增运动类型选择
   { value: '0', label: '全部' },
   { value: '1', label: '羽毛球' },
@@ -22,12 +47,12 @@ const sportsOptions = [ //新增运动类型选择
   { value: '8', label: '排球' },
 ];
 
-const venueOptions = [ //新增场地选择
-  { value: '0', label: '场地1' },
-  { value: '1', label: '场地2' },
-  { value: '2', label: '场地3' },
-  { value: '3', label: '场地4' },
-];
+// const venueOptions = [ //新增场地选择
+//   { value: '0', label: '场地1' },
+//   { value: '1', label: '场地2' },
+//   { value: '2', label: '场地3' },
+//   { value: '3', label: '场地4' },
+// ];
 
 const reserveDescription = {
   sum: {
@@ -233,11 +258,23 @@ const revenueChart = computed(() => ({
       </div>
       <div class="FilterOption" v-if="sportsOption !== '0'">
         <div class="FilterText">场地</div>
-        <el-radio-group v-model="venueOption">
-          <el-radio-button v-for="option in venueOptions" :key="option.value" :value="option.value">
-            {{ option.label }}
-          </el-radio-button>
-        </el-radio-group>
+        <el-select
+          v-model="value"
+          filterable
+          multiple
+          placeholder="Select"
+          style="width: 400px"
+          collapse-tags
+          collapse-tags-tooltip
+          :max-collapse-tags="5" 
+        >
+          <el-option
+            v-for="item in venueOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
       </div>
     </div>
     <div class="StatisticsContent">

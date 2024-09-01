@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import convertTime from '@/apis/utils';
+import { convertTime } from '@/apis/utils';
 
 const props = defineProps({
   mode: String,

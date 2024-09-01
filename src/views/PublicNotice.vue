@@ -2,7 +2,7 @@
 import { Search } from '@element-plus/icons-vue';
 import { ref } from 'vue';
 import PublicNoticeModal from './components/PublicNoticeModal.vue';
-import convertTime  from '@/apis/utils'
+import { convertTime }  from '@/apis/utils'
 
 const searchQuery = ref('');
 const dateRange = ref([]);
