@@ -3,10 +3,18 @@ import { Search } from '@element-plus/icons-vue';
 import { ref } from 'vue';
 import PublicNoticeModal from './components/PublicNoticeModal.vue';
 import { convertTime }  from '@/apis/utils'
+import { useUserStore } from '@/stores/userStore';
+import { storeToRefs } from 'pinia';
 
+const MAXCONTENTLEN = 50;
 const searchQuery = ref('');
 const dateRange = ref([]);
+
+const userStore = useUserStore();
+// const { userId, adminType } = storeToRefs(userStore)
+
 const adminType = ref('system');
+const userId = '2';
 
 const venueFilter = ref('');
 const venueOptions = [
@@ -21,8 +29,27 @@ const publicNoticeData = ref([
     content: '这里是公告内容',
     venues: [{ id: 1, name: '场地1'}],
     time: new Date('25 August, 2024 12:00:00'),
+    adminId: '2',
     adminName: '张三'
-  }
+  },
+  {
+    id: 1,
+    title: '公告2',
+    content: '公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；公告内容溢出测试：超过100字符；',
+    venues: [{ id: 1, name: '场地1'}],
+    time: new Date('25 August, 2024 12:00:00'),
+    adminId: '1',
+    adminName: '张三'
+  },
+  {
+    id: 3,
+    title: '公告3',
+    content: '这里是公告内容，公告内容小于50字符测试',
+    venues: [{ id: 1, name: '场地1'}],
+    time: new Date('25 August, 2024 12:00:00'),
+    adminId: '2',
+    adminName: '张三'
+  },
 ]);
 
 const filteredNotice = ref(publicNoticeData.value);
@@ -112,7 +139,7 @@ function FilterReset(){
         <el-button @click="handleSearch">确认筛选</el-button>
         <el-button @click="FilterReset">重置条件</el-button>
         <el-button class="newNoticeButton" v-if="adminType === 'system' || adminType === 'venue'"
-        type="primary">
+        type="primary" @click="viewPublicNoticeDetail(null, 'create')">
           发布新公告
         </el-button>
       </div>
@@ -120,7 +147,12 @@ function FilterReset(){
     <el-table :data="filteredNotice" :show-overflow-tooltip="{ effect: 'light'}">
       <el-table-column label="编号" prop="id" width="80" sortable></el-table-column>
       <el-table-column label="标题" prop="title" width="110" sortable></el-table-column>
-      <el-table-column label="内容" prop="content"></el-table-column>
+      <el-table-column label="内容">
+        <template #default="item">
+          <div class="noticeContent" v-if="item.row.content.length > MAXCONTENTLEN">{{ item.row.content.substr(0, MAXCONTENTLEN) + '...' }}</div>
+          <div class="noticeContent" v-else>{{ item.row.content }}</div>
+        </template>
+      </el-table-column>
       <el-table-column label="修改时间" width="140" sortable>
         <template #default="item">
           {{ convertTime(item.row.time) }}
@@ -134,8 +166,10 @@ function FilterReset(){
       <el-table-column label="操作" width="200">
         <template #default="item">
           <el-button size="small" @click="viewPublicNoticeDetail(item.row, 'view')">查看</el-button>
-          <el-button size="small" @click="viewPublicNoticeDetail(item.row, 'edit')">编辑</el-button>
-          <el-button size="small" type="danger">删除</el-button>
+          <el-button size="small" v-if="adminType !== 'normal'" :disabled="userId !== item.row.adminId"
+          @click="viewPublicNoticeDetail(item.row, 'edit')">编辑</el-button>
+          <el-button size="small" v-if="adminType !== 'normal'" :disabled="userId !== item.row.adminId" 
+          @click="viewPublicNoticeDetail(item.row, 'delete')" type="danger">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -204,6 +238,12 @@ function FilterReset(){
 
 .newNoticeButton{
   margin-left: auto;
+}
+
+.noticeContent{
+  overflow: hidden;
+  text-wrap: nowrap;
+  text-overflow: ellipsis;
 }
 
 </style>

@@ -3,8 +3,14 @@ import { convertTime } from '@/apis/utils';
 import { useRouter } from 'vue-router';
 import { ref } from 'vue'
 import PublicNoticeModal from './components/PublicNoticeModal.vue';
+import { useUserStore } from '@/stores/userStore';
+import { storeToRefs } from 'pinia';
 
 const router = useRouter();
+const userStore = useUserStore();
+// const { userId, adminType } = storeToRefs(userStore);
+const adminType = 'system';
+const userId = '2';
 
 // 此处用常量数组暂时模拟从后端获取到的数据
 const publicNoticeData = [{
@@ -13,6 +19,7 @@ const publicNoticeData = [{
   content: "这里是公告内容",
   time: new Date('18 August, 2024 18:00'),
   venues: [{ id: 1, name: '场地1'}],
+  adminId: '1',
   adminName: "张三",
 },{
   id: 2,
@@ -20,6 +27,7 @@ const publicNoticeData = [{
   content: "标题很长，但是公告内容不知道该写什么",
   time: new Date('18 August, 2024 19:00'),
   venues: [{ id: 2, name: '场地2'}],
+  adminId: '2',
   adminName: "张三",
 }];
 
@@ -78,8 +86,17 @@ function switchEditMode(){
 }
 
 function viewVenueDetail(venue){
-  router.push("AdminVenueDetail");
-  console.log(venue);
+  if(adminType === 'normal'){
+
+  }
+  else{
+    router.push({
+      path: '/AdminVenueDetail',
+      query: {
+        venueId: venue.id,
+      }
+    });
+  }
 }
 
 function changeRoute(path){
@@ -104,8 +121,14 @@ function changeRoute(path){
               {{ publicNotice.title }}</div>
           </el-tooltip>
           <div class="NoticeTime">{{ convertTime(publicNotice.time) }}</div>
-          <div class="NoticeEdit" @click="viewPublicNoticeDetail(publicNotice, 'edit')">编辑</div>
-          <div class="NoticeDelete">删除</div>
+          <div class="NoticeControl" v-if="adminType !== 'normal' && userId === publicNotice.adminId">
+            <div class="NoticeEdit" @click="viewPublicNoticeDetail(publicNotice, 'edit')">编辑</div>
+            <div class="NoticeDelete" @click="viewPublicNoticeDetail(publicNotice, 'delete')">删除</div>
+          </div>
+          <div class="NoticeControl" v-if="adminType !== 'normal' && userId !== publicNotice.adminId">
+            <div class="disabledControl">编辑</div>
+            <div class="disabledControl">删除</div>
+          </div>
         </div>
       </div>
     </div>
@@ -125,7 +148,7 @@ function changeRoute(path){
       <div class="CardHeader">
         <div class="CardTitle">场地总览</div>
         <el-button class="CardButton" size="small"
-          @click="changeRoute('/AdminVenue')">更多</el-button>
+          @click="changeRoute('/VenueBrowser')">更多</el-button>
       </div>
       <div class="VenueContent">
         <div class="VenueItem" v-for="venue in venueData" @click="viewVenueDetail(venue)">
@@ -203,8 +226,8 @@ function changeRoute(path){
 }
 
 .NoticeTitle{
-  flex: 5;
-  margin-right: 5px;
+  /* flex: 5; */
+  /* margin-right: 5px; */
   overflow: hidden;
   text-wrap: nowrap;
   text-overflow: ellipsis;
@@ -217,11 +240,24 @@ function changeRoute(path){
 }
 
 .NoticeTime{
-  flex: 4;
+  /* flex: 4; */
+  margin-left: auto;
   margin-right: 5px;
-  overflow: hidden;
+  min-width: 120px;
+  /* overflow: hidden;
   text-wrap: nowrap;
-  text-overflow: ellipsis;
+  text-overflow: ellipsis; */
+}
+
+.NoticeControl{
+  display: flex;
+}
+
+.disabledControl{
+  color: darkgray;
+  margin-left: 5px;
+  margin-right: 5px;
+  width: 30px;
 }
 
 .NoticeEdit{
