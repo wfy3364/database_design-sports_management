@@ -104,8 +104,6 @@ function closeDeviceEdit() {
 function saveDeviceEdit() {
   deviceInfo.value.name=tempDeviceInfo.value.name;
   deviceInfo.value.venue=tempDeviceInfo.value.venue;
-  console.log(tempDeviceInfo.value.name);
-  console.log(deviceInfo.value.name);
   ElMessage({
     message: '信息修改成功',
     type: 'success',
@@ -117,6 +115,31 @@ function saveDeviceEdit() {
 function goToDeviceList() {
   router.push('/AdminDevice'); // 设备列表页面的路由地址
 }
+
+const value = ref('')
+
+const options = [
+  {
+    value: '场地1',
+    label: '场地1',
+  },
+  {
+    value: '场地2',
+    label: '场地2',
+  },
+  {
+    value: '场地3',
+    label: '场地3',
+  },
+  {
+    value: '场地4',
+    label: '场地4',
+  },
+  {
+    value: '场地5',
+    label: '场地5',
+  },
+]
 </script>
 
 <template>
@@ -195,32 +218,44 @@ function goToDeviceList() {
       </div>
     </div>
   </div> -->
-  <div v-if="deviceEdit" class="modal" @click="closeDeviceEdit">
+  <!-- <div v-if="deviceEdit" class="modal" @click="closeDeviceEdit">
     <div class="modal-content" @click.stop>
       <div class="modalHeader">
         <div class="modalTitle">编辑信息</div>
         <el-button class="smallButton" type="danger" @click="closeDeviceEdit">关闭</el-button>
-      </div>
+      </div> -->
+    <el-dialog v-model="deviceEdit" title="编辑信息" align-center>
       <div class="modalBody">
-        <el-form :model="tempDeviceInfo" ref="form" label-width="120px">
+        <el-form :model="tempDeviceInfo" label-width="120px">
           <div class="form-row">
-            <el-form-item class="form-item" label="设备名" prop="name">
-              <el-input v-model="tempDeviceInfo.name" placeholder=""></el-input>
+            <span>设备名称</span>
+            <el-form-item prop="name">
+              <el-input v-model="tempDeviceInfo.name" placeholder="" style="width: 240px"></el-input>
             </el-form-item>
           </div>
-          <div class="form-row">
+          <!-- <div class="form-row">
             <el-form-item class="form-item" label="场地" prop="venue">
               <el-input v-model="tempDeviceInfo.venue" placeholder=""></el-input>
             </el-form-item>
-          </div>
-          <div class="smallButtonContainer"> 
-            <el-button class="smallButton" @click="closeDeviceEdit">取消</el-button>
-            <el-button class="smallButton" type="primary" @click="saveDeviceEdit">保存</el-button>
+          </div> -->
+          <div class="form-row">
+            <span>场地选择</span>
+            <el-form-item prop="venue">
+              <el-select v-model="tempDeviceInfo.venue" style="width: 240px">
+                <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value"/>
+              </el-select>
+            </el-form-item>
+            
           </div>
         </el-form>
       </div>
-    </div>
-  </div>
+      <template #footer>
+        <div class="smallButtonContainer"> 
+          <el-button class="smallButton" @click="closeDeviceEdit">取消</el-button>
+          <el-button class="smallButton" type="primary" @click="saveDeviceEdit">保存</el-button>
+        </div>
+      </template>
+    </el-dialog>
 </template>
 
 <style scoped>
