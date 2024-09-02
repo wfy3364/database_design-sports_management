@@ -52,6 +52,10 @@ const publicNoticeData = ref([
   },
 ]);
 
+function successHandler(){
+  
+}
+
 const filteredNotice = ref(publicNoticeData.value);
 
 const showPublicNotice = ref(false);
@@ -187,7 +191,7 @@ function FilterReset(){
   background-color: white;
   border: 1px solid lightgray;
   margin: 10px;
-  max-width: 1200px;
+  /* max-width: 1200px; */
 }
 
 .PublicNoticeTitle{

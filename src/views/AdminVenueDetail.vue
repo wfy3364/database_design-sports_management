@@ -29,12 +29,12 @@ const venueInfo = {
   description: "这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介",
 };
 
-// const EditCheck = computed(() => {
-//   return adminType.value === 'system' ||
-//         (adminType.value === 'venue' || adminType.value === 'venue-device') &&
-//         venueInfo.id in adminPermission.value.venue;
-// });
-const EditCheck = ref(true);
+const EditCheck = computed(() => {
+  return adminType.value === 'system' ||
+        (adminType.value === 'venue' || adminType.value === 'venue-device') &&
+        adminPermission.value.venue.includes(venueInfo.id);
+});
+// const EditCheck = ref(true);
 
 const openTime = [{
   period: "13:00-14:00",

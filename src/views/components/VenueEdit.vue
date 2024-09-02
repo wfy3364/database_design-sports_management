@@ -31,10 +31,10 @@ const { adminType, adminPermission } = storeToRefs(userStore);
 // 检查管理员编辑权限
 // const EditCheck = computed(() => {
 //   return adminType.value === 'system' ||
-//         (adminType.value === 'device' || adminType.value === 'venue-device') &&
-//         record.deviceId in adminPermission.value.device
+//         (adminType.value === 'venue' || adminType.value === 'venue-device') &&
+//         adminPermission.value.venue.includes(curRecord.id);
 // });
-const EditCheck = ref(true);
+
 const openDate = ref(dayjs().format("YYYY-MM-DD"));
 const editingDateIndex = ref(0);
 const openTime = ref([{

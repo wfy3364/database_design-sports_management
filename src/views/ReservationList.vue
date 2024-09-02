@@ -15,13 +15,18 @@
               <input v-model="endDate" type="date" />
               <button @click="searchAppointments">搜索</button>
             </div> -->
+          <div v-if="!userCheck && !adminCheck" class="accessDeny">
+            <div class="denyText">您没有权限查看预约记录</div>
+          </div>
+          <div v-else>
           <div class="FilterArea">
             
             <div class="FilterOption">
               <div class="FilterText">预约类型</div>
-              <el-radio-group v-model="reservationTypeFilter">
-                <el-radio-button value="0" @click="isTeamSearch=false">个人</el-radio-button>
-                <el-radio-button value="1" @click="isTeamSearch=true">团体</el-radio-button>
+              <el-radio-group v-model="reservationTypeFilter" @change="reservationTypeChange">
+                <el-radio-button value="2">全部</el-radio-button>
+                <el-radio-button value="0">个人</el-radio-button>
+                <el-radio-button value="1">团体</el-radio-button>
               </el-radio-group>
             </div>
 
@@ -29,9 +34,9 @@
               <el-radio-group v-model="searchType">
                 <el-radio value="0">预约搜索</el-radio>
                 <el-radio value="1">场地搜索</el-radio>
-                <div v-if="isTeamSearch">
-                  <el-radio value="2">团体搜索</el-radio>
-                </div>
+                <!-- <div v-if="isTeamSearch"> -->
+                <el-radio value="2" :disabled="disableTeamSearch">团体搜索</el-radio>
+                <!-- </div> -->
               </el-radio-group>
               <el-input v-model="searchContent" class="SearchBox" 
                 :placeholder="searchPlaceholder[+searchType]">
@@ -93,8 +98,10 @@
                 <!-- {{ formatDateTime(item.row.startTime) }} - {{ formatDateTime(item.row.endTime) }} -->
               </template>
             </el-table-column>
-            <el-table-column label="团体ID" prop="teamID" width="110" sortable></el-table-column>
-            <el-table-column label="团体名称" prop="teamName" width="110" sortable></el-table-column>
+            <el-table-column v-if="adminCheck && reservationTypeFilter === '0'" label="用户ID" prop="userID" width="110" sortable></el-table-column>
+            <el-table-column v-if="adminCheck && reservationTypeFilter === '0'" label="用户姓名" prop="userRealName" width="110" sortable></el-table-column>
+            <el-table-column v-if="userCheck || reservationTypeFilter !== '0'" label="团体号" prop="teamID" width="110" sortable></el-table-column>
+            <el-table-column v-if="userCheck || reservationTypeFilter !== '0'" label="团体名称" prop="teamName" width="110" sortable></el-table-column>
             <el-table-column prop="price" label="支付价格" width="110" sortable></el-table-column>
             <el-table-column label="状态" width="100" sortable>
               <!-- 状态类型：已预约、已取消、已完成、违约 -->
@@ -104,11 +111,14 @@
             </el-table-column>
             <el-table-column label="操作" width="190">
               <template #default="item">
-                <el-button size="small" type="primary" @click="showAppointmentDetails(item.row)">查看详细</el-button>
-                <el-button size="small" @click="cancelAppointment(item.row)">取消预约</el-button>
+                <el-button size="small" type="primary" @click="showAppointmentDetails(item.row)">详情</el-button>
+                <el-button v-if="userCheck" size="small" :disabled="!canCancel" @click="cancelAppointment(item.row)">取消预约</el-button>
+                <el-button v-if="item.row.statusCode === 1 && adminCheck"
+                size="small" @click="signConfirm(item.row)">签到</el-button>
               </template>
             </el-table-column>
           </el-table>
+          </div>
         </div>
       </main>
       
@@ -118,6 +128,7 @@
         title="预约详情"
         width="50%"
         :before-close="handleCloseDetails"
+        align-center
       >
         <!-- 个人预约 -->
         <div v-if="isPerson" class = "detailContent">
@@ -127,9 +138,9 @@
           <p>支付价格：{{ selectedAppointment.price }}</p>
           <p>状态：{{ getStatusName(selectedAppointment.statusCode) }}</p>
           <div v-if="isFinished">
-            <p>签到时间：{{ formatDateTime(selectedAppointment.signTime) }}</p>
+            <p>签到时间：{{ convertTime(selectedAppointment.signTime) }}</p>
           </div>
-          <p>操作时间：{{ formatDateTime(selectedAppointment.operationTime) }}</p>
+          <p>操作时间：{{ convertTime(selectedAppointment.operationTime) }}</p>
         </div>
 
         <!-- 团体预约 -->
@@ -138,19 +149,21 @@
           <p>场地名称：{{ selectedAppointment.venueName }}</p>
           <p>预约时间：{{ formatAppointmentTime(selectedAppointment.startTime, selectedAppointment.endTime) }}</p>
           <p>支付价格：{{ selectedAppointment.price }}</p>
+          <p>团体号：{{ selectedAppointment.teamID }}</p>
+          <p>团体名称：{{ selectedAppointment.teamName }}</p>
           <div v-if="teamDetailsData">
             <el-table :data="teamDetailsData.members" style="width: 100%; max-height: 70%; overflow-y: auto;">
-              <el-table-column prop="id" label="成员ID" width="120"></el-table-column>
+              <el-table-column prop="id" label="成员ID" width="100"></el-table-column>
               <el-table-column prop="nickname" label="成员昵称"></el-table-column>
-              <el-table-column prop="isSigned" label="是否签到" width="120">
+              <el-table-column prop="isSigned" label="状态" width="100">
                 <template #default="{ row }">
                   <el-tag :type="getIsSignedTags(row.isSigned)">{{ row.isSigned }}</el-tag>
                 </template>  
               </el-table-column>
-              <el-table-column prop="signTimeTeam" label="签到时间" width="200">
+              <el-table-column prop="signTimeTeam" label="签到时间">
                 <template #default="{ row }">
                   <div v-if="isSignedTeam(row.isSigned)">
-                    {{ formatDateTime(row.signTimeTeam) }}
+                    {{ convertTime(row.signTimeTeam) }}
                   </div>
                 </template>
               </el-table-column> 
@@ -264,6 +277,64 @@
         </el-button>
         <el-button @click="handleCloseCancel">取消</el-button>
       </el-dialog>
+      <!-- 信息提示框 -->
+      <el-dialog v-model="infoDialog" :title="infoDialogTitle">
+        <div>{{ infoDialogContent }}</div>
+        <template #footer>
+          <el-button @click="infoDialog = false" type="primary">确定</el-button>
+        </template>
+      </el-dialog>
+      <!-- 确认签到提示框 -->
+      <el-dialog v-model="signConfirmDialog" title="签到确认">
+        <div>请确认签到信息：</div>
+        <p>预约编号：{{ signingAppointment.id }}</p>
+        <p>场地名称：{{ signingAppointment.venueName }}</p>
+        <p>预约时间：{{ formatAppointmentTime(signingAppointment.startTime, signingAppointment.endTime) }}</p>
+        <div v-if="signingAppointment.reservationType === 'group'">
+          <p>团体ID：{{ signingAppointment.teamID }}</p>
+          <p>团体名称：{{ signingAppointment.teamName }}</p>
+        </div>
+        <p>用户ID：{{ signingAppointment.userID }}</p>
+        <p>用户姓名：{{ signingAppointment.userRealName }}</p>
+        <template #footer>
+          <el-button type="primary" @click="handleSign">确定</el-button>
+          <el-button @click="signConfirmDialog = false">取消</el-button>
+        </template>
+      </el-dialog>
+
+      <!-- 团体签到对话框 -->
+      <el-dialog title="团体签到" v-model="teamSignDialog" align-center>
+        <p>预约编号：{{ signingAppointment.id }}</p>
+        <p>场地名称：{{ signingAppointment.venueName }}</p>
+        <p>预约时间：{{ formatAppointmentTime(signingAppointment.startTime, signingAppointment.endTime) }}</p>
+        <p>团体号：{{ signingAppointment.teamID }}</p>
+        <p>团体名称：{{ signingAppointment.teamName }}</p>
+        <el-table :data="teamDetailsData.members" :show-overflow-tooltip="{ effect: 'light'}" 
+        style="width: 100%; max-height: 70%; overflow-y: auto;">
+        <el-table-column prop="id" label="成员ID" width="100"></el-table-column>
+        <el-table-column prop="nickname" label="成员昵称"></el-table-column>
+        <el-table-column prop="isSigned" label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="getIsSignedTags(row.isSigned)">{{ row.isSigned }}</el-tag>
+          </template>  
+        </el-table-column>
+        <el-table-column prop="signTimeTeam" label="签到时间">
+          <template #default="{ row }">
+            <div v-if="isSignedTeam(row.isSigned)">
+              {{ convertTime(row.signTimeTeam) }}
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="80">
+          <template #default="{ row }">
+            <el-button size="small" v-if="row.isSigned === '未签到'" @click="teamSignConfirm(row)">签到</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+        <template #footer>
+          <el-button type="primary" @click="teamSignDialog = false">完成</el-button>
+        </template>
+      </el-dialog>
 
       <!-- 取消预约模态框(弃用) -->
       <!-- <div v-if="showCancelModal" class="modal">
@@ -309,6 +380,9 @@
   import { ref, computed } from 'vue';
   import axios from 'axios';
   import { Search } from '@element-plus/icons-vue'
+  import { convertTime } from '@/apis/utils';
+  import { useUserStore } from '@/stores/userStore';
+  import { storeToRefs } from 'pinia';
   
   const isLoggedIn = ref(false);
   const isFinished = ref(false); // 判断是否签到
@@ -321,63 +395,81 @@
   const appointments = ref([]);
   const showCancelModal = ref(false);
   const showDetailModal = ref(false);
-  const cancelReason = ref('');
+  // const cancelReason = ref('');
   const cancellingAppointment = ref(null);
   const selectedAppointment = ref(null);
   const searchType = ref('0');
   const searchContent = ref('');
   //const searchPlaceholder = ref(['预约记录ID', '场地名称或ID'])
   const reservationType = ref('0');
-  const reservationTypeFilter = ref('0');
+  const reservationTypeFilter = ref('2');
   const statusCode = ref('0');
   const statusFilter = ref('0');
   const operationDateRange = ref([]);
   const operationDateRangeFilter = ref([]);
   const filteredRecords = ref([]);
-  const isTeamSearch = ref(false);
+  const disableTeamSearch = ref(false);
+  const infoDialog = ref(false);
+  const infoDialogTitle = ref('');
+  const infoDialogContent = ref('');
+  const signConfirmDialog = ref(false);
+  const signingAppointment = ref(null);
+  const teamSignDialog = ref(false);
+  const userStore = useUserStore();
+  // const { adminType, adminPermission } = storeToRefs(userStore);
+  const adminType = ref('system');
+  const adminPermission = ref({
+    venue: [],
+    device: [],
+  });
+  // const isTeamSearch = ref(false);
 
 //----------------------------测试数据-----------------------------------
 
   appointments.value = [
   {
     id: '12345',
-    venueId: 1,
+    venueId: '1',
     venueName: '体育场',
-    startTime: '2023-08-21T10:00:00',
-    endTime: '2023-08-21T12:00:00',
+    startTime: new Date('2023-08-21T10:00:00'),
+    endTime: new Date('2023-08-21T12:00:00'),
     price: 100,
     statusCode: 1, // 1: 已预约, 2: 已取消, 3: 已完成, 4: 违约
-    operationTime: '2024-08-20T14:30:00',
-    reservationType: 0,
+    operationTime: new Date('2024-08-20T14:30:00'),
+    reservationType: 'individual',
     signTime: null,
-    teamID: '无',
-    teamName: '无'
+    userID: '12345',
+    userRealName: '测试',
+    teamID: null,
+    teamName: null,
   },
   {
     id: '67890',
-    venueId: 2,
+    venueId: '2',
     venueName: '游泳馆',
-    startTime: '2023-08-22T14:00:00',
-    endTime: '2023-08-22T16:00:00',
+    startTime: new Date('2024-09-03T00:00:00'),
+    endTime: new Date('2024-09-03T23:30:00'),
     price: 80,
-    statusCode: 2, // 1: 已预约, 2: 已取消, 3: 已完成, 4: 违约
-    operationTime: '2024-08-20T14:30:00',
-    reservationType: 1,
+    statusCode: 1, // 1: 已预约, 2: 已取消, 3: 已完成, 4: 违约
+    operationTime: new Date('2024-09-01T22:30:00'),
+    reservationType: 'group',
     signTime: null,
-    teamID: '9876',
-    teamName: 'haha'
+    userID: '23456',
+    userRealName: '测试',
+    teamID: '123',
+    teamName: '团体01',
   },
   {
     id: '11111',
-    venueId: 3,
+    venueId: '3',
     venueName: '篮球场',
-    startTime: '2023-08-23T09:00:00',
-    endTime: '2023-08-23T11:00:00',
+    startTime: new Date('2023-08-23T09:00:00'),
+    endTime: new Date('2023-08-23T11:00:00'),
     price: 90,
     statusCode: 3, // 1: 已预约, 2: 已取消, 3: 已完成, 4: 违约
-    operationTime: '2024-08-20T14:30:00',
-    reservationType: 0,
-    signTime: '2023-08-23T10:00:00',
+    operationTime: new Date('2024-08-20T14:30:00'),
+    reservationType: 'group',
+    signTime: new Date('2023-08-23T10:00:00'),
     teamID: '无',
     teamName: '无'
   }
@@ -425,11 +517,15 @@
   const filteredAppointments = ref(appointments.value);
 
   //placeholder内容
-  const searchPlaceholder = computed(() => [
+  const searchPlaceholder = ref([
     '预约记录ID', 
     '场地名称或ID', 
     '团体名称或ID',
-  ])
+  ]);
+
+  const userCheck = computed(() => adminType.value === 'normal');
+  const adminCheck = computed(() => adminType.value === 'system' || adminType.value === 'venue'
+  || adminType.value === 'venue-device');
 
   const getStatusName = (statusCode) => {
     const statusMap = {
@@ -446,9 +542,23 @@
   const getIsSignedTags = (isSigned) => {
     const isSignedTags = {
       '未签到': 'warning',
-      '已签到': 'info',
+      '已签到': 'success',
+      '已取消': 'info'
     };
     return isSignedTags[isSigned] || 'info';
+  }
+
+  const reservationTypeChange = () => {
+    if(reservationTypeFilter.value === '0'){
+      if(searchType.value === '2'){
+        searchType.value = '0';
+      }
+      disableTeamSearch.value = true;
+    }
+    else{
+      disableTeamSearch.value = false;
+    }
+    reservationTypeSearch();
   }
 
   const isSignedTeam = (isSigned) => {
@@ -470,9 +580,21 @@
     // });
   // });
 
+  const reservationTypeSearch = () => {
+    filteredAppointments.value = appointments.value;
+    filteredAppointments.value = filteredAppointments.value.filter(item => {
+      if (reservationTypeFilter.value === '2') return true;
+      //console.log("比较:", item.reservationType, parseInt(reservationTypeFilter.value));
+      return item.reservationType === 'individual' && reservationTypeFilter.value === '0' ||
+      item.reservationType === 'group' && reservationTypeFilter.value === '1';
+    });
+  }
+
   //筛选
   const handleSearch = () => {
-    filteredAppointments.value = appointments.value;
+
+    // 新增的预约类型筛选
+    reservationTypeSearch();
 
     //输入框筛选
     if(searchContent.value){
@@ -494,9 +616,10 @@
         const recordDate = new Date(appointment.startTime);
         return recordDate >= startDate && recordDate <= endDate;
       });
-    } else {
-      filteredAppointments.value = filteredAppointments.value;
     }
+    // } else {
+      // filteredAppointments.value = filteredAppointments.value;
+    // }
 
     // 新增的状态筛选
     if (statusFilter.value!='0') {
@@ -516,12 +639,6 @@
     //   });
     // }
 
-    // 新增的预约类型筛选
-    filteredAppointments.value = filteredAppointments.value.filter(item => {
-      if (!reservationTypeFilter.value) return true;
-      //console.log("比较:", item.reservationType, parseInt(reservationTypeFilter.value));
-      return item.reservationType === parseInt(reservationTypeFilter.value);
-    });
   }
 
   //重置筛选
@@ -538,16 +655,18 @@
   }
 
   // 获取时间 
-  const formatDateTime = (operationTime) => {
-    const date = new Date(operationTime);
-    return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-  };
+  // const formatDateTime = (operationTime) => {
+  //   const date = new Date(operationTime);
+  //   return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+  // };
 
   //获取时间段
   const formatAppointmentTime = (startTime, endTime) => {
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-    return `${start.getFullYear()}-${(start.getMonth() + 1).toString().padStart(2, '0')}-${start.getDate().toString().padStart(2, '0')} ${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}-${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`;
+    // const start = new Date(startTime);
+    // const end = new Date(endTime);
+    // return `${start.getFullYear()}-${(start.getMonth() + 1).toString().padStart(2, '0')}-${start.getDate().toString().padStart(2, '0')} ${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}-${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`;
+    const endTimeStr = convertTime(endTime);
+    return convertTime(startTime) + '-' + endTimeStr.slice(endTimeStr.length - 5, endTimeStr.length);
   };
 
   const goToLogin = () => {
@@ -581,10 +700,10 @@
   //打开预约详情模态框
   const showAppointmentDetails = (appointment) => {
     selectedAppointment.value = appointment;
-    showDetailModal.value = true;
     isFinished.value = (appointment.statusCode == '3');
-    isPerson.value = (appointment.reservationType == '0')
-    isTeam.value = (appointment.reservationType == '1')
+    isPerson.value = (appointment.reservationType == 'individual')
+    isTeam.value = (appointment.reservationType == 'group')
+    showDetailModal.value = true;
     //console.log(selectedAppointment.value);
   };
 
@@ -603,7 +722,7 @@
     })
     .then(response => {
       showCancelModal.value = false;
-      cancelReason.value = '';
+      // cancelReason.value = '';
       cancellingAppointment.value = null;
       // 刷新预约列表
       searchAppointments();
@@ -651,6 +770,42 @@
   //     cancellingAppointment.value = null;
   //   };
   //test cancel end
+
+  const signCheck = (record) => {
+    const curTime = Date.now();
+    if(curTime < record.startTime.getTime() - 1000 * 60 * 30 || curTime > record.endTime.getTime()){
+      infoDialogTitle.value = '签到失败';
+      infoDialogContent.value = '当前不在可签到时间段内';
+      infoDialog.value = true;
+      return false;
+    }
+    return true;
+  }
+
+  const signConfirm = (record) => {
+    signingAppointment.value = record;
+    if(record.reservationType === 'individual' && signCheck(record)){
+      signConfirmDialog.value = true;
+    }
+    else if(record.reservationType === 'group'){
+      teamSignDialog.value = true;
+    }
+  }
+
+  const teamSignConfirm = (user) => {
+    if(!signCheck(signingAppointment.value)){
+      return;
+    }
+    signingAppointment.value.userID = user.id;
+    signingAppointment.value.userRealName = user.nickname;
+    signConfirmDialog.value = true;
+  }
+
+  const handleSign = () => {
+    if(!signCheck(signingAppointment.value)){
+      return;
+    }
+  }
 
   </script>
   
@@ -851,5 +1006,17 @@
     margin-bottom: 20px; /* 增加标题与内容的间距 */
   }
 
+  .accessDeny{
+    display: flex;
+    justify-content: center;
+    height: 75vh;
+    color: darkgray;
+    font-size: 20px;
+  }
+
+  .denyText{
+    margin-top: auto;
+    margin-bottom: auto;
+  }
   
   </style>

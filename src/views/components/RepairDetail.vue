@@ -54,7 +54,7 @@ const recordDevice = ref({
 const EditCheck = computed(() => {
   return adminType.value === 'system' ||
         (adminType.value === 'device' || adminType.value === 'venue-device') &&
-        record.deviceId in adminPermission.value.device
+        adminPermission.value.device.includes(record.deviceId);
 });
 // const EditCheck = ref(true);
 

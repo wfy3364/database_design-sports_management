@@ -115,5 +115,4 @@ async function getAllTeams(teamData, isSearching) {
   });
 }
 
-
 export { userLogin, userRegister, getUserInfo, fetchTeam, createTeam, getAllTeams };
