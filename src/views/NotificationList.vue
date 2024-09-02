@@ -5,19 +5,42 @@
     </el-card>
 
     <div class="sections">
-      <!-- 用户加入团体成功的通知部分 -->
-      <el-card shadow="hover" class="card" v-for="(notificationList, type) in notificationTypes" :key="type">
+      <!-- 团体通知部分 -->
+      <el-card shadow="hover" class="card">
         <div class="card-header">
-          <h2>{{ notificationList.title }}</h2>
-          <el-button type="primary" @click="showMore(type)">更多</el-button>
+          <h2>团体通知</h2>
+          <el-button type="primary" @click="showMore('team')">更多</el-button>
         </div>
-        <ul>
-          <li v-for="notification in notificationList.notifications.slice(0, 2)" :key="notification.id">
-            <span>{{ notification.id }}</span> - 
-            <a @click="viewAnnouncement(notification)">{{ notification.title }}</a>
-            ({{ notification.date }})
-          </li>
-        </ul>
+        <!-- 限制显示前10条通知 -->
+        <el-table :data="filteredGroupNotifications.slice(0, 10)" style="width: 100%">
+          <el-table-column prop="id" label="通知编号" width="100"></el-table-column>
+          <el-table-column prop="title" label="标题"></el-table-column>
+          <el-table-column prop="date" label="时间" width="150"></el-table-column>
+          <el-table-column label="操作" width="100">
+            <template #default="scope">
+              <el-button @click="viewAnnouncement(scope.row)" size="small">查看</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-card>
+
+      <!-- 预约通知部分 -->
+      <el-card shadow="hover" class="card">
+        <div class="card-header">
+          <h2>预约通知</h2>
+          <el-button type="primary" @click="showMore('reservation')">更多</el-button>
+        </div>
+        <!-- 限制显示前10条通知 -->
+        <el-table :data="filteredBookingNotifications.slice(0, 10)" style="width: 100%">
+          <el-table-column prop="id" label="通知编号" width="100"></el-table-column>
+          <el-table-column prop="title" label="标题"></el-table-column>
+          <el-table-column prop="date" label="时间" width="150"></el-table-column>
+          <el-table-column label="操作" width="100">
+            <template #default="scope">
+              <el-button @click="viewAnnouncement(scope.row)" size="small">查看</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
       </el-card>
     </div>
 
@@ -26,7 +49,6 @@
       <template #title>
         <div class="modal-title">
           <span>{{ modalTitle }}</span>
-          <el-button type="text" @click="closeModal">关闭</el-button>
         </div>
       </template>
       <el-table :data="selectedNotifications" style="width: 100%">
@@ -46,53 +68,54 @@
       <template #title>
         <div class="modal-title">
           <span>{{ selectedAnnouncement.title }}</span>
-          <el-button type="text" @click="closeDetailModal">关闭</el-button>
         </div>
       </template>
       <div class="modal-content">
         <p>{{ selectedAnnouncement.content }}</p>
       </div>
+      <!-- 对于 team/userCheck 和 team/adminCheck 类型的通知，显示“同意”和“拒绝”按钮 -->
+      <template #footer>
+        <div v-if="isConfirmationType(selectedAnnouncement)" class="dialog-footer">
+          <el-button @click="handleDecision('accept')" type="primary">同意</el-button>
+          <el-button @click="handleDecision('reject')" type="danger">拒绝</el-button>
+        </div>
+      </template>
     </el-dialog>
   </div>
 </template>
 
-
 <script setup>
-import { ref } from 'vue';
-import { ElCard, ElDialog, ElTable, ElTableColumn, ElButton } from 'element-plus';
+import { ref, computed } from 'vue';
+import { ElCard, ElDialog, ElTable, ElTableColumn, ElButton, ElMessage } from 'element-plus';
 
-const groupNotifications = ref([
-  { id: 1, title: '加入团体A成功', date: '2024-08-14', content: '您已成功加入团体A。' },
-  { id: 2, title: '加入团体B成功', date: '2024-08-13', content: '您已成功加入团体B。' },
+// 模拟通知数据
+const notifications = ref([
+  { id: 1, type: 'teamJoin', title: '加入团体A成功', date: '2024-08-14', content: '您已成功加入团体A。' },
+  { id: 2, type: 'team/userCheck', title: '团体B加入请求', date: '2024-08-13', content: '请确认是否加入团体B。' },
+  { id: 3, type: 'reservationConfirm', title: '预约成功确认', date: '2024-08-14', content: '您的预约已成功确认。' },
+  { id: 4, type: 'reservationCancel', title: '预约已取消', date: '2024-08-13', content: '您的预约已取消。' },
+  { id: 5, type: 'team/adminCheck', title: '用户申请加入团体C', date: '2024-08-12', content: '请确认是否接受用户加入团体C的申请。' },
 ]);
 
-const bookingNotifications = ref([
-  { id: 3, title: '预约成功确认', date: '2024-08-14', content: '您的预约已成功确认。' },
-  { id: 4, title: '预约已取消', date: '2024-08-13', content: '您的预约已取消。' },
-]);
+const filteredGroupNotifications = computed(() =>
+  notifications.value.filter(notification => notification.type.startsWith('team'))
+);
 
-const homepageNotifications = ref([
-  { id: 5, title: '系统维护通知', date: '2024-08-12', content: '系统将在明天维护。' },
-  { id: 6, title: '新功能上线', date: '2024-08-10', content: '我们即将推出新功能，敬请期待！' },
-]);
-
-const venueNotifications = ref([
-  { id: 7, title: '场馆开放时间调整', date: '2024-08-11', content: '场馆开放时间将进行调整。' },
-  { id: 8, title: '新场馆开放', date: '2024-08-09', content: '新场馆将于下周正式开放。' },
-]);
-
-const notificationTypes = ref({
-  group: { title: '团体加入通知', notifications: groupNotifications.value },
-  booking: { title: '预约通知', notifications: bookingNotifications.value },
-  homepage: { title: '主页通知', notifications: homepageNotifications.value },
-  venue: { title: '场馆动态', notifications: venueNotifications.value },
-});
+const filteredBookingNotifications = computed(() =>
+  notifications.value.filter(notification => notification.type.startsWith('reservation'))
+);
 
 const selectedAnnouncement = ref(null);
 const selectedNotifications = ref([]);
 const isModalVisible = ref(false);
 const isDetailModalVisible = ref(false);
+const isLoading = ref(false); // 用于处理加载状态
 const modalTitle = ref('');
+
+// 检查是否是需要确认的通知类型
+const isConfirmationType = (announcement) => {
+  return announcement && (announcement.type === 'team/userCheck' || announcement.type === 'team/adminCheck');
+};
 
 const viewAnnouncement = (announcement) => {
   selectedAnnouncement.value = announcement;
@@ -100,8 +123,13 @@ const viewAnnouncement = (announcement) => {
 };
 
 const showMore = (type) => {
-  selectedNotifications.value = notificationTypes.value[type].notifications;
-  modalTitle.value = notificationTypes.value[type].title;
+  if (type === 'team') {
+    selectedNotifications.value = filteredGroupNotifications.value;
+    modalTitle.value = '团体通知';
+  } else if (type === 'reservation') {
+    selectedNotifications.value = filteredBookingNotifications.value;
+    modalTitle.value = '预约通知';
+  }
   isModalVisible.value = true;
 };
 
@@ -111,6 +139,36 @@ const closeModal = () => {
 
 const closeDetailModal = () => {
   isDetailModalVisible.value = false;
+};
+
+const handleDecision = async (decision) => {
+  const action = decision === 'accept' ? '同意' : '拒绝';
+  isLoading.value = true; // 开始加载
+  try {
+    const response = await fetch('/api/update-group-status', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        notificationId: selectedAnnouncement.value.id,
+        decision: decision,
+      }),
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      ElMessage.success(`${action}操作成功`);
+      isDetailModalVisible.value = false;
+    } else {
+      ElMessage.error(`${action}操作失败`);
+    }
+  } catch (error) {
+    console.error(error);
+    ElMessage.error(`${action}操作出现错误`);
+  } finally {
+    isLoading.value = false; // 请求结束，停止加载
+  }
 };
 </script>
 
@@ -151,33 +209,9 @@ const closeDetailModal = () => {
   align-items: center;
 }
 
-ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-a {
-  color: #007BFF;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
 .modal-title {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   font-size: 18px;
   font-weight: bold;
@@ -188,5 +222,11 @@ a:hover {
 .modal-content {
   padding: 20px;
   line-height: 1.5;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px;
 }
 </style>

@@ -4,7 +4,7 @@
 
     <!-- 筛选区域 -->
     <div class="FilterArea">
-      <div class="SearchArea">
+      <div class="FilterOption">
         <el-input v-model="searchQuery" class="SearchBox" placeholder="场地ID或名称">
           <template #prefix>
             <el-icon><search /></el-icon>
@@ -12,14 +12,13 @@
         </el-input>
       </div>
       <div class="FilterOption">
-        <div class="FilterText">运动类型</div>
         <el-radio-group v-model="selectedSport">
           <el-radio-button value="">全部</el-radio-button>
           <el-radio-button v-for="sport in sports" :value="sport" :key="sport">{{ sport }}</el-radio-button>
         </el-radio-group>
       </div>
       <div class="FilterOption">
-        <el-checkbox v-model="enableDateFilter">在特定日期开放</el-checkbox>
+        <el-checkbox v-model="enableDateFilter">开放日期筛选</el-checkbox>
         <el-date-picker v-if="enableDateFilter" v-model="filterDate" placeholder="选择日期"></el-date-picker>
       </div>
       <div class="FilterControl">
@@ -28,111 +27,90 @@
       </div>
     </div>
 
-   <!-- 场地列表展示 -->
-<div class="venue-list">
-  <div 
-    v-for="venue in filteredVenues" 
-    :key="venue.id" 
-    class="venue-item"
-    @click="viewVenueDetails(venue)" 
-    role="button"                
-  >
-    <img class="venueImg" :src="venue.image" alt="场地图片" />
-    <div class="venue-details">
-      <h3>{{ venue.name }}</h3>
-      <p>ID: {{ venue.id }}</p>
-      <p>类型: {{ venue.sport }}</p>
-      <p>状态: {{ venue.status }}</p>
-      <p>总容量: {{ venue.totalCapacity }}</p>
+    <!-- 场地列表展示 -->
+    <div class="venue-list">
+      <div 
+        v-for="venue in filteredVenues" 
+        :key="venue.id" 
+        class="venue-item"
+        @click="viewVenueDetails(venue)" 
+        role="button"
+      >
+        <img class="venueImg" :src="venue.image" alt="场地图片" />
+        <div class="venue-details">
+          <h3>{{ venue.name }}</h3>
+          <p>ID: {{ venue.id }}</p>
+          <p>类型: {{ venue.sport }}</p>
+          <p>总容量: {{ venue.totalCapacity }}</p>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
 
     <!-- 场地详情模态框 -->
-  <div v-if="selectedVenue" class="modal" @click="closeModal">
-        <div class="modal-content" @click.stop>
-          <div class="modalHeader">
-            <div class="modalTitle">{{ selectedVenue.name }}</div>
-            <el-button class="closeButton" type="danger" @click="closeModal">关闭</el-button>
+    <div v-if="selectedVenue" class="modal" @click="closeModal">
+      <div class="modal-content" @click.stop>
+        <div class="modalHeader">
+          <div class="modalTitle">{{ selectedVenue.name }}</div>
+          <el-button class="closeButton" type="danger" @click="closeModal">关闭</el-button>
+        </div>
+        <img class="venueImg" :src="selectedVenue.image" alt="场地图片" />
+        <div class="venue-timeslots">
+          <el-table :data="selectedVenue.timeslots" border :default-sort="{ prop: 'time' }">
+            <el-table-column prop="time" label="时间" sortable></el-table-column>
+            <el-table-column prop="capacity" label="剩余容量" width="105" sortable></el-table-column>
+            <el-table-column prop="price" label="价格" width="80" sortable></el-table-column>
+            <el-table-column label="操作" width="80">
+              <template #default="item">
+                <el-button type="primary" size="small" @click="bookVenue(selectedVenue, item.row)">预约</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+        
+        <!-- 删除场地简介和场地公告部分 -->
+        
+        <div class="modalSubtitle">其他信息</div>
+        <div class="modalItemContent">
+          <div class="otherInfoLine">
+            <div class="otherInfoLabel">场地编号：</div>
+            <div>{{ selectedVenue.id }}</div>
           </div>
-          <img class="venueImg" :src="selectedVenue.image" alt="场地图片" />
-          <div class="modalSubtitle">开放时间段</div>
-          <div class="venue-timeslots">
-           
-            <div class="timeslotHeader">
-              <el-button size="small" @click="setDate(-1)">&lt;</el-button>
-              <el-date-picker v-model="venueDate" size="small"
-                @change="handleDateChange()"></el-date-picker>
-              <el-button size="small" @click="setDate(1)">&gt;</el-button>
-            </div>
-            <el-table :data="selectedVenue.timeslots" :key="selectedVenue.timeslots.time" 
-              border :default-sort="{ prop: 'time'} ">
-              <el-table-column prop="time" label="时间" sortable :resizable="false"></el-table-column>
-              <el-table-column prop="capacity" label="剩余容量" width="105" sortable :resizable="false"></el-table-column>
-              <el-table-column prop="price" label="价格" width="80" sortable :resizable="false"></el-table-column>
-              <el-table-column label="操作" width="80">
-                <template #default="item">
-                  <el-button type="primary" size="small" 
-                  @click="bookVenue(selectedVenue, item.row)">预约</el-button>
-                </template>
-              </el-table-column>
-            </el-table>
+          <div class="otherInfoLine">
+            <div class="otherInfoLabel">运动类型：</div>
+            <div>{{ selectedVenue.sport }}</div>
           </div>
-          <div class="modalSubtitle">场地简介</div>
-          <div class="modalItemContent">{{ selectedVenue.description }}</div>
-          <div class="modalSubtitle">场地公告</div>
-            <el-table :data="selectedVenue.announcements" :key="selectedVenue.announcements.id"
-            :show-header="false">
-              <el-table-column prop="title"></el-table-column>
-              <el-table-column prop="time" width="150"></el-table-column>
-              <el-table-column width="80">
-                <template #default="item">
-                  <el-button size="small" @click="showAnnouncementDetails(item.row)">详情</el-button>
-                </template>
-              </el-table-column>
-            </el-table>
-          
-          <div class="modalSubtitle">其他信息</div>
-          <div class="modalItemContent">
-            <div class="otherInfoLine">
-              <div class="otherInfoLabel">场地编号：</div>
-              <div>{{ selectedVenue.id }}</div>
-            </div>
-            <div class="otherInfoLine">
-              <div class="otherInfoLabel">运动类型：</div>
-              <div>{{ selectedVenue.sport }}</div>
-            </div>
-            <div class="otherInfoLine">
-              <div class="otherInfoLabel">管理员：</div>
-              <div>{{ selectedVenue.manager }}</div>
-            </div>
+          <div class="otherInfoLine">
+            <div class="otherInfoLabel">管理员：</div>
+            <div>{{ selectedVenue.manager }}</div>
+          </div>
+          <div class="otherInfoLine">
+            <div class="otherInfoLabel">场地位置：</div>
+            <div>{{ selectedVenue.address }}</div>
           </div>
         </div>
       </div>
     </div>
+  </div>
 </template>
 
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { Search } from '@element-plus/icons-vue';
-import { dayjs } from 'element-plus';
+import dayjs from 'dayjs';
 
-// 场地数据示例，包括ID、名称、运动类型、图片、时间段、描述、公告和管理员信息
+// 场地数据示例，包括ID、名称、运动类型、图片、时间段、管理员信息和地址
 const venues = ref([
   {
     id: 1,
     name: '体育场A',
     sport: '足球',
-    status: '开放',
     totalCapacity: 100,
     image: '',
     timeslots: [
       { id: 1, time: '2024-08-24 08:00-10:00', capacity: 10, price: 100 },
       { id: 2, time: '2024-08-24 10:00-12:00', capacity: 8, price: 120 },
     ],
-    description: '这是体育场A的详细描述。',
-    announcements: [{ id: 1, time: '2024-08-22 13:00', title: '体育场A关闭通知' }],
     manager: '张三',
     address: '北京市朝阳区体育场路1号',
     phone: '010-12345678',
@@ -141,15 +119,12 @@ const venues = ref([
     id: 2,
     name: '羽毛球馆C',
     sport: '羽毛球',
-    status: '开放',
     totalCapacity: 30,
     image: '',
     timeslots: [
       { id: 1, time: '2024-08-24 08:00-09:30', capacity: 3, price: 50 },
       { id: 2, time: '2024-08-24 09:30-11:00', capacity: 4, price: 60 },
     ],
-    description: '这是羽毛球馆C的详细描述。',
-    announcements: [{ id: 1, time: '2024-08-24 09:00', title: '羽毛球馆C活动公告' }],
     manager: '王五',
     address: '北京市东城区羽毛球馆路3号',
     phone: '010-13579135',
@@ -158,15 +133,12 @@ const venues = ref([
     id: 3,
     name: '篮球馆B',
     sport: '篮球',
-    status: '开放',
     totalCapacity: 50,
     image: '',
     timeslots: [
       { id: 1, time: '2024-08-24 09:00-11:00', capacity: 5, price: 80 },
       { id: 2, time: '2024-08-24 11:00-13:00', capacity: 5, price: 90 },
     ],
-    description: '这是篮球馆B的详细描述。',
-    announcements: [{ id: 1, time: '2024-08-23 10:00', title: '篮球馆B维护通知' }],
     manager: '李四',
     address: '北京市海淀区篮球馆路2号',
     phone: '010-87654321',
@@ -174,23 +146,19 @@ const venues = ref([
   {
     id: 4,
     name: '游泳馆D',
-    sport: '游泳',
-    status: '开放',
+    sport: '网球',
     totalCapacity: 70,
     image: '',
     timeslots: [
       { id: 1, time: '2024-08-24 07:00-09:00', capacity: 10, price: 100 },
       { id: 2, time: '2024-08-24 09:00-11:00', capacity: 12, price: 120 },
     ],
-    description: '这是游泳馆D的详细描述。',
-    announcements: [{ id: 1, time: '2024-08-22 11:00', title: '游泳馆D活动预告' }],
     manager: '赵六',
     address: '北京市丰台区游泳馆路4号',
     phone: '010-11223344',
   },
   // 更多场馆数据...
 ]);
-
 
 // 运动类型选项
 const sports = ref(['足球', '篮球', '网球', '羽毛球']);
@@ -274,73 +242,68 @@ initializeVenues();
 </script>
 
 <style scoped>
+
 .venue-browser {
-  width: 80%;
-  margin: 0 auto;
-  padding: 20px;
-  background-color: #f5f5f5; /* 背景色 */
-  border-radius: 8px; /* 圆角 */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 阴影效果 */
+  display: flex;
+  flex-direction: column;
+  width: calc(100% - 20px);
+  padding-bottom: 10px;
+  margin: 10px;
+  border-radius: 5px;
+  background-color: white; /* 设为纯白色背景 */
+  border: 1px solid lightgray;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .venueBrowserTitle {
-  font-size: 24px; /* 标题字体大小 */
+  font-size: 24px;
   font-weight: bold;
-  text-align: center; /* 居中对齐 */
-  color: #333; /* 标题文字颜色 */
-  margin-bottom: 20px;
+  text-align: center;
+  color: #333;
+  margin: 20px 0; /* 调整标题的外边距 */
 }
 
 .FilterArea {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: center; /* 水平居中对齐 */
+  justify-content: center; /* 垂直居中对齐 */
   gap: 20px;
   padding: 20px;
-  background-color: #fff; /* 背景色 */
-  border: 1px solid #e0e0e0; /* 边框 */
-  border-radius: 8px; /* 圆角 */
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
   margin-bottom: 20px;
-}
-
-.SearchArea {
-  flex: 1;
-}
-
-.SearchBox {
-  width: 100%;
 }
 
 .FilterOption {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  justify-content: center; /* 使每个筛选条件居中 */
   gap: 10px;
-}
-
-.FilterText {
-  margin-right: 10px;
-  font-weight: bold;
-  color: #666;
+  width: 100%; /* 占据全宽以便居中 */
+  max-width: 500px; /* 设置一个最大宽度 */
 }
 
 .FilterControl {
   display: flex;
+  justify-content: center;
   gap: 10px;
   margin-top: 10px;
 }
+
 .venue-list {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   justify-content: space-between;
-  overflow-x: auto;
   width: 100%;
   padding: 20px;
   box-sizing: border-box;
 }
 
 .venue-item {
-  flex: 1 1 calc(25% - 20px);
-  max-width: calc(25% - 20px);
+  flex: 1 1 30%; /* 每个场地项固定宽度为30% */
+  max-width: 30%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -350,25 +313,71 @@ initializeVenues();
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-right: 20px;
+  margin-bottom: 20px;
   box-sizing: border-box;
-  cursor: pointer; /* 鼠标变为指针，提示可点击 */
-  transition: box-shadow 0.3s ease, transform 0.3s ease; /* 添加过渡效果 */
-}
-
-.venue-item:last-child {
-  margin-right: 0;
+  cursor: pointer;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
 .venue-item:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* 悬停时阴影更深 */
-  transform: translateY(-5px); /* 悬停时稍微提升 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transform: translateY(-5px);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: center; /* 标题居中对齐 */
+  align-items: center;
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.modalTitle {
+  font-size: 22px;
+  font-weight: bold;
+  text-align: center;
+  flex: 1;
+}
+
+.closeButton {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+}
+
+.modalSubtitle {
+  font-size: 18px;
+  margin-top: 20px;
+  text-align: center;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.modalItemContent {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.otherInfoLine {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+}
+
+.otherInfoLabel {
+  font-weight: bold;
+  color: #333;
+}
+
+.venue-timeslots {
+  margin-bottom: 20px;
 }
 
 .venueImg {
   width: 100%;
   height: auto;
   border-radius: 4px;
+  margin-bottom: 20px;
 }
 
 .venue-details {
@@ -400,7 +409,7 @@ initializeVenues();
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.6); /* 半透明背景 */
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -408,51 +417,13 @@ initializeVenues();
 }
 
 .modal-content {
-  width: 80%;
+  width: 25%; 
   max-width: 800px;
   background-color: #fff;
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   position: relative;
-}
-
-.modalHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.modalTitle {
-  font-size: 22px;
-  font-weight: bold;
-}
-
-.closeButton {
-  margin-left: auto;
-}
-
-.modalSubtitle {
-  font-size: 18px;
-  margin-top: 20px;
-  margin-bottom: 10px;
-  font-weight: bold;
-}
-
-.modalItemContent {
-  margin-bottom: 20px;
-}
-
-.otherInfoLine {
-  display: flex;
-  justify-content: space-between;
-  padding: 5px 0;
-}
-
-.otherInfoLabel {
-  font-weight: bold;
-  color: #333;
 }
 
 .timeslotHeader {
@@ -463,3 +434,4 @@ initializeVenues();
   margin: 20px 0;
 }
 </style>
+

@@ -15,9 +15,16 @@
             <label for="password">密码:</label>
             <el-input v-model="password" id="password" type="password" show-password />
           </div>
+          <!-- 新增的隐私协议多选框 -->
+          <div>
+            <el-checkbox v-model="agreePrivacy">
+              已阅读并同意
+              <router-link to="/privacy-policy">隐私协议</router-link>
+            </el-checkbox>
+          </div>
           <div class="errDisplay">{{ errMsg }}</div>
           <div>没有账号? <router-link to="/UserRegister">点此注册</router-link></div>
-          <button type="submit">登录</button>
+          <button type="submit" :disabled="!agreePrivacy">登录</button>
         </form>
       </div>
     </div>
@@ -36,15 +43,21 @@ const username = ref('');
 const password = ref('');
 const isLogging = ref(false);
 const errMsg = ref('');
+const agreePrivacy = ref(false); // 新增的ref，用于跟踪用户是否同意隐私协议
 
 const handleLogin = async () => {
-  if(!username.value){
+  if (!username.value) {
     errMsg.value = '用户名不能为空';
     return;
   }
 
-  if(!password.value){
+  if (!password.value) {
     errMsg.value = '密码不能为空';
+    return;
+  }
+
+  if (!agreePrivacy.value) { // 检查用户是否同意隐私协议
+    errMsg.value = '请阅读并同意隐私协议';
     return;
   }
 
@@ -57,10 +70,9 @@ const handleLogin = async () => {
     Password: encryptedPassword,
   };
 
-  if(isNaN(+username.value)){
+  if (isNaN(+username.value)) {
     loginData.Username = username.value;
-  }
-  else{
+  } else {
     loginData.UserId = username.value;
   }
 
@@ -74,22 +86,20 @@ export default {
 };
 </script>
 
-
 <style scoped>
-
-.loginOuterPage{
+.loginOuterPage {
   display: flex;
   flex-direction: column;
   justify-content: center;
   height: 100vh;
 }
 
-.loginPage{
+.loginPage {
   display: flex;
   padding: 20px;
 }
 
-.loginLogoArea{
+.loginLogoArea {
   padding: 1em;
   width: calc(100% - 300px);
   border: 1px solid black;
@@ -102,7 +112,7 @@ export default {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-.loginTitle{
+.loginTitle {
   display: flex;
   justify-content: center;
   font-size: 30px;
@@ -138,13 +148,27 @@ button {
   width: 100%;
 }
 
-button:hover {
+button:disabled {
+  background-color: #CCCCCC;
+  cursor: not-allowed;
+}
+
+button:hover:not(:disabled) {
   background-color: #0056b3;
 }
 
-.errDisplay{
+.errDisplay {
   color: red;
   height: 2em;
 }
 
+a, a:visited {
+  color: #007BFF; 
+  text-decoration: none; 
+}
+
+a:hover {
+  color: #0056b3; /* 悬停时颜色稍微变深 */
+  text-decoration: underline; 
+}
 </style>

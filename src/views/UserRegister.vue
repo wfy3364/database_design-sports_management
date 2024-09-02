@@ -27,10 +27,17 @@
             <label for="phone">电话号码:</label>
             <el-input v-model="phone" id="phone" type="text" />
           </div>
+          <!-- 新增的隐私协议多选框 -->
+          <div>
+            <el-checkbox v-model="agreePrivacy">
+              已阅读并同意
+              <router-link to="/privacy-policy">隐私协议</router-link>
+            </el-checkbox>
+          </div>
           <div class="errDisplay">{{ errMsg }}</div>
           <div>已有账号? <router-link to="/login">点此登录</router-link></div>
           <el-button class="registerButton" @click="validateInputs() && (registerConfirm = true)" 
-          type="primary" size="large">注册</el-button>
+          type="primary" size="large" :disabled="!agreePrivacy">注册</el-button>
         </form>
       </div>
     </div>
@@ -55,170 +62,152 @@
       </div>
     </template>
   </el-dialog>
-  </template>
+</template>
   
-  <script setup>
-  import { ref } from 'vue';
-  import { useRouter } from 'vue-router';
-  import { userRegister } from '@/apis/requests';
-  import CryptoJS from 'crypto-js';
-  
-  const registerConfirm = ref(false);
-  const successConfirm = ref(false);
-  const isRegistering = ref(false);
-  const resUserId = ref('');
-  const fullName = ref('');
-  const nickname = ref('');
-  const password = ref('');
-  const confirmPassword = ref('');
-  const phone = ref('');
-  const errMsg = ref('');
-  const router = useRouter();
-  
-  const handleRegister = async () => {
-    if (!validateInputs()) {
-      // alert('请确保所有字段填写正确。');
-      return;
-    }
-    isRegistering.value = true;
-    registerConfirm.value = false;
-    // 模拟生成用户ID
-    // const userId = Math.floor(Math.random() * 1000000);
-    const encryptedPassword = CryptoJS.SHA256(password.value).toString();
+<script setup>
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { userRegister } from '@/apis/requests';
+import CryptoJS from 'crypto-js';
 
-      // 创建注册数据对象
-    const registerData = {
-      // id: userId,
-      UserName: nickname.value,
-      Password: encryptedPassword,
-      ContactNumber: phone.value,
-      UserType: 'normal',
-      RealName: fullName.value,
-    };
+const registerConfirm = ref(false);
+const successConfirm = ref(false);
+const isRegistering = ref(false);
+const resUserId = ref('');
+const fullName = ref('');
+const nickname = ref('');
+const password = ref('');
+const confirmPassword = ref('');
+const phone = ref('');
+const errMsg = ref('');
+const agreePrivacy = ref(false); // 用于跟踪用户是否同意隐私协议
+const router = useRouter();
 
-    console.log('Register Data:', registerData); // 调试时查看注册数据
-    // 模拟后端延迟响应
-    // setTimeout(() => {
-    //   const success = true; // 模拟后端响应成功
-    //   if (success) {
-    //     successConfirm.value = true;
-    //   } else {
-    //     alert('注册失败');
-    //   }
-    // },); 
-    await userRegister(registerData, isRegistering, successConfirm, resUserId, errMsg)
+const handleRegister = async () => {
+  if (!validateInputs()) {
+    return;
+  }
+  isRegistering.value = true;
+  registerConfirm.value = false;
+  const encryptedPassword = CryptoJS.SHA256(password.value).toString();
+
+  const registerData = {
+    UserName: nickname.value,
+    Password: encryptedPassword,
+    ContactNumber: phone.value,
+    UserType: 'normal',
+    RealName: fullName.value,
   };
-  
-  const validateInputs = () => {
-    // 检查所有字段是否已填写
-    errMsg.value = '';
-    const requiredItems = [
-      { item: fullName, name: "真实姓名"},
-      { item: nickname, name: "用户名"},
-      { item: password, name: "密码"},
-      { item: confirmPassword, name: "确认密码"},
-      { item: phone, name: "电话号码"}
-    ];
-    // if (!fullName.value || !nickname.value || !password.value || !confirmPassword.value || !phone.value) {
-    //   return false;
-    // }
-    for(const requiredItem of requiredItems){
-      if(!requiredItem.item.value){
-        errMsg.value = requiredItem.name + '不能为空';
-        return false;
-      }
-    }
-    // 检查密码和确认密码是否匹配
-    if (password.value !== confirmPassword.value) {
-      errMsg.value = '两次输入的密码不匹配';
+
+  await userRegister(registerData, isRegistering, successConfirm, resUserId, errMsg)
+};
+
+const validateInputs = () => {
+  errMsg.value = '';
+  const requiredItems = [
+    { item: fullName, name: "真实姓名"},
+    { item: nickname, name: "用户名"},
+    { item: password, name: "密码"},
+    { item: confirmPassword, name: "确认密码"},
+    { item: phone, name: "电话号码"}
+  ];
+  for(const requiredItem of requiredItems){
+    if(!requiredItem.item.value){
+      errMsg.value = requiredItem.name + '不能为空';
       return false;
     }
-    return true;
-  };
-
-  const handleSuccess = () => {
-    successConfirm.value = false;
-    router.push('/login'); // 跳转到登录页面
   }
+  if (password.value !== confirmPassword.value) {
+    errMsg.value = '两次输入的密码不匹配';
+    return false;
+  }
+  return true;
+};
 
-  </script>
+const handleSuccess = () => {
+  successConfirm.value = false;
+  router.push('/login'); // 跳转到登录页面
+}
+
+</script>
   
 <style scoped>
 
-  .registerOuterPage{
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    height: 100vh;
-  }
+.registerOuterPage{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100vh;
+}
 
-  .registerPage{
-    display: flex;
-    padding: 20px;
-  }
+.registerPage{
+  display: flex;
+  padding: 20px;
+}
 
-  .registerLogoArea{
-    padding: 1em;
-    width: calc(100% - 400px);
-    border: 1px solid black;
-  }
+.registerLogoArea{
+  padding: 1em;
+  width: calc(100% - 400px);
+  border: 1px solid black;
+}
 
-  .registerBox {
-    width: 400px;
-    margin: auto;
-    padding: 1em;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  }
-  
-  .registerTitle{
-    display: flex;
-    justify-content: center;
-    font-size: 30px;
-    font-weight: 700;
-    margin-bottom: 5px;
-  }
+.registerBox {
+  width: 400px;
+  margin: auto;
+  padding: 1em;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
 
-  div {
-    margin-bottom: 5px;
-  }
-  
-  label {
-    margin-bottom: .5em;
-    color: #333333;
-    display: block;
-  }
-  
-  input {
-    border: 1px solid #CCCCCC;
-    padding: .5em;
-    font-size: 1em;
-    width: 100%;
-    box-sizing: border-box;
-  }
-  
-  .registerButton{
-    width: 100%;
-  }
+.registerTitle{
+  display: flex;
+  justify-content: center;
+  font-size: 30px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
 
-  /* button {
-    padding: 0.7em;
-    color: #fff;
-    background-color: #007BFF;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    width: 100%;
-  }
-  
-  button:hover {
-    background-color: #0056b3;
-  } */
+div {
+  margin-bottom: 5px;
+}
 
-  .errDisplay{
-    color: red;
-    height: 2em;
-  }
+label {
+  margin-bottom: .5em;
+  color: #333333;
+  display: block;
+}
 
-  </style>
-  
+input {
+  border: 1px solid #CCCCCC;
+  padding: .5em;
+  font-size: 1em;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.registerButton{
+  width: 100%;
+}
+
+.registerButton:disabled {
+  background-color: #CCCCCC !important; /* 设置禁用状态下的背景色为灰白色 */
+  color: #ffffff !important; /* 禁用状态下的文字颜色 */
+  cursor: not-allowed; /* 禁用状态下的鼠标样式 */
+}
+
+.errDisplay{
+  color: red;
+  height: 2em;
+}
+
+a, a:visited {
+  color: #007BFF; 
+  text-decoration: none; 
+}
+
+a:hover {
+  color: #0056b3; /* 悬停时颜色稍微变深 */
+  text-decoration: underline; /* 悬停时加下划线 */
+}
+
+</style>
