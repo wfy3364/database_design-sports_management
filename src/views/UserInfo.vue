@@ -147,9 +147,13 @@
   import CryptoJS from 'crypto-js';
   import { useRouter } from 'vue-router';
   import { userRegister } from '@/apis/requests';
+  import { useUserStore } from '@/stores/userStore';
+  import { storeToRefs } from 'pinia';
 
   ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Filler, Title);
 
+  const userStore = useUserStore();
+  const { isAuthenticated, token, userId, userName, adminType, adminPermission } = storeToRefs(userStore);
 
   const registerConfirm = ref(false);
   const successConfirm = ref(false);
@@ -204,6 +208,14 @@
     quitConfirm.value = null;
   }
   const logout = () => {
+    isAuthenticated.value = false;
+    userId.value = '';
+    userName.value = '';
+    adminType.value = '';
+    adminPermission.value = {
+      venue: [],
+      device: [],
+    };
     router.push('/Login');
   };
 

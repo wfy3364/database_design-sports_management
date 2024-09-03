@@ -343,20 +343,20 @@ const options = [
   border: 1px solid lightgray;
 }
 
-.modal {
+/* .modal {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.6); /* 半透明背景 */
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-}
+} */
 
-.modal-content {
+/* .modal-content {
   width: 60%;
   max-width: 600px;
   background-color: #fff;
@@ -364,19 +364,19 @@ const options = [
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   position: relative;
-}
+} */
 
-.modalHeader {
+/* .modalHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-}
+} */
 
-.modalTitle {
+/* .modalTitle {
   font-size: 22px;
   font-weight: bold;
-}
+} */
 
 .modalBody {
   margin-top: 20px;
