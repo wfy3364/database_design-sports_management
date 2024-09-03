@@ -1,22 +1,32 @@
 <script setup>
 
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { Search } from '@element-plus/icons-vue'
+import { convertTime, judgeState } from '@/apis/utils';
+import MaintenanceDetail from './components/MaintenanceDetail.vue';
+import { useUserStore } from '@/stores/userStore';
+import { storeToRefs } from 'pinia';
 
 const searchType = ref('0');
 const searchContent = ref('');
 const searchPlaceholder = ['保养记录ID', '场地名称或ID'];
 const stateOption = ref('3');
 const isSearching = ref(false);
+const maintenanceEdit = ref(false);
 
-const maintenanceData = [{
+const curRecord = ref(null);
+const detailDialog = ref(false);
+const dialogMode = ref('view');
+const userStore = useUserStore();
+const { adminType, adminPermission } = storeToRefs(userStore);
+
+const maintenanceData = ref([{
   id: 1,
   venueId: 1,
   venueName: '场地1',
   start_time: '2024-08-20 13:00',
   end_time: '2024-08-20 14:00',
-  description: '设备正常维修',
-  state: 0,
+  description: '场地正常保养',
 },
 {
   id: 2,
@@ -24,27 +34,30 @@ const maintenanceData = [{
   venueName: '场地名称过长时的展示',
   start_time: '2024-08-20 13:00',
   end_time: '2024-08-20 14:00',
-  description: '维修描述过长时以提示框的方式显示维修描述过长时以提示框的方式显示',
-  state: 1,
+  description: '保养描述过长时以提示框的方式显示保养描述过长时以提示框的方式显示保养描述过长时以提示框的方式显示',
 },
 {
   id: 3,
   venueId: 3,
   venueName: '场地2',
   start_time: '2024-08-21 13:00',
-  end_time: '2024-08-21 14:00',
-  description: '设备正常维修',
-  state: 2,
+  end_time: '2024-09-21 14:00',
+  description: '场地正常保养',
 },
 {
   id: 4,
   venueId: 2,
   venueName: '场地名称过长时的展示',
-  start_time: '2024-08-20 15:00',
-  end_time: '2024-08-20 16:00',
-  description: '设备正常维修',
-  state: 2,
-}];
+  start_time: '2024-09-20 15:00',
+  end_time: '2024-09-20 16:00',
+  description: '场地正常保养',
+}]);
+
+maintenanceData.value = maintenanceData.value.map(item => {
+  return {...item, state: judgeState(item.start_time, item.end_time)}
+});
+
+const tempMaintenanceData = ref([...maintenanceData.value]);  //临时存储的场地数据
 
 const shortcuts = [
   {
@@ -78,29 +91,10 @@ const shortcuts = [
 
 const dateRange = ref([]);
 
-// 计算属性: 根据状态和搜索内容筛选数据
-// const filteredData = computed(() => {
-//   let data = maintenanceData;
-
-//   if (stateOption.value !== '3') {
-//     data = data.filter(item => item.state === +stateOption.value);
-//   }
-  
-//   if (isSearching.value && searchContent.value) {
-//     data = data.filter(item => {
-//       const searchTerm = searchContent.value.toLowerCase();
-//       return item.venueId == searchTerm || item.venueName.toLowerCase().includes(searchTerm);
-//     });
-//     //isSearching.value = false;
-//   }
-  
-//   return data;
-// });
-
 const filteredData = ref(maintenanceData);
 
 function handleSearch(){
-  filteredData.value = maintenanceData;
+  filteredData.value = maintenanceData.value;
   if (stateOption.value !== '3') {
     filteredData.value = filteredData.value.filter(item => item.state === +stateOption.value);
   }
@@ -126,15 +120,45 @@ function FilterReset(){
   searchType.value = '0';
   searchContent.value = '';
   stateOption.value = '3';
-  filteredData.value = maintenanceData;
+  filteredData.value = maintenanceData.value;
   dateRange.value = [];
 }
 
+// function showDeviceEdit(){
+//   maintenanceEdit.value = true;
+// }
+
+// function closeMaintenanceEdit(){
+//   maintenanceEdit.value = false;
+// }
+
+// function saveMaintenanceEdit(){
+//   ElMessage({
+//     message: '保养信息修改成功',
+//     type: 'success',
+//   })
+//   maintenanceEdit.value = false;
+// }
+
+function showMaintenanceDetail(record, mode){
+  curRecord.value = record;
+  dialogMode.value = mode;
+  detailDialog.value = true;
+}
+
+const EditCheck = computed(() => { //检查管理员权限
+  return adminType.value === 'system' ||
+        (adminType.value === 'device' || adminType.value === 'venue-device') &&
+        record.deviceId in adminPermission.value.device
+});
 </script>
 
 <template>
   <div class="AdminVenueMaintenance">
-    <div class="MaintenanceHeader">保养记录</div>
+    <div class="VenueMaintenanceHeader">
+      <div class="MaintenanceHeader">保养记录</div>
+      <el-button class="EditButton" @click="showMaintenanceDetail(null, 'create')">添加</el-button>
+    </div>
     <div class="FilterArea">
       <div class="SearchArea">
         <el-radio-group v-model="searchType">
@@ -183,8 +207,51 @@ function FilterReset(){
           <div v-if="item.row.state === 2" style="color: red">待保养</div>
         </template>
       </el-table-column>
+      <el-table-column label="操作" width="150">
+        <template #default="item">
+          <el-button size="small" type="primary" @click="showMaintenanceDetail(item.row, 'view')">详情</el-button>
+          <el-button size="small" v-if="EditCheck" @click="showMaintenanceDetail(item.row, 'edit')">编辑</el-button>
+        </template>
+      </el-table-column>
     </el-table>
   </div>
+  <!-- <el-dialog v-model="maintenanceEdit" title="编辑信息" align-center>
+    <div class="modalBody">
+      <el-form :model="tempMaintenanceData" label-width="120px">
+        <div class="detailTitle">基本信息</div>
+          <div v-if="dialogMode === 'view' || dialogMode === 'edit'">
+            <div class="detailLine">
+              <div class="detailLabel">保养记录编号：</div>
+              <div> {{ tempMaintenanceData.id }} </div>
+            </div>
+            <div class="detailLine">
+              <div class="detailLabel">保养场地编号：</div>
+              <div> {{ tempMaintenanceData.venueId }} </div>
+            </div>
+            <div class="detailLine">
+              <div class="detailLabel">保养场地名称：</div>
+              <div> {{ tempMaintenanceData.venueName }} </div>
+            </div>
+            <div class="detailLine">
+              <div class="detailLabel">场地编号：</div>
+              <div> {{ curRecord.venueId }} </div>
+            </div>
+            <div class="detailLine">
+              <div class="detailLabel">场地名称：</div>
+              <div> {{ curRecord.venueName }} </div>
+            </div>
+          </div>
+      </el-form>
+    </div>
+    <template #footer>
+      <div class="smallButtonContainer"> 
+        <el-button class="smallButton" @click="closeMaintenanceEdit">取消</el-button>
+        <el-button class="smallButton" type="primary" @click="saveMaintenanceEdit">保存</el-button>
+      </div>
+    </template>
+  </el-dialog> -->
+  <MaintenanceDetail v-if="detailDialog" :dialogMode="dialogMode" :curRecord="curRecord" 
+  @closeModal="detailDialog = false" @editModal="showRepairDetail(curRecord, 'edit')"></MaintenanceDetail>
 </template>
 
 <style scoped>
@@ -197,15 +264,6 @@ function FilterReset(){
   border-radius: 5px;
   background-color: white;
   border: 1px solid lightgray;
-}
-
-.MaintenanceHeader{
-  display: flex;
-  justify-content: center;
-  padding: 10px;
-  /* border-bottom: 1px solid black; */
-  font-size: 18px;
-  font-weight: 700;
 }
 
 .FilterArea{
@@ -247,4 +305,48 @@ function FilterReset(){
   margin-top: 10px;
 }
 
+.modalBody {
+  margin-top: 20px;
+}
+
+.smallButtonContainer {
+  display: flex;
+  justify-content: flex-end;
+  /* margin-right: auto; */
+}
+
+.smallButton {
+  /* margin-right: auto; */
+  margin-top: 10px;
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.VenueMaintenanceHeader{
+  display: flex;
+  justify-content: center;
+  padding: 10px;
+  border-bottom: 1px solid black;
+  align-items: center;
+}
+
+.MaintenanceHeader{
+  display: flex;
+  justify-content: center;
+  width: 50%;
+  left: 25%;
+  position: relative;
+  padding: 10px;
+  /* border-bottom: 1px solid black; */
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.EditButton{
+  margin-left: auto;
+}
 </style>
