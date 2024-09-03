@@ -1,40 +1,51 @@
 <script setup>
 import { convertTime } from '@/apis/utils';
 import { useRouter } from 'vue-router';
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import PublicNoticeModal from './components/PublicNoticeModal.vue';
+import { getAllPublicNotice, getPublicNoticeDetail } from '@/apis/requests';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
+import { ElMessage } from 'element-plus';
 
 const router = useRouter();
 const userStore = useUserStore();
 // const { userId, adminType } = storeToRefs(userStore);
 const adminType = 'system';
 const userId = '2';
+const publicNoticeErrMsg = ref('');
+const publicNoticeLoading = ref(false);
 
 // 此处用常量数组暂时模拟从后端获取到的数据
-const publicNoticeData = [{
-  id: 1,
-  title: "公告标题1",
-  content: "这里是公告内容",
-  time: new Date('18 August, 2024 18:00'),
-  venues: [{ id: 1, name: '场地1'}],
-  adminId: '1',
-  adminName: "张三",
-},{
-  id: 2,
-  title: "长标题测试，这个公告的标题很长",
-  content: "标题很长，但是公告内容不知道该写什么",
-  time: new Date('18 August, 2024 19:00'),
-  venues: [{ id: 2, name: '场地2'}],
-  adminId: '2',
-  adminName: "张三",
-}];
+const publicNoticeData = ref([]);
+// const publicNoticeData = [{
+//   id: 1,
+//   title: "公告标题1",
+//   content: "这里是公告内容",
+//   time: new Date('18 August, 2024 18:00'),
+//   venues: [{ id: 1, name: '场地1'}],
+//   adminId: '1',
+//   adminName: "张三",
+// },{
+//   id: 2,
+//   title: "长标题测试，这个公告的标题很长",
+//   content: "标题很长，但是公告内容不知道该写什么",
+//   time: new Date('18 August, 2024 19:00'),
+//   venues: [{ id: 2, name: '场地2'}],
+//   adminId: '2',
+//   adminName: "张三",
+// }];
 
 const userNoticeData = [{
   id: 1,
-  title: "通知标题1",
-  time: "2024-08-18",
+  title: "预约通知1",
+  time: "2024-08-18T09:00:00",
+  type: "reservation"
+},{
+  id: 2,
+  title: "团体加入邀请",
+  time: "2024-08-18T10:00:00",
+  type: "team/userCheck"
 }];
 
 const venueData = [{
@@ -71,6 +82,24 @@ const showPublicNotice = ref(false);
 const PublicNoticeMode = ref('');
 const SelectedPublicNotice = ref(null);
 
+async function getPublicNoticeBasic(){
+  publicNoticeLoading.value = true;
+  await getAllPublicNotice(getPublicNoticeSuccess, getPublicNoticeErr);
+}
+
+function getPublicNoticeSuccess(res){
+  publicNoticeData.value = res;
+  publicNoticeLoading.value = false;
+}
+
+function getPublicNoticeErr(msg){
+  ElMessage.error('获取公告失败，请刷新重试');
+  publicNoticeErrMsg.value = '获取公告失败：' + msg;
+  publicNoticeLoading.value = false;
+}
+
+onMounted(getPublicNoticeBasic);
+
 function viewPublicNoticeDetail(notice, mode){
   PublicNoticeMode.value = mode;
   SelectedPublicNotice.value = notice;
@@ -103,6 +132,14 @@ function changeRoute(path){
   router.push(path);
 }
 
+function judgeNoticeType(type){
+  const baseType = type.split('/')[0];
+  const typeMap = {
+    'reservation': '预约通知',
+    'team': '团体通知'
+  }
+  return typeMap[baseType];
+}
 
 </script>
 
@@ -114,7 +151,13 @@ function changeRoute(path){
         <el-button class="CardButton" size="small" 
           @click="changeRoute('/PublicNotice')">更多</el-button>
       </div>
-      <div class="NoticeContent" v-for="publicNotice in publicNoticeData" >
+      <div v-if="publicNoticeErrMsg" class="publicNoticeErrDisplay">
+        {{ publicNoticeErrMsg }}
+      </div>
+      <div v-loading="publicNoticeLoading" v-else-if="publicNoticeData.length === 0" class="noNoticeDisplay">
+        暂无公告
+      </div>
+      <div v-else class="NoticeContent" v-for="publicNotice in publicNoticeData" >
         <div class="NoticeItem">
           <el-tooltip effect="light" placement="bottom" :content="publicNotice.title">
             <div class="NoticeTitle" @click="viewPublicNoticeDetail(publicNotice, 'view')">
@@ -136,11 +179,16 @@ function changeRoute(path){
       <div class="CardHeader">
         <div class="CardTitle">个人通知</div>
         <el-button class="CardButton" size="small"
-          @click="changeRoute('/AdminNotice')">更多</el-button>
+          @click="changeRoute(adminType === 'normal' ? '/NotificationList' : '/AdminNotifications')">更多</el-button>
       </div>
       <div class="NoticeContent" v-for="userNotice in userNoticeData">
         <div class="NoticeItem">
-          <div class="NoticeTitle">{{ userNotice.title }}</div>
+          <el-tooltip effect="light" placement="bottom" :content="userNotice.title">
+            <div class="NoticeTitle" @click="">
+              {{ userNotice.title }}</div>
+          </el-tooltip>
+          <div class="NoticeTime">{{ convertTime(userNotice.time) }}</div>
+          <div class="NoticeType">{{ judgeNoticeType(userNotice.type) }}</div>
         </div>
       </div>
     </div>
@@ -328,5 +376,20 @@ function changeRoute(path){
   line-height: 25px;
 }
 
+.publicNoticeErrDisplay{
+  color: red;
+  margin: auto;
+}
+
+.noNoticeDisplay{
+  color: gray;
+  margin: auto;
+}
+
+.NoticeType{
+  margin-right: 5px;
+  color: orange;
+  min-width: 80px;
+}
 
 </style>

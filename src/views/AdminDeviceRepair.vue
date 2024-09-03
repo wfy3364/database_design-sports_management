@@ -1,11 +1,13 @@
 <script setup>
 
-import { ref, computed } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { Search } from '@element-plus/icons-vue'
 import { convertTime, judgeState } from '@/apis/utils';
 import RepairDetail from './components/RepairDetail.vue';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
+import { getRepairData } from '@/apis/requests';
+import { ElMessage } from 'element-plus';
 
 const searchType = ref('0');
 const searchContent = ref('');
@@ -16,6 +18,8 @@ const detailDialog = ref(false);
 const dialogMode = ref('view');
 const userStore = useUserStore();
 const { adminType, adminPermission } = storeToRefs(userStore);
+const tableLoading = ref(false);
+const errMsg = ref('');
 
 function showRepairDetail(record, mode){
   curRecord.value = record;
@@ -24,50 +28,72 @@ function showRepairDetail(record, mode){
 }
 
 // start_time和end_time需要全部处理成Date类型
-const repairData = ref([{
-  id: '1',
-  deviceId: '1',
-  deviceName: '设备1',
-  venueId: '1',
-  venueName: '场地1',
-  start_time: new Date("August 20, 2024 13:00:00"),
-  end_time: new Date("August 20, 2024 14:00:00"),
-  description: '设备正常维修',
-},
-{
-  id: '2',
-  deviceId: '2',
-  deviceName: '设备名称过长时的展示',
-  venueId: '2',
-  venueName: '场地名称过长时的展示',
-  start_time: new Date("August 20, 2024 14:00:00"),
-  end_time: new Date("August 20, 2024 14:00:00"),
-  description: '维修描述过长时以提示框的方式显示',
-},
-{
-  id: '3',
-  deviceId: '3',
-  deviceName: '设备2',
-  venueId: '3',
-  venueName: '场地2',
-  start_time: new Date("August 21, 2024 13:00:00"),
-  end_time: new Date("August 21, 2024 14:00:00"),
-  description: '设备正常维修',
-},
-{
-  id: '4',
-  deviceId: '4',
-  deviceName: '设备1',
-  venueId: '2',
-  venueName: '场地名称过长时的展示',
-  start_time: new Date("August 21, 2024 14:00:00"),
-  end_time: new Date("August 21, 2024 15:00:00"),
-  description: '设备描述测试：设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，',
-}]);
+// const repairData = ref([{
+//   id: '1',
+//   deviceId: '1',
+//   deviceName: '设备1',
+//   venueId: '1',
+//   venueName: '场地1',
+//   start_time: new Date("August 20, 2024 13:00:00"),
+//   end_time: new Date("August 20, 2024 14:00:00"),
+//   description: '设备正常维修',
+// },
+// {
+//   id: '2',
+//   deviceId: '2',
+//   deviceName: '设备名称过长时的展示',
+//   venueId: '2',
+//   venueName: '场地名称过长时的展示',
+//   start_time: new Date("August 20, 2024 14:00:00"),
+//   end_time: new Date("August 20, 2024 14:00:00"),
+//   description: '维修描述过长时以提示框的方式显示',
+// },
+// {
+//   id: '3',
+//   deviceId: '3',
+//   deviceName: '设备2',
+//   venueId: '3',
+//   venueName: '场地2',
+//   start_time: new Date("August 21, 2024 13:00:00"),
+//   end_time: new Date("August 21, 2024 14:00:00"),
+//   description: '设备正常维修',
+// },
+// {
+//   id: '4',
+//   deviceId: '4',
+//   deviceName: '设备1',
+//   venueId: '2',
+//   venueName: '场地名称过长时的展示',
+//   start_time: new Date("August 21, 2024 14:00:00"),
+//   end_time: new Date("August 21, 2024 15:00:00"),
+//   description: '设备描述测试：设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，',
+// }]);
+const repairData = ref([]);
 
-repairData.value = repairData.value.map(item => {
-  return {...item, state: judgeState(item.start_time, item.end_time)}
-});
+async function loadRepairData(){
+  tableLoading.value = true;
+  await getRepairData(handleLoadSuccess, handleLoadErr);
+}
+
+function handleLoadSuccess(res){
+  repairData.value = res;
+  errMsg.value = '';
+  tableLoading.value = false;
+  repairData.value = repairData.value.map(item => {
+    return {...item, state: judgeState(item.start_time, item.end_time)}
+  });
+  filteredData.value = repairData.value;
+}
+
+function handleLoadErr(msg){
+  repairData.value = [];
+  filteredData.value = [];
+  tableLoading.value = false;
+  ElMessage.error('获取维修信息失败，请刷新重试');
+  errMsg.value = '获取维修信息失败：' + msg;
+}
+
+onMounted(loadRepairData);
 
 const shortcuts = [
   {
@@ -208,7 +234,7 @@ function FilterReset(){
         type="primary" class="createButton">添加记录</el-button>
       </div>
     </div>
-    <el-table :data="filteredData" :show-overflow-tooltip="{ effect: 'light'}">
+    <el-table v-loading="tableLoading" :data="filteredData" :show-overflow-tooltip="{ effect: 'light'}">
       <el-table-column prop="id" label="记录编号" width="105" sortable></el-table-column>
       <el-table-column prop="deviceId" label="设备编号" width="105" sortable></el-table-column>
       <el-table-column prop="deviceName" label="设备名称" width="105" sortable></el-table-column>
@@ -234,6 +260,7 @@ function FilterReset(){
         </template>
       </el-table-column>
     </el-table>
+    <div class="errDisplay">{{ errMsg }}</div>
   </div>
   <RepairDetail v-if="detailDialog" :dialogMode="dialogMode" :curRecord="curRecord" 
   @closeModal="detailDialog = false" @editModal="showRepairDetail(curRecord, 'edit')"></RepairDetail>
@@ -300,6 +327,11 @@ function FilterReset(){
 
 .createButton{
   margin-left: auto;
+}
+
+.errDisplay{
+  color: red;
+  justify-content: center;
 }
 
 </style>

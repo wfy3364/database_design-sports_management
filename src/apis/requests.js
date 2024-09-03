@@ -64,55 +64,87 @@ async function getUserInfo(userData) {
   })
 }
 
-async function createTeam(teamData, successDialog, resId, createDialog, isCreating, errMsg) {
+async function createTeam(teamData, successHandler, errHandler) {
   await httpInstance.post('/api/Group/create', teamData).then((res) => {
     console.log(res);
     if (res.state) {
-      resId.value = res.groupId;
-      createDialog.value = false;
-      isCreating.value = false;
-      successDialog.value = true;
+      successHandler(res.groupId);
     }
     else {
-      isCreating.value = false;
-      errMsg.value = '创建团体失败：' + (res.info || '未知错误');
+      errHandler(res.info || '未知错误');
     }
   }).catch((err) => {
-    isCreating.value = false;
-    errMsg.value = '创建团体失败：' + (err.response?.data?.message || '未知错误');
+    errHandler(err.response?.data?.message || '未知错误');
   })
 }
 
-async function fetchTeam(teamData, filteredTeam, isLoading) {
+async function fetchTeam(successHandler, errHandler) {
   const userStore = useUserStore();
   const { userId } = storeToRefs(userStore);
   await httpInstance.get(`/api/Group/userallGroup/${userId}`).then((res) => {
     console.log(res);
     if (res.status) {
-      teamData.value = res.userGroups;
-      filteredTeam.value = teamData.value;
-      isLoading.value = false;
+      successHandler(res.userGroups);
     }
     else {
-      ElMessage.error('获取团队数据失败：' + (res.message || '未知错误'))
-      isLoading.value = false;
+      errHandler(res.message || '未知错误');
+    }
+  }).catch((err) => {
+    errHandler(err.response?.data?.message || '未知错误');
+  });
+}
+
+async function getAllTeams(successHandler, errHandler) {
+  await httpInstance.get('/api/Group/selectGroups').then((res) => {
+    successHandler(res);
+  }).catch((err) => {
+    errHandler(err.response?.data?.message || '未知错误');
+  });
+}
+
+async function getRepairData(successHandler, errHandler) {
+  await httpInstance.get('api/Venue/GetAllRepairRecords').then((res) => {
+    console.log(res);
+    if (res.state) {
+      successHandler(res.data);
+    }
+    else {
+      errHandler(res.info);
+    }
+  }).catch((err) => {
+    errHandler(err.response?.data?.info || '未知错误');
+  })
+}
+
+// 主界面接口
+async function getAllPublicNotice(successHandler, errHandler) {
+  await httpInstance.get('api/Announcement/publicNoticeData').then((res) => {
+    if (res.status) {
+      successHandler(res.data)
+    }
+    else {
+      errHandler(res.info || '未知错误');
     }
   }).catch((err) => {
     console.log(err);
-    ElMessage.error('获取团队数据失败：' + (err.response?.data?.message || '未知错误'))
-    isLoading.value = false;
-  });
+    errHandler(err.response?.data?.message || '未知错误');
+  })
 }
 
-async function getAllTeams(teamData, isSearching) {
-  await httpInstance.get('/api/Group/selectGroups').then((res) => {
-    console.log(res);
-    teamData.value = res;
-    isSearching.value = false;
+async function getPublicNoticeDetail(noticeId, successHandler, errHandler) {
+  await httpInstance.get(`/api/Announcement/getAnnouncementDetails/${noticeId}`).then((res) => {
+    if (res.status) {
+      successHandler(res.data);
+    }
+    else {
+      errHandler(res.info);
+    }
   }).catch((err) => {
-    ElMessage.error('获取团队数据失败：' + (err.response?.data?.message || '未知错误'));
-    isSearching.value = false;
-  });
+    errHandler(err.response?.data?.info || '未知错误');
+  })
 }
 
-export { userLogin, userRegister, getUserInfo, fetchTeam, createTeam, getAllTeams };
+export {
+  userLogin, userRegister, getUserInfo, fetchTeam, createTeam, getAllTeams, getRepairData,
+  getAllPublicNotice, getPublicNoticeDetail
+};

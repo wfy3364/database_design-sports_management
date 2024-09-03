@@ -9,7 +9,7 @@ import { ElMessage } from 'element-plus';
 const props = defineProps({
   mode: String,
   notice: {
-    id: Number,
+    announcementId: Number,
     title: String,
     content: String,
     venues: Array,
@@ -61,6 +61,13 @@ function dialogConfirm(){
     handleDelete(); 
   }
   handleClose();
+}
+
+function confirmDialogClose(){
+  confirmDialog.value = false;
+  if(props.mode === 'delete'){
+    emit('closeModal');
+  }
 }
 
 function closeConfirm(){
@@ -138,7 +145,7 @@ onMounted(() => {
         <div class="contentArea">{{ notice.content }}</div>
         <div class="infoLine">
           <div class="noticeInfo">公告ID：</div>
-          {{ notice.id }}
+          {{ notice.announcementId }}
         </div>
         <div class="infoLine">
           <div class="noticeInfo">发布时间：</div>
@@ -157,7 +164,7 @@ onMounted(() => {
     <div v-else-if="mode === 'edit' || mode === 'create'" class="modalContent">
       <div class="infoLine" v-if="mode === 'edit'">
         <div class="noticeInfo">公告ID：</div>
-        {{ notice.id }}
+        {{ notice.announcementId }}
       </div>
       <div class="editLine">
         <div class="noticeInfo">公告标题</div>
@@ -196,12 +203,12 @@ onMounted(() => {
     </template>
   </el-dialog>
   <!-- 确认弹窗 -->
-  <el-dialog title="确认提示" v-model="confirmDialog">
+  <el-dialog title="确认提示" v-model="confirmDialog" :before-close="confirmDialogClose">
     <div class="confirmContent">{{ dialogContent }}</div>
     <div v-if="confirmAction === 'delete'">
       <div class="infoLine">
         <div class="noticeInfo">公告ID：</div>
-        {{ notice.id }}
+        {{ notice.announcementId }}
       </div>
       <div class="infoLine">
         <div class="noticeInfo">公告原标题：</div>
@@ -210,7 +217,7 @@ onMounted(() => {
     </div>
     <template #footer>
       <div>
-        <el-button @click="confirmDialog = false">取消</el-button>
+        <el-button @click="confirmDialogClose">取消</el-button>
         <el-button type="primary" @click="dialogConfirm">确定</el-button>
       </div>
     </template>

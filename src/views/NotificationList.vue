@@ -15,7 +15,11 @@
         <el-table :data="filteredGroupNotifications.slice(0, 10)" style="width: 100%">
           <el-table-column prop="id" label="通知编号" width="100"></el-table-column>
           <el-table-column prop="title" label="标题"></el-table-column>
-          <el-table-column prop="date" label="时间" width="150"></el-table-column>
+          <el-table-column label="时间" width="150">
+            <template #default="scope">
+              {{ convertTime(scope.row.date) }}
+            </template>
+          </el-table-column>
           <el-table-column label="操作" width="100">
             <template #default="scope">
               <el-button @click="viewAnnouncement(scope.row)" size="small">查看</el-button>
@@ -34,7 +38,11 @@
         <el-table :data="filteredBookingNotifications.slice(0, 10)" style="width: 100%">
           <el-table-column prop="id" label="通知编号" width="100"></el-table-column>
           <el-table-column prop="title" label="标题"></el-table-column>
-          <el-table-column prop="date" label="时间" width="150"></el-table-column>
+          <el-table-column label="时间" width="150">
+            <template #default="scope">
+              {{ convertTime(scope.row.date) }}
+            </template>
+          </el-table-column>
           <el-table-column label="操作" width="100">
             <template #default="scope">
               <el-button @click="viewAnnouncement(scope.row)" size="small">查看</el-button>
@@ -45,12 +53,12 @@
     </div>
 
     <!-- 模态框显示所有通知 -->
-    <el-dialog v-model="isModalVisible" width="600px">
-      <template #title>
+    <el-dialog v-model="isModalVisible" width="600px" :header="modalTitle">
+      <!-- <template #title>
         <div class="modal-title">
           <span>{{ modalTitle }}</span>
         </div>
-      </template>
+      </template> -->
       <el-table :data="selectedNotifications" style="width: 100%">
         <el-table-column prop="id" label="通知编号" width="100"></el-table-column>
         <el-table-column prop="title" label="标题"></el-table-column>
@@ -62,9 +70,10 @@
         </el-table-column>
       </el-table>
     </el-dialog>
-
+    <notification-detail v-if="isDetailModalVisible" :selected-announcement="selectedAnnouncement" 
+    @close-modal="closeDetailModal"></notification-detail>
     <!-- 查看通知内容的模态框 -->
-    <el-dialog v-model="isDetailModalVisible" width="500px">
+    <!-- <el-dialog v-model="isDetailModalVisible" width="500px">
       <template #title>
         <div class="modal-title">
           <span>{{ selectedAnnouncement.title }}</span>
@@ -72,29 +81,31 @@
       </template>
       <div class="modal-content">
         <p>{{ selectedAnnouncement.content }}</p>
-      </div>
+      </div> -->
       <!-- 对于 team/userCheck 和 team/adminCheck 类型的通知，显示“同意”和“拒绝”按钮 -->
-      <template #footer>
+      <!-- <template #footer>
         <div v-if="isConfirmationType(selectedAnnouncement)" class="dialog-footer">
           <el-button @click="handleDecision('accept')" type="primary">同意</el-button>
           <el-button @click="handleDecision('reject')" type="danger">拒绝</el-button>
         </div>
       </template>
-    </el-dialog>
+    </el-dialog> -->
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue';
+import NotificationDetail from './components/NotificationDetail.vue';
 import { ElCard, ElDialog, ElTable, ElTableColumn, ElButton, ElMessage } from 'element-plus';
+import { convertTime } from '@/apis/utils';
 
 // 模拟通知数据
 const notifications = ref([
-  { id: 1, type: 'teamJoin', title: '加入团体A成功', date: '2024-08-14', content: '您已成功加入团体A。' },
-  { id: 2, type: 'team/userCheck', title: '团体B加入请求', date: '2024-08-13', content: '请确认是否加入团体B。' },
-  { id: 3, type: 'reservationConfirm', title: '预约成功确认', date: '2024-08-14', content: '您的预约已成功确认。' },
-  { id: 4, type: 'reservationCancel', title: '预约已取消', date: '2024-08-13', content: '您的预约已取消。' },
-  { id: 5, type: 'team/adminCheck', title: '用户申请加入团体C', date: '2024-08-12', content: '请确认是否接受用户加入团体C的申请。' },
+  { id: '1', type: 'teamJoin', title: '加入团体A成功', date: new Date('2024-08-14'), content: '您已成功加入团体A。' },
+  { id: '2', type: 'team/userCheck', title: '团体B加入请求', date: new Date('2024-08-13'), content: '请确认是否加入团体B。' },
+  { id: '3', type: 'reservationConfirm', title: '预约成功确认', date: new Date('2024-08-14'), content: '您的预约已成功确认。' },
+  { id: '4', type: 'reservationCancel', title: '预约已取消', date: new Date('2024-08-13'), content: '您的预约已取消。' },
+  { id: '5', type: 'team/adminCheck', title: '用户申请加入团体C', date: new Date('2024-08-12'), content: '请确认是否接受用户加入团体C的申请。' },
 ]);
 
 const filteredGroupNotifications = computed(() =>
@@ -112,18 +123,13 @@ const isDetailModalVisible = ref(false);
 const isLoading = ref(false); // 用于处理加载状态
 const modalTitle = ref('');
 
-// 检查是否是需要确认的通知类型
-const isConfirmationType = (announcement) => {
-  return announcement && (announcement.type === 'team/userCheck' || announcement.type === 'team/adminCheck');
-};
-
 const viewAnnouncement = (announcement) => {
   selectedAnnouncement.value = announcement;
   isDetailModalVisible.value = true;
 };
 
 const showMore = (type) => {
-  if (type === 'team') {
+  if (type.split('/')[0] === 'team') {
     selectedNotifications.value = filteredGroupNotifications.value;
     modalTitle.value = '团体通知';
   } else if (type === 'reservation') {

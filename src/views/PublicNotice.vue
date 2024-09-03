@@ -1,14 +1,17 @@
 <script setup>
 import { Search } from '@element-plus/icons-vue';
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import PublicNoticeModal from './components/PublicNoticeModal.vue';
 import { convertTime }  from '@/apis/utils'
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
+import { getAllPublicNotice, getPublicNoticeDetail } from '@/apis/requests';
+import { ElMessage } from 'element-plus';
 
 const MAXCONTENTLEN = 50;
 const searchQuery = ref('');
 const dateRange = ref([]);
+const tableLoading = ref(false);
 
 const userStore = useUserStore();
 // const { userId, adminType } = storeToRefs(userStore)
@@ -51,12 +54,47 @@ const publicNoticeData = ref([
     adminName: '张三'
   },
 ]);
+const filteredNotice = ref(publicNoticeData.value);
 
-function successHandler(){
-  
+async function getAllNotice(){
+  tableLoading.value = true;
+  await getAllPublicNotice(getFurtherInfo, getNoticeErr);
 }
 
-const filteredNotice = ref(publicNoticeData.value);
+async function getFurtherInfo(res){
+  if(res.length === 0){
+    getNoticeSuccess([]);
+    return;
+  }
+  const noticeIdList = res.map(item => item.id);
+  const noticeAdmin = res.map(item => item.adminId);
+  const resData = [];
+  let curIndex = 0;
+  const step = async (res) => {
+    resData.push({...res, adminId: noticeAdmin[curIndex]});
+    curIndex++;
+    if(curIndex === noticeIdList.length){
+      getNoticeSuccess(resData);
+    }
+    else{
+      await getPublicNoticeDetail(noticeIdList[curIndex], step, getNoticeErr);
+    }
+  }
+  await getPublicNoticeDetail(noticeIdList[0], step, getNoticeErr);
+}
+
+function getNoticeSuccess(res){
+  publicNoticeData.value = res;
+  filteredNotice.value = publicNoticeData.value;
+  tableLoading.value = false;
+}
+
+function getNoticeErr(msg){
+  ElMessage.error('获取公告失败');
+  tableLoading.value = false;
+}
+
+onMounted(getAllNotice)
 
 const showPublicNotice = ref(false);
 const PublicNoticeMode = ref('');
@@ -148,7 +186,7 @@ function FilterReset(){
         </el-button>
       </div>
     </div>
-    <el-table :data="filteredNotice" :show-overflow-tooltip="{ effect: 'light'}">
+    <el-table :data="filteredNotice" :show-overflow-tooltip="{ effect: 'light'}" v-loading="tableLoading">
       <el-table-column label="编号" prop="id" width="80" sortable></el-table-column>
       <el-table-column label="标题" prop="title" width="110" sortable></el-table-column>
       <el-table-column label="内容">

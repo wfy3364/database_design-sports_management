@@ -4,6 +4,9 @@
       <div v-if="isLoading" class="loading-message">
         加载中...
       </div>
+      <div v-else-if="fetchErrMsg" class="fetchErr">
+        {{ fetchErrMsg }}
+      </div>
       <div v-else-if="!teams || teams.length == 0" class="no-team-message">
         您还没有加入任何团体
       </div>
@@ -152,6 +155,7 @@
       title="加入团体"
       v-model="joinTeamDialogVisible"
       width="50%"
+      align-center
       :before-close="handleCloseJoinTeamDialog"
     >
       <div class="search-container">
@@ -163,7 +167,7 @@
         <el-button type="primary" @click="searchTeams">搜索</el-button>
       </div>
 
-      <el-table :data="teamDataTest" style="width: 100%" v-loading="isSearching" :show-overflow-tooltip="{ effect: light }" >
+      <el-table :data="teamData" style="width: 100%" v-loading="isSearching" :show-overflow-tooltip="{ effect: light }" >
         <el-table-column prop="groupId" label="团体ID" width="100"></el-table-column>
         <el-table-column prop="groupName" label="名称" width="120"></el-table-column>
         <el-table-column prop="description" label="描述"></el-table-column>
@@ -220,6 +224,7 @@
       v-model="detailsLiteVisible"
       title="查看详情"
       width="50%"
+      align-center
       :before-close="closeDetailsLite"
     >
      <div v-if="currentTeamLite">
@@ -243,6 +248,7 @@
       title="创建团体"
       width="50%"
       v-loading="isCreating"
+      align-center
       :before-close="handleCloseCreateTeamDialog"
     >
       <div class = "team-info">
@@ -311,7 +317,7 @@
   </template>
   
   <script setup>
-  import { ref, onMounted } from 'vue'
+  import { ref, onMounted, computed } from 'vue'
   import axios from 'axios'
   import { fetchTeam, createTeam, getAllTeams } from '@/apis/requests';
   import { convertTime } from '@/apis/utils';
@@ -397,6 +403,7 @@
   const isLoading = ref(false);
   const filteredTeam = ref([]);
   const errMsg = ref('');
+  const fetchErrMsg = ref('');
   const successDialog = ref(false);
   const resTeamId = ref('');
   const isCreating = ref(false);
@@ -423,8 +430,23 @@
   // 在组件挂载时获取数据
   onMounted(async () => {
     isLoading.value = true;
-    fetchTeam(teams, filteredTeam, isLoading);
+    fetchTeam(fetchTeamSuccess, fetchTeamErr);
   })
+
+  const fetchTeamSuccess = (res) => {
+    teamData.value = res;
+    fetchErrMsg.value = '';
+    filteredTeam.value = teamData.value;
+    isLoading.value = false;
+  }
+
+  const fetchTeamErr = (msg) => {
+    teamData.value = [];
+    filteredTeam.value = [];
+    ElMessage.error('获取团体数据失败');
+    fetchErrMsg.value = '获取团体数据失败，请刷新重试：' + msg;
+    isLoading.value = false;
+  }
 
   //tag color
   const getRoleTagType = (role) => {
@@ -593,8 +615,18 @@
   const showJoinModal = async () => {
     joinTeamDialogVisible.value = true
     isSearching.value = true;
-    await getAllTeams(teamData, isSearching);
-    console.log('open sucessfully')
+    await getAllTeams(getTeamsSuccess, getTeamsErr);
+    // console.log('open sucessfully')
+  }
+
+  const getTeamsSuccess = (res) => {
+    teamData.value = res;
+    isSearching.value = false;
+  }
+
+  const getTeamsErr = (msg) => {
+    ElMessage.error('获取团队数据失败：' + msg);
+    isSearching.value = false;
   }
 
   //关闭加入团体模态框
@@ -752,7 +784,19 @@
       Description: teamDescription.value,
     }
     isCreating.value = true;
-    await createTeam(newTeam, successDialog, resTeamId, createTeamDialogVisible, isCreating, errMsg);
+    await createTeam(newTeam, teamCreateSuccess, teamCreateErr);
+  }
+
+  const teamCreateSuccess = (res) => {
+    resTeamId.value = res;
+    createTeamDialogVisible.value = false;
+    isCreating.value = false;
+    successDialog.value = true;
+  }
+
+  const teamCreateErr = (msg) => {
+    isCreating.value = false;
+    errMsg.value = '创建团体失败：' + msg;
   }
 
   // onMounted(fetchTeamInfo)
@@ -849,8 +893,11 @@
   }
 
   .loading-message {
-    text-align: center;
+    display: flex;
+    justify-content: center;
     padding: 20px;
+    margin-top: auto;
+    margin-bottom: auto;
   }
 
   .add-member-section {
@@ -866,4 +913,13 @@
     color: red;
   }
 
+  .fetchErr {
+    display: flex;
+    justify-content: center;
+    color: red;
+    width: 100%;
+    /* height: 75vh; */
+    margin-top: auto;
+    margin-bottom: auto;
+  }
   </style>
