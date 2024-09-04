@@ -14,10 +14,10 @@ const dateRange = ref([]);
 const tableLoading = ref(false);
 
 const userStore = useUserStore();
-// const { userId, adminType } = storeToRefs(userStore)
+const { userId, adminType } = storeToRefs(userStore)
 
-const adminType = ref('system');
-const userId = '2';
+// const adminType = ref('system');
+// const userId = '2';
 
 const venueFilter = ref('');
 const venueOptions = [
@@ -67,11 +67,13 @@ async function getFurtherInfo(res){
     return;
   }
   const noticeIdList = res.map(item => item.id);
-  const noticeAdmin = res.map(item => item.adminId);
+  const noticeBaseInfo = res.map(item => {
+    return { id: item.id, adminId: item.adminId, time: item.time, title: item.title }
+  });
   const resData = [];
   let curIndex = 0;
   const step = async (res) => {
-    resData.push({...res, adminId: noticeAdmin[curIndex]});
+    resData.push({...noticeBaseInfo[curIndex], ...res});
     curIndex++;
     if(curIndex === noticeIdList.length){
       getNoticeSuccess(resData);
@@ -84,13 +86,14 @@ async function getFurtherInfo(res){
 }
 
 function getNoticeSuccess(res){
+  console.log(res);
   publicNoticeData.value = res;
   filteredNotice.value = publicNoticeData.value;
   tableLoading.value = false;
 }
 
 function getNoticeErr(msg){
-  ElMessage.error('获取公告失败');
+  ElMessage.error('获取公告失败：' + msg);
   tableLoading.value = false;
 }
 
@@ -106,8 +109,11 @@ function viewPublicNoticeDetail(notice, mode){
   showPublicNotice.value = true;
 }
 
-function closePublicNoticeDetail(){
+function closePublicNoticeDetail(update){
   showPublicNotice.value = false;
+  if(update){
+    getAllNotice();
+  }
 }
 
 function switchEditMode(){
@@ -202,7 +208,7 @@ function FilterReset(){
       </el-table-column>
       <el-table-column label="涉及场地" width="150">
         <template #default="item">
-          <el-tag v-for="venue in item.row.venues">{{ venue.name }}</el-tag>
+          <el-tag v-for="venue in item.row.venues">{{ venue.venueName }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="操作" width="200">

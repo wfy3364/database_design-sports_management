@@ -5,11 +5,12 @@ import { convertTime } from '@/apis/utils';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
 import { ElMessage } from 'element-plus';
+import { addPublicNotice, modifyPublicNotice } from '@/apis/requests';
 
 const props = defineProps({
   mode: String,
   notice: {
-    announcementId: Number,
+    id: String,
     title: String,
     content: String,
     venues: Array,
@@ -30,9 +31,9 @@ const dialogTitle = {
 const showDialog = ref(true);
 // const viewModal = ref(null);
 const userStore = useUserStore();
-// const { userId, adminType } = storeToRefs(userStore);
-const userId = '1';
-const adminType = 'system';
+const { userId, adminType } = storeToRefs(userStore);
+// const userId = ref('1');
+// const adminType = 'system';
 const confirmDialog = ref(false);
 const dialogContent = ref('');
 const confirmAction = ref('');
@@ -40,6 +41,8 @@ const modifiedNotice = ref(null);
 const titleEmptyErr = ref('');
 const contentEmptyErr = ref('');
 const venueFilter = ref([]);
+const successDialog = ref(false);
+const resNoticeId = ref('');
 // console.log(venueFilter.value);
 const venueOptions = [
   { id: 1, name: '场地1'},
@@ -48,10 +51,14 @@ const venueOptions = [
 const isLoading = ref(false);
 
 function handleClose(){
-  emit('closeModal');
+  emit('closeModal', false);
 }
 
-function handleDelete(){
+async function handleDelete(){
+  
+}
+
+function deleteSuccess(){
 
 }
 
@@ -66,7 +73,7 @@ function dialogConfirm(){
 function confirmDialogClose(){
   confirmDialog.value = false;
   if(props.mode === 'delete'){
-    emit('closeModal');
+    emit('closeModal', false);
   }
 }
 
@@ -83,6 +90,12 @@ function deleteConfirm(){
 }
 
 function switchEdit(){
+  modifiedNotice.value = {
+    title: props.notice.title,
+    content: props.notice.content,
+    noticeVenues: props.notice.venues,
+  };
+  venueFilter.value = props.notice.venues.map(obj => obj.id);
   emit('editModal');
 }
 
@@ -91,16 +104,45 @@ function errDisplay(msg, val){
   msg.value = val;
 }
 
-function submitEdit(){
+async function submitEdit(){
   if(!validateEdit()){
     return;
   }
+  const noticeData = {
+    announcementId: props.notice.id,
+    ...modifiedNotice.value,
+    noticeVenues: venueFilter.value.map(item => item.toString()),
+  }
+  // console.log(noticeData);
+  // console.log(venueFilter.value);
+  await modifyPublicNotice(noticeData, editSuccess, editErr);
 }
 
-function submitCreate(){
+function editSuccess(){
+  ElMessage.success('发布修改成功');
+  emit('closeModal', true);
+}
+
+async function submitCreate(){
   if(!validateEdit()){
     return;
   }
+  const noticeData = {
+    ...modifiedNotice.value,
+    adminId: userId.value,
+    noticeVenues: venueFilter.value,
+  };
+  await addPublicNotice(noticeData, createSuccess, editErr)
+}
+
+function createSuccess(res){
+  successDialog.value = true;
+  resNoticeId.value = res;
+  emit('closeModal', true);
+}
+
+function editErr(msg){
+  ElMessage.error('公告发布失败：' + msg);
 }
 
 function validateEdit(){
@@ -123,14 +165,19 @@ onMounted(() => {
     deleteConfirm();
   }
   else if(props.mode === 'edit'){
-    modifiedNotice.value = props.notice;
+    console.log(props.notice);
+    modifiedNotice.value = {
+      title: props.notice.title,
+      content: props.notice.content,
+      noticeVenues: props.notice.venues,
+    };
     venueFilter.value = props.notice.venues.map(obj => obj.id);
   }
   else if(props.mode === 'create'){
     modifiedNotice.value = {
       title: '',
       content: '',
-      venues: [],
+      noticeVenues: [],
     }
   }
 });
@@ -145,7 +192,7 @@ onMounted(() => {
         <div class="contentArea">{{ notice.content }}</div>
         <div class="infoLine">
           <div class="noticeInfo">公告ID：</div>
-          {{ notice.announcementId }}
+          {{ notice.id }}
         </div>
         <div class="infoLine">
           <div class="noticeInfo">发布时间：</div>
@@ -164,7 +211,7 @@ onMounted(() => {
     <div v-else-if="mode === 'edit' || mode === 'create'" class="modalContent">
       <div class="infoLine" v-if="mode === 'edit'">
         <div class="noticeInfo">公告ID：</div>
-        {{ notice.announcementId }}
+        {{ notice.id }}
       </div>
       <div class="editLine">
         <div class="noticeInfo">公告标题</div>
@@ -208,7 +255,7 @@ onMounted(() => {
     <div v-if="confirmAction === 'delete'">
       <div class="infoLine">
         <div class="noticeInfo">公告ID：</div>
-        {{ notice.announcementId }}
+        {{ notice.id }}
       </div>
       <div class="infoLine">
         <div class="noticeInfo">公告原标题：</div>
@@ -220,6 +267,13 @@ onMounted(() => {
         <el-button @click="confirmDialogClose">取消</el-button>
         <el-button type="primary" @click="dialogConfirm">确定</el-button>
       </div>
+    </template>
+  </el-dialog>
+  <el-dialog title="发布成功" v-model="successDialog">
+    <div>发布公告成功！</div>
+    <div>公告ID：{{ resNoticeId }}</div>
+    <template #footer>
+      <el-button @click="successDialog = false">确定</el-button>
     </template>
   </el-dialog>
 </template>

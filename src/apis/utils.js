@@ -1,3 +1,5 @@
+import dayjs from "dayjs";
+
 function convertTime(time) {
   if (!time) {
     return '';
@@ -29,4 +31,13 @@ function judgeState(start_time, end_time) {
   }
 }
 
-export { convertTime, judgeState }
+function timeSort(arr, timeProp, slicePos) {
+  const res = arr;
+  res.sort((item1, item2) => {
+    return dayjs(item1[timeProp]).isAfter(dayjs(item2[timeProp]), 'second') ? -1 : 0;
+  });
+  console.log(res);
+  return slicePos > 0 ? res.slice(0, slicePos) : res;
+}
+
+export { convertTime, judgeState, timeSort }

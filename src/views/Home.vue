@@ -1,18 +1,18 @@
 <script setup>
-import { convertTime } from '@/apis/utils';
+import { convertTime, timeSort } from '@/apis/utils';
 import { useRouter } from 'vue-router';
 import { ref, onMounted } from 'vue'
 import PublicNoticeModal from './components/PublicNoticeModal.vue';
-import { getAllPublicNotice, getPublicNoticeDetail } from '@/apis/requests';
+import { getAllPublicNotice, getPublicNoticeDetail, getUserNotice } from '@/apis/requests';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
 import { ElMessage } from 'element-plus';
 
 const router = useRouter();
 const userStore = useUserStore();
-// const { userId, adminType } = storeToRefs(userStore);
-const adminType = 'system';
-const userId = '2';
+const { userId, adminType } = storeToRefs(userStore);
+// const adminType = 'system';
+// const userId = '2';
 const publicNoticeErrMsg = ref('');
 const publicNoticeLoading = ref(false);
 
@@ -36,17 +36,18 @@ const publicNoticeData = ref([]);
 //   adminName: "张三",
 // }];
 
-const userNoticeData = [{
-  id: 1,
-  title: "预约通知1",
-  time: "2024-08-18T09:00:00",
-  type: "reservation"
-},{
-  id: 2,
-  title: "团体加入邀请",
-  time: "2024-08-18T10:00:00",
-  type: "team/userCheck"
-}];
+// const userNoticeData = [{
+//   id: 1,
+//   title: "预约通知1",
+//   time: "2024-08-18T09:00:00",
+//   type: "reservation"
+// },{
+//   id: 2,
+//   title: "团体加入邀请",
+//   time: "2024-08-18T10:00:00",
+//   type: "team/userCheck"
+// }];
+const userNoticeData = ref([]);
 
 const venueData = [{
   id: 1,
@@ -88,7 +89,7 @@ async function getPublicNoticeBasic(){
 }
 
 function getPublicNoticeSuccess(res){
-  publicNoticeData.value = res;
+  publicNoticeData.value = timeSort(res, 'time', 6);
   publicNoticeLoading.value = false;
 }
 
@@ -98,16 +99,44 @@ function getPublicNoticeErr(msg){
   publicNoticeLoading.value = false;
 }
 
-onMounted(getPublicNoticeBasic);
-
-function viewPublicNoticeDetail(notice, mode){
-  PublicNoticeMode.value = mode;
-  SelectedPublicNotice.value = notice;
-  showPublicNotice.value = true;
+async function viewPublicNoticeDetail(notice, mode){
+  const showDetailDialog = (res) => {
+    PublicNoticeMode.value = mode;
+    SelectedPublicNotice.value = {...notice, ...res};
+    showPublicNotice.value = true;
+  }
+  await getPublicNoticeDetail(notice.id, showDetailDialog, detailErr);
 }
 
-function closePublicNoticeDetail(){
+function detailErr(msg){
+  ElMessage.error('获取公告详情失败：' + msg);
+}
+
+function closePublicNoticeDetail(update){
   showPublicNotice.value = false;
+  if(update){
+    getPublicNoticeBasic();
+  }
+}
+
+async function loadNotification(){
+  await getUserNotice(userId.value, processNoticeSuccess, notificationErr)
+}
+
+function processNoticeSuccess(res){
+  // console.log(res);
+  // userNoticeData.value = res.sort((item1, item2) => {
+  //   return dayjs(item1.notificationTime).isAfter(dayjs(item2.notificationTime));
+  // }).slice(0, 6);
+  userNoticeData.value = timeSort(res, 'notificationTime', 6);
+}
+
+function notificationErr(msg){
+  ElMessage.error('获取通知失败：', msg);
+}
+
+function viewNotificationDetail(){
+
 }
 
 function switchEditMode(){
@@ -116,7 +145,7 @@ function switchEditMode(){
 
 function viewVenueDetail(venue){
   if(adminType === 'normal'){
-
+    
   }
   else{
     router.push({
@@ -140,6 +169,11 @@ function judgeNoticeType(type){
   }
   return typeMap[baseType];
 }
+
+onMounted(() => {
+  getPublicNoticeBasic();
+  loadNotification();
+});
 
 </script>
 
@@ -183,12 +217,12 @@ function judgeNoticeType(type){
       </div>
       <div class="NoticeContent" v-for="userNotice in userNoticeData">
         <div class="NoticeItem">
+          <div class="NoticeType">{{ judgeNoticeType(userNotice.notificationType) }}</div>
           <el-tooltip effect="light" placement="bottom" :content="userNotice.title">
-            <div class="NoticeTitle" @click="">
+            <div class="NoticeTitle" @click="viewNotificationDetail(userNotice)">
               {{ userNotice.title }}</div>
           </el-tooltip>
-          <div class="NoticeTime">{{ convertTime(userNotice.time) }}</div>
-          <div class="NoticeType">{{ judgeNoticeType(userNotice.type) }}</div>
+          <div class="NoticeTime">{{ convertTime(userNotice.notificationTime) }}</div>
         </div>
       </div>
     </div>

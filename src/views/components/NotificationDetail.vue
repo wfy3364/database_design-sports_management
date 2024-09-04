@@ -1,23 +1,30 @@
 <script setup>
 
-import { ref, onMounted } from 'vue'
+import { ref, onMounted } from 'vue';
+import { deleteUserNotice, removeTeamUser, updateUserRole } from '@/apis/requests';
+import { ElMessage, notificationTypes } from 'element-plus';
+import { teamValidateAction } from '@/apis/teamValidate';
 
 const props = defineProps({
   selectedAnnouncement: {
-    id: String,
-    type: String,
+    notificationId: String,
+    notificationType: String,
     title: String,
-    date: Date,
+    notificationTime: Date,
     content: String,
+    targetUser: String,
+    targetTeam: String, 
   }
 });
 
-const emit = defineEmits(['closeModal']);
+const emit = defineEmits(['closeModal', 'noticeUpdate']);
 
 const notificationDetailVisible = ref(true);
 
 const isConfirmationType = (announcement) => {
-  return announcement && (announcement.type === 'team/userCheck' || announcement.type === 'team/adminCheck');
+  console.log(announcement);
+  return announcement && (announcement.notificationType === 'team/userCheck' || 
+  announcement.notificationType === 'team/adminCheck');
 };
 
 const handleClose = () => {
@@ -25,34 +32,42 @@ const handleClose = () => {
 }
 
 const handleDecision = async (decision) => {
-  const action = decision === 'accept' ? '同意' : '拒绝';
-  isLoading.value = true; // 开始加载
-  try {
-    const response = await fetch('/api/update-group-status', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        notificationId: selectedAnnouncement.value.id,
-        decision: decision,
-      }),
-    });
+  teamValidateAction(decision, props.selectedAnnouncement.targetUser, props.selectedAnnouncement.targetTeam,
+    () => { emit('noticeUpdate') }, decisionErr);
+}
 
-    const result = await response.json();
-    if (result.success) {
-      ElMessage.success(`${action}操作成功`);
-      isDetailModalVisible.value = false;
-    } else {
-      ElMessage.error(`${action}操作失败`);
-    }
-  } catch (error) {
-    console.error(error);
-    ElMessage.error(`${action}操作出现错误`);
-  } finally {
-    isLoading.value = false; // 请求结束，停止加载
-  }
-};
+// const handleDecision = async (decision) => {
+//   if(decision === 'accept'){
+//     const updateData = {
+//       userId: props.selectedAnnouncement.targetUser,
+//       groupId: props.selectedAnnouncement.targetTeam,
+//       userRole: 'member',
+//       notificationType: 'join',
+//     }
+//     await updateUserRole(updateData, handleNoticeDelete, decisionErr);
+//   }
+//   else if(decision === 'reject'){
+//     const removeData = {
+//       userId: props.selectedAnnouncement.targetUser,
+//       adminId: userId.value,
+//     }
+//     await removeTeamUser(props.selectedAnnouncement.targetTeam, removeData, handleNoticeDelete, decisionErr);
+//   }
+// };
+
+// const handleNoticeDelete = async () => {
+//   await deleteUserNotice(props.selectedAnnouncement.notificationId, noticeDeleteSuccess, decisionErr)
+// }
+
+// const noticeDeleteSuccess = () => {
+//   ElMessage.success('操作成功');
+//   emit('noticeUpdate');
+// }
+
+const decisionErr = (msg) => {
+  ElMessage.error('操作失败：' + msg);
+}
+
 
 // onMounted(() => {
 //   notificationDetailVisible.value = true;

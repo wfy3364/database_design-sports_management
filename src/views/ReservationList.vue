@@ -416,12 +416,12 @@
   const signingAppointment = ref(null);
   const teamSignDialog = ref(false);
   const userStore = useUserStore();
-  // const { adminType, adminPermission } = storeToRefs(userStore);
-  const adminType = ref('system');
-  const adminPermission = ref({
-    venue: [],
-    device: [],
-  });
+  const { adminType, adminPermission } = storeToRefs(userStore);
+  // const adminType = ref('system');
+  // const adminPermission = ref({
+  //   venue: [],
+  //   device: [],
+  // });
   // const isTeamSearch = ref(false);
 
 //----------------------------测试数据-----------------------------------

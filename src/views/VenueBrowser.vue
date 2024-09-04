@@ -5,6 +5,7 @@
     <!-- 筛选区域 -->
     <div class="FilterArea">
       <div class="FilterOption">
+        <div class="FilterLabel">场地搜索：</div>
         <el-input v-model="searchQuery" class="SearchBox" placeholder="场地ID或名称">
           <template #prefix>
             <el-icon><search /></el-icon>
@@ -12,6 +13,7 @@
         </el-input>
       </div>
       <div class="FilterOption">
+        <div class="FilterLabel">运动类型：</div>
         <el-radio-group v-model="selectedSport">
           <el-radio-button value="">全部</el-radio-button>
           <el-radio-button v-for="sport in sports" :value="sport" :key="sport">{{ sport }}</el-radio-button>
@@ -47,12 +49,14 @@
     </div>
 
     <!-- 场地详情模态框 -->
-    <div v-if="selectedVenue" class="modal" @click="closeModal">
+    <!-- <div v-if="selectedVenue" class="modal" @click="closeModal">
       <div class="modal-content" @click.stop>
         <div class="modalHeader">
           <div class="modalTitle">{{ selectedVenue.name }}</div>
           <el-button class="closeButton" type="danger" @click="closeModal">关闭</el-button>
-        </div>
+        </div> -->
+    <el-dialog v-model="showVenueDetail" align-center :title="selectedVenue?.name">
+      <div class="detailContent">
         <img class="venueImg" :src="selectedVenue.image" alt="场地图片" />
         <div class="venue-timeslots">
           <el-table :data="selectedVenue.timeslots" border :default-sort="{ prop: 'time' }">
@@ -89,7 +93,10 @@
           </div>
         </div>
       </div>
-    </div>
+      <template #footer>
+        <el-button type="primary" @click="showVenueDetail = false">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -167,6 +174,7 @@ const sports = ref(['足球', '篮球', '网球', '羽毛球']);
 const searchQuery = ref('');
 const selectedSport = ref('');
 const selectedVenue = ref(null);
+const showVenueDetail = ref(false);
 const venueDate = ref(dayjs().format("YYYY-MM-DD"));
 const filterDate = ref(dayjs().format("YYYY-MM-DD"));
 const enableDateFilter = ref(false);
@@ -205,7 +213,8 @@ const filterReset = () => {
 
 // 显示场地详情的函数
 const viewVenueDetails = (venue) => {
-  selectedVenue.value = venue; 
+  selectedVenue.value = venue;
+  showVenueDetail.value = true;
 };
 
 const showAnnouncementDetails = (announcement) => {
@@ -276,10 +285,15 @@ initializeVenues();
   margin-bottom: 20px;
 }
 
+.FilterLabel{
+  width: 100px;
+  font-weight: 700;
+}
+
 .FilterOption {
   display: flex;
   align-items: center;
-  justify-content: center; /* 使每个筛选条件居中 */
+  /* justify-content: center; */
   gap: 10px;
   width: 100%; /* 占据全宽以便居中 */
   max-width: 500px; /* 设置一个最大宽度 */
@@ -355,17 +369,18 @@ initializeVenues();
 
 .modalItemContent {
   margin-bottom: 20px;
-  text-align: center;
+  /* text-align: center; */
 }
 
 .otherInfoLine {
   display: flex;
-  justify-content: space-between;
+  /* justify-content: space-between; */
   padding: 5px 0;
 }
 
 .otherInfoLabel {
   font-weight: bold;
+  width: 100px;
   color: #333;
 }
 
@@ -433,5 +448,12 @@ initializeVenues();
   gap: 10px;
   margin: 20px 0;
 }
+
+.detailContent{
+  overflow: auto;
+  max-height: 75vh;
+}
+
+
 </style>
 
