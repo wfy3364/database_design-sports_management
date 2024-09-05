@@ -1,10 +1,9 @@
-import { updateUserRole, removeTeamUser } from "./requests";
-
+import { updateUserRole, removeTeamUser, deleteUserNotice } from "./requests";
 import { useUserStore } from "@/stores/userStore";
 import { ElMessage } from "element-plus";
 import { storeToRefs } from "pinia";
 
-const teamValidateAction = async (decision, user, group, successHandler, errHandler) => {
+const teamValidateAction = async (decision, user, group, notice, successHandler, errHandler) => {
   const userStore = useUserStore();
   const { userId } = storeToRefs(userStore);
   const noticeDeleteSuccess = () => {
@@ -17,13 +16,13 @@ const teamValidateAction = async (decision, user, group, successHandler, errHand
     successHandler();
   }
   const handleNoticeDelete = async () => {
-    await deleteUserNotice(props.selectedAnnouncement.notificationId, noticeDeleteSuccess, errHandler)
+    await deleteUserNotice(notice, noticeDeleteSuccess, errHandler)
   }
   if (decision === 'accept') {
     const updateData = {
       userId: user,
       groupId: group,
-      userRole: 'member',
+      userRole: 'Member',
       notificationType: 'join',
     }
     await updateUserRole(updateData, handleNoticeDelete, errHandler);

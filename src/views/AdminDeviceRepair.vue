@@ -27,6 +27,13 @@ function showRepairDetail(record, mode){
   detailDialog.value = true;
 }
 
+function handleDetailClose(update){
+  detailDialog.value = false;
+  if(update){
+    loadRepairData();
+  }
+}
+
 // start_time和end_time需要全部处理成Date类型
 // const repairData = ref([{
 //   id: '1',
@@ -263,7 +270,7 @@ function FilterReset(){
     <div class="errDisplay">{{ errMsg }}</div>
   </div>
   <RepairDetail v-if="detailDialog" :dialogMode="dialogMode" :curRecord="curRecord" 
-  @closeModal="detailDialog = false" @editModal="showRepairDetail(curRecord, 'edit')"></RepairDetail>
+  @closeModal="handleDetailClose" @editModal="showRepairDetail(curRecord, 'edit')"></RepairDetail>
 </template>
 
 <style scoped>

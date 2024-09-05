@@ -3,6 +3,7 @@ import { convertTime, timeSort } from '@/apis/utils';
 import { useRouter } from 'vue-router';
 import { ref, onMounted } from 'vue'
 import PublicNoticeModal from './components/PublicNoticeModal.vue';
+import NotificationDetail from './components/NotificationDetail.vue';
 import { getAllPublicNotice, getPublicNoticeDetail, getUserNotice } from '@/apis/requests';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
@@ -48,6 +49,7 @@ const publicNoticeData = ref([]);
 //   type: "team/userCheck"
 // }];
 const userNoticeData = ref([]);
+const curUserNotice = ref(null);
 
 const venueData = [{
   id: 1,
@@ -82,6 +84,7 @@ const venueData = [{
 const showPublicNotice = ref(false);
 const PublicNoticeMode = ref('');
 const SelectedPublicNotice = ref(null);
+const isDetailModalVisible = ref(false);
 
 async function getPublicNoticeBasic(){
   publicNoticeLoading.value = true;
@@ -119,6 +122,15 @@ function closePublicNoticeDetail(update){
   }
 }
 
+function closeDetailModal(){
+  isDetailModalVisible.value = false;
+};
+
+function closeDetailUpdate(){
+  isDetailModalVisible.value = false;
+  getAnnouncements();
+}
+
 async function loadNotification(){
   await getUserNotice(userId.value, processNoticeSuccess, notificationErr)
 }
@@ -135,8 +147,9 @@ function notificationErr(msg){
   ElMessage.error('获取通知失败：', msg);
 }
 
-function viewNotificationDetail(){
-
+function viewNotificationDetail(notice){
+  curUserNotice.value = notice;
+  isDetailModalVisible.value = true;
 }
 
 function switchEditMode(){
@@ -251,6 +264,8 @@ onMounted(() => {
   <PublicNoticeModal v-if="showPublicNotice" :mode="PublicNoticeMode"
     :notice="SelectedPublicNotice" @closeModal="closePublicNoticeDetail"
     @editModal="switchEditMode"></PublicNoticeModal>
+  <notification-detail v-if="isDetailModalVisible" :selected-announcement="curUserNotice" 
+  @close-modal="closeDetailModal" @noticeUpdate="closeDetailUpdate"></notification-detail>
 </template>
 
 <style>

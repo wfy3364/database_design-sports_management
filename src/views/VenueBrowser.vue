@@ -26,6 +26,7 @@
       <div class="FilterControl">
         <el-button type="primary" @click="filterVenues">确认筛选</el-button>
         <el-button @click="filterReset">重置条件</el-button>
+        <el-button v-if="createCheck" @click="handleVenueCreate">添加场地</el-button>
       </div>
     </div>
 
@@ -58,9 +59,21 @@
     <el-dialog v-model="showVenueDetail" align-center :title="selectedVenue?.name">
       <div class="detailContent">
         <img class="venueImg" :src="selectedVenue.image" alt="场地图片" />
+        <div class="modalSubtitle">
+          <div class="openDateSelection">
+            <el-button size="small" @click="setDate(-1)">&lt;</el-button>
+            <el-date-picker v-model="venueDate" size="small" 
+            @change="handleDateChange()"></el-date-picker>
+            <el-button size="small" @click="setDate(1)">&gt;</el-button>
+          </div>
+        </div>
         <div class="venue-timeslots">
           <el-table :data="selectedVenue.timeslots" border :default-sort="{ prop: 'time' }">
-            <el-table-column prop="time" label="时间" sortable></el-table-column>
+            <el-table-column label="时间" sortable>
+              <template #default="item">
+                {{ venueTimeFormat(item.row.startTime, item.row.endTime) }}
+              </template>
+            </el-table-column>
             <el-table-column prop="capacity" label="剩余容量" width="105" sortable></el-table-column>
             <el-table-column prop="price" label="价格" width="80" sortable></el-table-column>
             <el-table-column label="操作" width="80">
@@ -72,6 +85,22 @@
         </div>
         
         <!-- 删除场地简介和场地公告部分 -->
+        <div class="modalSubtitle">场地简介</div>
+        <div class="modalItemContent">{{ selectedVenue.description || "暂无简介" }}</div>
+        <div class="modalSubtitle">场地公告</div>
+          <el-table :data="selectedVenue?.announcements" :key="selectedVenue.announcements?.id">
+            <el-table-column prop="title" label="标题"></el-table-column>
+            <el-table-column width="150" label="时间">
+              <template #default="item">
+                {{ convertTime(item.row.time) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="80">
+              <template #default="item">
+                <el-button size="small" @click="viewVenueNotice(item.row.id)">详情</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
         
         <div class="modalSubtitle">其他信息</div>
         <div class="modalItemContent">
@@ -97,14 +126,20 @@
         <el-button type="primary" @click="showVenueDetail = false">确定</el-button>
       </template>
     </el-dialog>
+    <VenueEdit v-if="editVenueDialog" :dialogMode="editDialogMode"
+    @closeModal="handleEditClose"></VenueEdit>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Search } from '@element-plus/icons-vue';
+import { useUserStore } from '@/stores/userStore';
+import { storeToRefs } from 'pinia';
+import VenueEdit from './components/VenueEdit.vue';
 import dayjs from 'dayjs';
+import { convertTime } from '@/apis/utils';
 
 // 场地数据示例，包括ID、名称、运动类型、图片、时间段、管理员信息和地址
 const venues = ref([
@@ -157,7 +192,7 @@ const venues = ref([
     totalCapacity: 70,
     image: '',
     timeslots: [
-      { id: 1, time: '2024-08-24 07:00-09:00', capacity: 10, price: 100 },
+      { id: 1, startTime: '2024-08-24 07:00-09:00', capacity: 10, price: 100 },
       { id: 2, time: '2024-08-24 09:00-11:00', capacity: 12, price: 120 },
     ],
     manager: '赵六',
@@ -170,6 +205,9 @@ const venues = ref([
 // 运动类型选项
 const sports = ref(['足球', '篮球', '网球', '羽毛球']);
 
+const userStore = useUserStore();
+const { adminType } = storeToRefs(userStore);
+
 // 定义搜索和筛选相关的状态
 const searchQuery = ref('');
 const selectedSport = ref('');
@@ -179,8 +217,14 @@ const venueDate = ref(dayjs().format("YYYY-MM-DD"));
 const filterDate = ref(dayjs().format("YYYY-MM-DD"));
 const enableDateFilter = ref(false);
 const router = useRouter();
+const createCheck = computed(() => {
+  return adminType.value === 'system';
+})
 
 const filteredVenues = ref([]);
+
+const editVenueDialog = ref(false);
+const editDialogMode = ref('create');
 
 // 初始化场地列表
 const initializeVenues = () => {
@@ -221,6 +265,13 @@ const showAnnouncementDetails = (announcement) => {
   alert(`公告详情:\n标题: ${announcement.title}\n时间: ${announcement.time}`);
 };
 
+const venueTimeFormat = (start, end) => {
+  const startStr = convertTime(start);
+  const endStr = convertTime(end);
+  return startStr.slice(startStr.length - 5, startStr.length - 1)
+  + '-' + endStr.slice(endStr.length - 5, endStr.length - 1);
+}
+
 // 关闭模态框的函数
 const closeModal = () => {
   selectedVenue.value = null; 
@@ -231,8 +282,8 @@ const bookVenue = (venue, slot) => {
   router.push({
     path: '/VenueReservation',
     query: {
-      venue: venue.id,
-      timeslot: slot.id,
+      venueId: venue.id,
+      timeslotId: slot.id,
     },
   });
 };
@@ -244,6 +295,17 @@ const setDate = (val) => {
 const handleDateChange = () => {
   // 处理日期变更逻辑
 };
+
+const handleVenueCreate = () => {
+  editVenueDialog.value = true;
+}
+
+const handleEditClose = (update) => {
+  editVenueDialog.value = false;
+  if(update){
+    initializeVenues();
+  }
+}
 
 // 初始化
 initializeVenues();
@@ -454,6 +516,10 @@ initializeVenues();
   max-height: 75vh;
 }
 
+.openDateSelection{
+  display: flex;
+  justify-content: center;
+}
 
 </style>
 

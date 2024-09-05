@@ -32,7 +32,9 @@
           <el-table-column label="操作" width="200">
             <template #default="item">
               <el-button size="small" @click="showTeamDetails(item.row.groupId)">团体详情</el-button>
-              <el-button size="small" @click="showLeaveTeamDialog(item.row)" type="danger">退出团体</el-button>
+              <el-button size="small" v-if="item.row.roleInGroup !== 'Validating'" 
+              @click="showLeaveTeamDialog(item.row)" type="danger">退出团体
+              </el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -48,6 +50,7 @@
       v-model="teamDetailsVisible"
       title="团体详情"
       width="70%"
+      align-center
       :before-close="handleCloseTeamDetails"
     >
       <!-- 需将teamDetailsData修改为正式数据currentTeam -->
@@ -73,26 +76,26 @@
           </el-table-column>
           <el-table-column v-if="isAdminOrCreator" label="操作" width="240">
             <template #default="{ row }">
-              <div v-if="row.userRole === 'validating'">
-                <el-button size="small" type="primary" @click="handleDecision('accept')">同意</el-button>
-                <el-button size="small" type="danger" @click="handleDecision('reject')">拒绝</el-button>
+              <div v-if="row.userRole === 'Validating'">
+                <el-button size="small" type="primary" @click="handleValidate('accept', row.userId)">同意</el-button>
+                <el-button size="small" type="danger" @click="handleValidate('reject', row.userId)">拒绝</el-button>
               </div>
               <div v-else>
                 <el-button 
-                size="small" 
-                type="danger" 
-                @click="kickMember(row.id)"
-                :disabled="isCurrentUserOrCreator(row)"
-                >
-                  踢出
-                </el-button>
-                <el-button 
                   size="small" 
-                  :type="row.userRole === 'admin' ? 'warning' : 'primary'" 
+                  :type="row.userRole ==='Admin' ? 'warning' : 'primary'" 
                   @click="toggleAdminRole(row)"
                   :disabled="isCurrentUserOrCreator(row)"
                 >
-                  {{ row.userRole === 'admin' ? '撤销管理员' : '授予管理员' }}
+                  {{ row.userRole === 'Admin' ? '撤销管理员' : '授予管理员' }}
+                </el-button>
+                <el-button 
+                size="small" 
+                type="danger" 
+                @click="kickMember(row.userId)"
+                :disabled="isCurrentUserOrCreator(row)"
+                >
+                  踢出
                 </el-button>
               </div>
             </template>
@@ -315,7 +318,7 @@
       </template>
     </el-dialog>
     <el-dialog v-model="successDialog" title="创建信息" width="50%">
-      <div>团队创建成功！指定的成员在确认后将加入该团体。</div>
+      <div>团队创建成功！</div>
       <div>团队ID：{{ resTeamId }}</div>
       <div>团体名称：{{ teamName }}</div>
       <el-button type="primary" @click="successDialog = false">确定</el-button>
@@ -327,9 +330,10 @@
   import { ref, onMounted, computed } from 'vue'
   import axios from 'axios'
   import { fetchTeam, createTeam, getAllTeams, getTeamName, getTeamDetail, 
-    addTeamUser, removeTeamUser,
+    addTeamUser, removeTeamUser, getUserNotice, 
     updateUserRole
   } from '@/apis/requests';
+  import { teamValidateAction } from '@/apis/teamValidate';
   import { convertTime } from '@/apis/utils';
   import { useUserStore } from '@/stores/userStore';
   import { storeToRefs } from 'pinia';
@@ -469,18 +473,18 @@
 
   //tag color
   const userRoleMap = {
-    'creator': '创建者',
-    'member': '成员',
-    'admin': '管理员',
-    'validating': '未加入',
+    'Creator': '创建者',
+    'Member': '成员',
+    'Admin': '管理员',
+    'Validating': '审核中',
   }
 
   const getRoleTagType = (role) => {
     const RoleTags = {
-      'creator': 'success',
-      'member': 'info',
-      'admin': 'warning',
-      'validating': 'danger',
+      'Creator': 'success',
+      'Member': 'info',
+      'Admin': 'warning',
+      'Validating': 'danger',
     };
     return RoleTags[role] || 'info';
     // switch (role) {
@@ -522,7 +526,7 @@
   const isAdminOrCreator = computed(() => {
     if (!currentTeam.value) return false
     const currentUserRole = currentTeam.value.users.find(m => m.userId === userId.value)?.userRole
-    return ['creator', 'admin'].includes(currentUserRole)
+    return ['Creator', 'Admin'].includes(currentUserRole)
   })
 
   //判断本用户是否是创始人
@@ -532,20 +536,24 @@
 
   //踢出成员
   const kickMember = async (memberId) => {
-    try {
-      await axios.post(`/api/teams/${currentTeam.value.id}/kick/${memberId}`)
-      ElMessage.success('成员已被踢出')
-      // 更新成员列表
-      currentTeam.value.members = currentTeam.value.members.filter(m => m.id !== memberId)
-    } catch (error) {
-      console.error('踢出成员失败:', error)
-      ElMessage.error('踢出成员失败，请稍后重试')
+    const removeData = {
+      userId: memberId,
+      adminId: userId.value,
     }
+    await removeTeamUser(currentTeam.value.groupId, removeData, kickMemberSuccess, kickMemberErr);
+  }
+
+  const kickMemberSuccess = () => {
+    ElMessage.info('成功踢出成员');
+    showTeamDetails(currentTeam.value.groupId);
+  }
+  const kickMemberErr = (msg) => {
+    ElMessage.error('踢出成员失败：' + msg);
   }
 
   //更新管理员状态
   const toggleAdminRole = async (member) => {
-    const newRole = member.userRole === 'admin' ? 'member' : 'admin';
+    const newRole = member.userRole === 'Admin' ? 'Member' : 'Admin';
     const updateData = {
       userId: member.userId,
       groupId: currentTeam.value.groupId,
@@ -563,6 +571,25 @@
   const toggleAdminErr = (msg) => {
     ElMessage.error('更改权限失败：' + msg);
   }
+
+  const handleValidate = async (mode, targetId) => {
+    const handleValidateErr = (msg) => {
+      ElMessage.error('操作失败：' + msg);
+    }
+    const resNoticeId = ref('');
+    const targetGroup = currentTeam.value.groupId;
+    const filterTargetNotice = async (res) => {
+      const resNotice = res.find((item, index) => {
+        return item.notificationType === 'team/adminCheck' && item.targetTeam === targetGroup
+        && item.targetUser === targetId;
+      })?.notificationId;
+      await teamValidateAction(mode, targetId, targetGroup, resNotice, () => {
+        showTeamDetails(currentTeam.value.groupId)
+      });
+    }
+    await getUserNotice(userId.value, filterTargetNotice, handleValidateErr)
+  }
+
 
   //搜索逻辑
   const searchUser = async () => {
@@ -691,7 +718,7 @@
       ElMessage.error('您已在该团体中');
       return;
     }
-    adminList.value = res.users.filter(user => user.userRole === 'creator' || user.userRole === 'admin');
+    adminList.value = res.users.filter(user => user.userRole === 'Creator' || user.userRole === 'Admin');
     joinRequestDialogVisible.value = true;
   }
 
@@ -772,7 +799,7 @@
     // console.log('申请加入的团队:', currentTeam.value)
     const joinData = {
       userId: userId.value,
-      roleInGroup: 'validating',
+      roleInGroup: 'Validating',
       adminId: selectedAdmin.value.userId,
       userName: userName.value,
       notificationType: 'adminCheck',
@@ -878,7 +905,7 @@
     const creatorData = {
       userId: userId.value,
       joinDate: new Date(),
-      roleInGroup: 'creator',
+      roleInGroup: 'Creator',
       notificationType: '',
     }
     await addTeamUser(resTeamId.value, creatorData, () => {

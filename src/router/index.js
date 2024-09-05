@@ -108,13 +108,13 @@ const router = createRouter({
   ]
 })
 
-// router.beforeEach(async (to, from) => {
-//   const userStore = useUserStore();
-//   const { isAuthenticated } = storeToRefs(userStore);
-//   if (!isAuthenticated.value && to.name != 'login' && to.name != 'register') {
-//     return { path: '/Login' };
-//   }
-//   return true;
-// })
+router.beforeEach(async (to, from) => {
+  const userStore = useUserStore();
+  const { isAuthenticated } = storeToRefs(userStore);
+  if (!isAuthenticated.value && to.name != 'login' && to.name != 'register') {
+    return { path: '/Login' };
+  }
+  return true;
+})
 
 export default router

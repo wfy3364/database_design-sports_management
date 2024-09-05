@@ -33,7 +33,7 @@ const handleClose = () => {
 
 const handleDecision = async (decision) => {
   teamValidateAction(decision, props.selectedAnnouncement.targetUser, props.selectedAnnouncement.targetTeam,
-    () => { emit('noticeUpdate') }, decisionErr);
+  props.selectedAnnouncement.notificationId, () => { emit('noticeUpdate') }, decisionErr);
 }
 
 // const handleDecision = async (decision) => {
