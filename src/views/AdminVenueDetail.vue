@@ -1,12 +1,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { dayjs } from 'element-plus';
+import { dayjs, ElMessage } from 'element-plus';
 // import router from '@/router/index'
-import { judgeState } from '@/apis/utils';
+import { getAdminVenueDetail, getVenueOpenTime } from '@/apis/requests';
+import { convertTime, judgeState } from '@/apis/utils';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
 import VenueEdit from './components/VenueEdit.vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 const editDialog = ref(false);
 const dialogMode = ref('edit');
@@ -14,20 +15,19 @@ const dialogMode = ref('edit');
 const userStore = useUserStore();
 const { adminType, adminPermission } = storeToRefs(userStore);
 
-const router = useRoute();
+const route = useRoute();
+const router = useRouter();
 
-onMounted(() => {
-  const { venueId } = router.query;
-})
 
-const venueInfo = {
-  id: '1',
-  name: "场地01",
-  type: "羽毛球",
-  capacity: 100,
-  address: "曹安公路4800号",
-  description: "这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介",
-};
+// const venueInfo = ref({
+//   id: '1',
+//   name: "场地01",
+//   type: "羽毛球",
+//   capacity: 100,
+//   address: "曹安公路4800号",
+//   description: "这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介",
+// });
+const venueInfo = ref([]);
 
 const EditCheck = computed(() => {
   return adminType.value === 'system' ||
@@ -36,39 +36,41 @@ const EditCheck = computed(() => {
 });
 // const EditCheck = ref(true);
 
-const openTime = [{
-  period: "13:00-14:00",
-  start_time: new Date("2024-09-01T13:00:00"),
-  end_time: new Date("2024-09-01T14:00:00"),
-  remain: 10,
-  price: 19.99,
-},{
-  period: "09:00-10:00",
-  start_time: new Date("2024-09-01T09:00:00"),
-  end_time: new Date("2024-09-01T10:00:00"),
-  remain: 5,
-  price: 9.99,
-}];
+// const openTime = [{
+//   period: "13:00-14:00",
+//   start_time: new Date("2024-09-01T13:00:00"),
+//   end_time: new Date("2024-09-01T14:00:00"),
+//   remain: 10,
+//   price: 19.99,
+// },{
+//   period: "09:00-10:00",
+//   start_time: new Date("2024-09-01T09:00:00"),
+//   end_time: new Date("2024-09-01T10:00:00"),
+//   remain: 5,
+//   price: 9.99,
+// }];
+const openTime = ref([]);
 
-const venueDevices = [{
-  id: 1,
-  name: "设备1",
-}, {
-  id: 2,
-  name: "设备2",
-}];
+// const venueDevices = [{
+//   id: 1,
+//   name: "设备1",
+// }, {
+//   id: 2,
+//   name: "设备2",
+// }];
+const venueDevices = ref([]);
 
 const overviewDisplay = {
-  "场地ID：": venueInfo.id,
-  "场地名称：": venueInfo.name,
-  "运动类型：": venueInfo.type,
-  "场地容量：": venueInfo.capacity,
-  "场地地址：": venueInfo.address,
+  "场地ID：": venueInfo.value.id,
+  "场地名称：": venueInfo.value.name,
+  "运动类型：": venueInfo.value.type,
+  "场地容量：": venueInfo.value.capacity,
+  "场地地址：": venueInfo.value.address,
 }
 
 const openDate = ref(dayjs().format("YYYY-MM-DD"));
 
-const maintainenceRecord = [{
+const maintainenceRecord = ref([{
   id: 1,
   start_time: "2024-08-19 19:00",
   end_time: "2024-08-19 20:00",
@@ -80,14 +82,83 @@ const maintainenceRecord = [{
   end_time: "2024-08-19 21:00",
   description: "保养描述过长时，多余内容隐藏，当鼠标移动到对应位置时以提示框的方式显示",
   state: 1,
-}];
+}]);
+
+const openDateIndex = ref(0);
+
+onMounted(async () => {
+  const { venueId } = route.query;
+  if(venueId){
+    await getAdminVenueDetail(venueId, processVenueDetail, getVenueDetailErr)
+    .then(getCurOpenTime).then(() => {
+      venueInfo.value.state = getVenueState();
+    });
+  }
+})
+
+function processVenueDetail(res){
+  venueInfo.value = {
+    id: res.venueId,
+    name: res.name,
+    type: res.type,
+    capacity: res.capacity,
+    address: res.venueLocation,
+    img: res.venueImageUrl,
+  };
+  venueDevices.value = res.venueDevices.map(item => {
+    return { id: item.equipmentId, name: item.equipmentName }
+  });
+  maintainenceRecord.value = res.maintenanceRecords.map(item => {
+    return {
+      id: item.venueMaintenanceId,
+      start_time: item.maintenanceStartDate,
+      end_time: item.maintenanceEndDate,
+      description: item.description,
+      state: judgeState(item.maintenanceStartDate, item.maintenanceEndDate)
+    }
+  });
+}
+
+async function getCurOpenTime(){
+  await getVenueOpenTime(venueInfo.value.id, openDate.value, getOpenTimeSuccess, getOpenTimeErr)
+}
+
+function getOpenTimeSuccess(res){
+  openTime.value.push({
+    date: openDate.value, 
+    time: res.map((item) => {
+      return {
+        id: item.availabilityId,
+        start_time: item.startTime,
+        end_time: item.endTime,
+        price: item.price,
+        remain: item.remainingCapacity,
+      }
+    }
+  )});
+  openDateIndex.value = openTime.value.length - 1;
+}
+
+function getOpenTimeErr(msg){
+  ElMessage.error('获取场地开放时间失败：' + msg);
+}
+
+function getVenueDetailErr(msg){
+  ElMessage.error('获取场地详细信息失败：' + msg);
+}
 
 function setDate(val){
   openDate.value = dayjs(openDate.value).add(val, "day").format("YYYY-MM-DD");
 }
 
-function handleDateChange(){
-  
+async function handleDateChange(){
+  for(let i = 0; i < editingTime.value.length; i++){
+    if(openTime.value[i].date === openDate.value){
+      openDateIndex.value = i;
+      return;
+    }
+  }
+  await getCurOpenTime();
 }
 
 function deviceLink(deviceId){
@@ -117,6 +188,15 @@ function showEditDialog(){
   editDialog.value = true;
 }
 
+function viewMaintenanceDetail(id){
+  router.push({
+    path: '/AdminVenueMaintenance',
+    query: {
+      maintenanceId: id,
+    }
+  })
+}
+
 </script>
 
 <template>
@@ -129,9 +209,25 @@ function showEditDialog(){
     <div class="VenueOverview">
       <img class="VenueImg" alt="场馆图片"/>
       <div class="OverviewText">
-        <div class="OverviewLine" v-for="val, k in overviewDisplay">
-          <div class="OverviewDescription">{{ k }}</div>
-          <div>{{ val }}</div>
+        <div class="OverviewLine">
+          <div class="OverviewDescription">场地ID：</div>
+          <div>{{ venueInfo?.id }}</div>
+        </div>
+        <div class="OverviewLine">
+          <div class="OverviewDescription">场地名称：</div>
+          <div>{{ venueInfo?.name }}</div>
+        </div>
+        <div class="OverviewLine">
+          <div class="OverviewDescription">运动类型：</div>
+          <div>{{ venueInfo?.type }}</div>
+        </div>
+        <div class="OverviewLine">
+          <div class="OverviewDescription">场地容量：</div>
+          <div>{{ venueInfo?.capacity }}</div>
+        </div>
+        <div class="OverviewLine">
+          <div class="OverviewDescription">场地地址：</div>
+          <div>{{ venueInfo?.address}}</div>
         </div>
         <div class="OverviewLine">
           <div class="OverviewDescription">设备：</div>
@@ -161,7 +257,7 @@ function showEditDialog(){
           @change="handleDateChange()"></el-date-picker>
           <el-button size="small" @click="setDate(1)">&gt;</el-button>
         </div>
-        <el-table :data="openTime" class="infoTable" border :default-sort="{ prop: 'period'}">
+        <el-table :data="openTime[openDateIndex]?.time" class="infoTable" border :default-sort="{ prop: 'period'}">
           <el-table-column prop="period" label="时间" sortable :resizable="false"></el-table-column>
           <el-table-column prop="remain" label="剩余容量" width="105" sortable :resizable="false"></el-table-column>
           <el-table-column prop="price" label="价格" width="80" sortable :resizable="false"></el-table-column>
@@ -171,7 +267,11 @@ function showEditDialog(){
         <div class="MaintainenceTitle">保养记录</div>
         <el-table :data="maintainenceRecord" class="infoTable" border>
           <el-table-column prop="id" label="编号" width="55" :resizable="false"></el-table-column>
-          <el-table-column prop="start_time" label="时间" width="140" :resizable="false"></el-table-column>
+          <el-table-column label="开始时间" width="140" :resizable="false">
+            <template #default="item">
+              {{ convertTime(item.row.start_time) }}
+            </template>
+          </el-table-column>
           <el-table-column prop="description" label="描述" :resizable="false"
           :show-overflow-tooltip="{ effect: 'light'}"></el-table-column>
           <el-table-column label="状态" width="80" :resizable="false">
@@ -183,7 +283,7 @@ function showEditDialog(){
           </el-table-column>
           <el-table-column label="操作" width="140">
             <template #default="item">
-              <el-button size="small" type="primary">详情</el-button>
+              <el-button size="small" type="primary" @click="viewMaintenanceDetail(item.row.id)">详情</el-button>
               <el-button size="small" v-if="EditCheck">编辑</el-button>
             </template>
           </el-table-column>

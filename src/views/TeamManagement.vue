@@ -32,7 +32,7 @@
           <el-table-column label="操作" width="200">
             <template #default="item">
               <el-button size="small" @click="showTeamDetails(item.row.groupId)">团体详情</el-button>
-              <el-button size="small" v-if="item.row.roleInGroup !== 'Validating'" 
+              <el-button size="small" v-if="!item.row.roleInGroup.startsWith('Validating')" 
               @click="showLeaveTeamDialog(item.row)" type="danger">退出团体
               </el-button>
             </template>
@@ -76,11 +76,11 @@
           </el-table-column>
           <el-table-column v-if="isAdminOrCreator" label="操作" width="240">
             <template #default="{ row }">
-              <div v-if="row.userRole === 'Validating'">
+              <div v-if="row.userRole === 'Validating/admin'">
                 <el-button size="small" type="primary" @click="handleValidate('accept', row.userId)">同意</el-button>
                 <el-button size="small" type="danger" @click="handleValidate('reject', row.userId)">拒绝</el-button>
               </div>
-              <div v-else>
+              <div v-else-if="!row.userRole.startsWith('Validating')">
                 <el-button 
                   size="small" 
                   :type="row.userRole ==='Admin' ? 'warning' : 'primary'" 
@@ -115,27 +115,28 @@
         <!-- 这里可以添加搜索结果的显示和添加成员的逻辑 -->
         <!-- 搜索结果显示 -->
         <!-- <div v-if="searchResults.length > 0" class="search-results"> -->
-        <div v-if= 1 class="search-results">
+        <div class="search-results">
           <h3>搜索结果</h3>
           <el-table :data="searchResults" style="width: 100%">
             <el-table-column prop="id" label="用户ID" width="100"></el-table-column>
             <el-table-column prop="nickname" label="昵称"></el-table-column>
             <el-table-column label="操作" width="120">
               <template #default="{ row }">
-                <el-button 
+                <!-- <el-button
+                  :disabled="isMemberAlreadyInTeam(row.id)"
                   size="small" 
                   type="primary" 
                   @click="addMemberToTeam(row)"
-                  :disabled="isMemberAlreadyInTeam(row.id)"
                 >
-                  {{ isMemberAlreadyInTeam(row.id) ? '已在团队中' : '添加' }}
-                </el-button>
+                  添加
+                </el-button> -->
+                <div v-if="isMemberAlreadyInTeam(row.id)">添加</div>
+                <!-- <div v-else>已在团体中</div> -->
               </template>
             </el-table-column>
           </el-table>
         </div>
       </div>
-
       </div>
     </el-dialog>
 
@@ -277,7 +278,7 @@
       </div>
 
       <!-- <div v-if="isAdminOrCreator" class="add-member-section">可以改成0，1试 -->
-      <div v-if="isAdminOrCreator" class="add-member-section">
+      <div class="add-member-section">
         <h3>添加成员</h3>
         <el-input
           v-model="searchMember"
@@ -289,21 +290,22 @@
         <!-- 这里可以添加搜索结果的显示和添加成员的逻辑 -->
         <!-- 搜索结果显示 -->
         <!-- <div v-if="searchResults.length > 0" class="search-results"> -->
-        <div v-if= "searchResults.length > 0" class="search-results">
+        <div class="search-results">
           <h3>搜索结果</h3>
           <el-table :data="searchResults" style="width: 100%">
             <el-table-column prop="id" label="用户ID" width="100"></el-table-column>
             <el-table-column prop="nickname" label="昵称"></el-table-column>
             <el-table-column label="操作" width="120">
               <template #default="{ row }">
-                <el-button 
+                <el-button
+                  v-if="row.id !== userId"
                   size="small" 
                   type="primary" 
                   @click="addMemberToTeam(row)"
-                  :disabled="isMemberAlreadyInTeam(row.id)"
                 >
-                  {{ isMemberAlreadyInTeam(row.id) ? '已在团队中' : '添加' }}
+                  添加
                 </el-button>
+                <div v-else>已加入团体</div>
               </template>
             </el-table-column>
           </el-table>
@@ -330,8 +332,8 @@
   import { ref, onMounted, computed } from 'vue'
   import axios from 'axios'
   import { fetchTeam, createTeam, getAllTeams, getTeamName, getTeamDetail, 
-    addTeamUser, removeTeamUser, getUserNotice, 
-    updateUserRole
+    addTeamUser, removeTeamUser, getUserNotice, getAllUsers,
+    updateUserRole,
   } from '@/apis/requests';
   import { teamValidateAction } from '@/apis/teamValidate';
   import { convertTime } from '@/apis/utils';
@@ -411,7 +413,7 @@
   const searchQuery = ref('')
   const teamToLeave = ref(null)
   const searchResults = ref([])
-  const hasSearched = ref(false)
+  // const hasSearched = ref(false)
   // const teamData = ref([])
   const allTeams = ref([]);
   const userTeams = ref([]);
@@ -434,26 +436,15 @@
   const searchedTeam = ref([]);
 
   const userStore = useUserStore();
-  const { userId, userName, adminType } = storeToRefs(userStore);
+  const { userId, userName } = storeToRefs(userStore);
 
-  // // 从后端获取团队数据
-  // const fetchTeams = async () => {
-  //   try {
-  //     isLoading.value = true
-  //     const response = await axios.get('/api/teams') // 替换为实际的API端点
-  //     teams.value = response.data
-  //   } catch (error) {
-  //     console.error('获取团队数据失败:', error)
-  //     ElMessage.error('获取团队数据失败，请稍后重试')
-  //   } finally {
-  //     isLoading.value = false
-  //   }
-  // }
+  const allUsers = ref([]);
 
   // 在组件挂载时获取数据
   onMounted(async () => {
     isLoading.value = true;
-    fetchTeam(fetchTeamSuccess, fetchTeamErr);
+    await fetchTeam(fetchTeamSuccess, fetchTeamErr);
+    await getAllUsers(getUserSuccess, getUserErr);
   })
 
   const fetchTeamSuccess = (res) => {
@@ -471,12 +462,26 @@
     isLoading.value = false;
   }
 
+
+  const getUserSuccess = (res) => {
+    allUsers.value = res.map(item => {
+      return { id: item.userId, nickname: item.username };
+    });
+    // console.log(allUsers.value);
+    searchResults.value = allUsers.value;
+  }
+
+  const getUserErr = (msg) => {
+    ElMessage.error('获取用户列表失败' + msg);
+  }
+
   //tag color
   const userRoleMap = {
     'Creator': '创建者',
     'Member': '成员',
     'Admin': '管理员',
-    'Validating': '审核中',
+    'Validating/admin': '审核中',
+    'Validating/user': '审核中',
   }
 
   const getRoleTagType = (role) => {
@@ -484,31 +489,14 @@
       'Creator': 'success',
       'Member': 'info',
       'Admin': 'warning',
-      'Validating': 'danger',
+      'Validating/admin': 'danger',
+      'Validating/user': 'danger',
     };
     return RoleTags[role] || 'info';
-    // switch (role) {
-    //   case '创建者':
-    //     return 'danger'
-    //   case '管理员':
-    //     return 'warning'
-    //   case '普通成员':
-    //     return 'info'
-    //   default:
-    //     return ''
-    // }
   }
 
   //打开团体详情模态框
   const showTeamDetails = async (id) => {
-    // try {
-    //   const response = await axios.get(`/api/teams/${id}`) // 替换为实际的API端点
-    //   currentTeam.value = response.data
-    //   teamDetailsVisible.value = true
-    // } catch (error) {
-    //   console.error('获取团体详情失败:', error)
-    //   ElMessage.error('获取团体详情失败，请稍后重试')
-    // }
     await getTeamInfo(id, (res) => {
       currentTeam.value = res;
       teamDetailsVisible.value = true;
@@ -519,19 +507,19 @@
   const handleCloseTeamDetails = () => {
     teamDetailsVisible.value = false
     currentTeam.value = null
-    searchResults.value = null
+    // searchResults.value = null
   }
 
   //判断本用户是否管理员/创始人
   const isAdminOrCreator = computed(() => {
-    if (!currentTeam.value) return false
+    // if (!currentTeam.value) return false
     const currentUserRole = currentTeam.value.users.find(m => m.userId === userId.value)?.userRole
     return ['Creator', 'Admin'].includes(currentUserRole)
   })
 
   //判断本用户是否是创始人
   const isCurrentUserOrCreator = (member) => {
-    return member.userId === userId.value || member.userRole === '创建者'
+    return member.userId === userId.value || member.userRole === 'Creator'
   }
 
   //踢出成员
@@ -566,6 +554,7 @@
 
   const toggleAdminSuccess = () => {
     ElMessage.success('已更改权限');
+    showTeamDetails(currentTeam.value.groupId);
   }
 
   const toggleAdminErr = (msg) => {
@@ -576,7 +565,6 @@
     const handleValidateErr = (msg) => {
       ElMessage.error('操作失败：' + msg);
     }
-    const resNoticeId = ref('');
     const targetGroup = currentTeam.value.groupId;
     const filterTargetNotice = async (res) => {
       const resNotice = res.find((item, index) => {
@@ -585,40 +573,42 @@
       })?.notificationId;
       await teamValidateAction(mode, targetId, targetGroup, resNotice, () => {
         showTeamDetails(currentTeam.value.groupId)
-      });
+      }, handleValidateErr);
     }
     await getUserNotice(userId.value, filterTargetNotice, handleValidateErr)
   }
 
 
   //搜索逻辑
-  const searchUser = async () => {
-    hasSearched.value = true;
-    try {
-      // 这里应该是实际的API调用
-      const response = await axios.get(`/api/users/search?query=${searchMember.value}`);
-      searchResults.value = response.data;
-      
-      // 模拟API调用
-      // await new Promise(resolve => setTimeout(resolve, 500));
-      // searchResults.value = [
-      //   { id: 201, nickname: "刘一", email: "liuyi@example.com" },
-      //   { id: 202, nickname: "陈二", email: "chener@example.com" },
-      //   { id: 203, nickname: "张三丰", email: "zhangsanfeng@example.com" },
-      // ].filter(user => 
-      //   user.nickname.includes(searchMember.value) || 
-      //   user.id.toString().includes(searchMember.value)
-      // );
-
-      ElMessage.success(`搜索完成，找到 ${searchResults.value.length} 个结果`);
-    } catch (error) {
-      console.error('搜索用户失败:', error);
-      ElMessage.error('搜索用户失败，请稍后重试');
+  const searchUser = () => {
+    if(!searchMember.value){
+      searchResults.value = allUsers.value;
     }
+    else{
+      searchResults.value = allUsers.value.filter(item => {
+        return item.id === searchMember.value || item.nickname.includes(searchMember.value);
+      });
+    }
+    console.log(searchResults.value);
+    // hasSearched.value = true;
+    // try {
+    //   // 这里应该是实际的API调用
+    //   const response = await axios.get(`/api/users/search?query=${searchMember.value}`);
+    //   searchResults.value = response.data;
+
+    //   ElMessage.success(`搜索完成，找到 ${searchResults.value.length} 个结果`);
+    // } catch (error) {
+    //   console.error('搜索用户失败:', error);
+    //   ElMessage.error('搜索用户失败，请稍后重试');
+    // }
   };
 
-  const isMemberAlreadyInTeam = (userId) => {
-    return currentTeam.value.members.some(member => member.id === userId);
+  const isMemberAlreadyInTeam = (id) => {
+    // console.log(currentTeam.value.users.some(user => user.id === id));
+    console.log(currentTeam.value.users, id);
+    // return currentTeam.value.users.some(user => user.id === id);
+    return true;
+    // return currentTeam.value.users.map(user => user.id).includes(id);
   };
 
   const addMemberToTeam = async (user) => {
@@ -639,10 +629,29 @@
     //   console.error('添加成员失败:', error);
     //   ElMessage.error('添加成员失败，请稍后重试');
     // }
-
+    
     // await addTeamUser();
+    if(currentTeam.value){
+      const joinData = {
+        userId: user.id,
+        joinDate: new Date(),
+        roleInGroup: 'Validating/user',
+        notificationType: 'userCheck',
+        adminId: userId.value,
+        userName: userName.value,
+      }
+      await addTeamUser(currentTeam.value.groupId, joinData, addTeamMemberSuccess, addTeamMemberErr);
+    }
   };
 
+  const addTeamMemberSuccess = () => {
+    ElMessage.success('已向成员发出邀请');
+    showTeamDetails(currentTeam.value.groupId);
+  }
+
+  const addTeamMemberErr = (msg) => {
+    ElMessage.error('添加成员失败：' + msg);
+  }
 
   //打开退出团体模态框
   const showLeaveTeamDialog = (id) => {
@@ -799,7 +808,7 @@
     // console.log('申请加入的团队:', currentTeam.value)
     const joinData = {
       userId: userId.value,
-      roleInGroup: 'Validating',
+      roleInGroup: 'Validating/admin',
       adminId: selectedAdmin.value.userId,
       userName: userName.value,
       notificationType: 'adminCheck',

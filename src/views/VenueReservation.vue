@@ -606,7 +606,7 @@ const getGroupMembers = async () => {
 
 const getMembersSuccess = (res) => {
   const groupMembers = res.users;
-  allMembers.value = groupMembers.filter(user => user.userRole !== 'Validating')
+  allMembers.value = groupMembers.filter(user => !user.userRole.startsWith('Validating'))
   .map(user => {
     return { id: user.userId, nickname: user.userName, role: user.userRole };
   });

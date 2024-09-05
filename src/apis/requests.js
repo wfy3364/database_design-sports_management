@@ -2,12 +2,11 @@ import httpInstance from "@/utils/http";
 import router from "@/router/index"
 import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
-import { ElMessage, ElStep } from "element-plus";
-// import { el } from "element-plus/es/locale";
 
 // const userStore = useUserStore();
 // const { userId, userName, adminType, adminPermission } = storeToRefs(userStore);
 
+// 用户接口操作
 async function userLogin(LoginData, successHandler, errHandler, isLogging, errMsg) {
   await httpInstance.post('/api/User/Login', LoginData).then((res) => {
     if (res.status) {
@@ -93,6 +92,14 @@ async function getUserInfo(successHandler, errHandler) {
     }
   }).catch((err) => {
     errHandler('获取用户信息失败：' + err.response?.data?.message || '未知错误');
+  })
+}
+
+async function getAllUsers(successHandler, errHandler) {
+  await httpInstance.get('api/UserPersonalInfo/all-users').then((res) => {
+    successHandler(res);
+  }).catch((err) => {
+    errHandler(err.response?.message);
   })
 }
 
@@ -320,8 +327,17 @@ async function modifyPublicNotice(noticeData, successHandler, errHandler) {
 
 
 // 场地相关接口
-async function createVenue(venueData) {
-  await httpInstance.post('/api/')
+async function createVenue(venueData, successHandler, errHandler) {
+  await httpInstance.post('/api/Venue/AddVenue', venueData).then((res) => {
+    if (res.state) {
+      successHandler(res);
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
+  }).catch((err) => {
+    errHandler(err.response?.data?.info || '未知错误');
+  })
 }
 
 async function getAllVenues(successHandler, errHandler) {
@@ -337,6 +353,42 @@ async function getAllVenues(successHandler, errHandler) {
   })
 }
 
+async function getVenueDetail(venueId, successHandler, errHandler) {
+  await httpInstance.get('api/Venue/GetVenueDetails', {
+    params: {
+      venueId: venueId,
+    }
+  }).then((res) => {
+    if (res.state) {
+      successHandler(res.data);
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
+  }).catch((err) => {
+    errHandler(err.response?.data?.info || '未知错误');
+  })
+}
+
+async function getAdminVenueDetail(venueId, successHandler, errHandler) {
+  await httpInstance.get('api/Venue/GetVenueDetails', {
+    params: {
+      venueId: venueId,
+    }
+  }).then((res) => {
+    console.log(res);
+    if (res.state) {
+      successHandler(res.data);
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
+  }).catch((err) => {
+    console.log(err);
+    errHandler(err.response?.data?.info || '未知错误');
+  })
+}
+
 async function getVenueOpenTime(venueId, date, successHandler, errHandler) {
   await httpInstance.get('/api/Venue/GetVenueAvailabilityByDate', {
     params: {
@@ -344,8 +396,12 @@ async function getVenueOpenTime(venueId, date, successHandler, errHandler) {
       date: date,
     }
   }).then((res) => {
+    console.log(res);
     if (res.state) {
       successHandler(res.data);
+    }
+    else if (res.info === '未找到该日期的场地开放时间段') {
+      successHandler([]);
     }
     else {
       errHandler(res.info || '未知错误')
@@ -356,6 +412,17 @@ async function getVenueOpenTime(venueId, date, successHandler, errHandler) {
   })
 }
 
+async function addVenueOpenTime(openTimeData, successHandler, errHandler) {
+  await httpInstance.post('/api/Venue/AddAvailability', openTimeData).then((res) => {
+    console.log(res);
+    successHandler();
+  }).catch((err) => {
+    console.log(err);
+    errHandler(err.response?.data || '未知错误');
+  })
+}
+
+// 管理员接口
 async function getAdminPermission(successHandler, errHandler) {
   const userStore = useUserStore();
   const { adminPermission } = storeToRefs(userStore);
@@ -397,9 +464,10 @@ async function inidividualReservation(reservationData, successHandler, errHandle
   })
 }
 
+
 //获取统计数据
 async function getStatistics(venueTypes, successHandler, errHandler) {
-  await httpInstance.get('/api/Venue/AnalyzeVenueData', {params:{venueType:venueTypes}}).then((res) => {
+  await httpInstance.get('/api/Venue/AnalyzeVenueData', { params: { venueType: venueTypes } }).then((res) => {
     console.log(res);
     if (res.state) {
       console.log(res.data)
@@ -416,7 +484,7 @@ async function getStatistics(venueTypes, successHandler, errHandler) {
 
 //获取特定场地统计数据
 async function getVenueStatistics(venueIds, successHandler, errHandler) {
-  await httpInstance.get('/api/Venue/AnalyzeVenueData', {params:{venueId:venueIds}}).then((res) => {
+  await httpInstance.get('/api/Venue/AnalyzeVenueData', { params: { venueId: venueIds } }).then((res) => {
     console.log(res);
     if (res.state) {
       console.log(res.data)
@@ -431,12 +499,38 @@ async function getVenueStatistics(venueIds, successHandler, errHandler) {
   })
 }
 
-export {
-  userLogin, userRegister, getUserInfo, fetchTeam, createTeam, getAllTeams, getTeamName,
-  getTeamDetail, addTeamUser, updateUserRole, removeTeamUser, getUserReservationGroup,
-  getUserNotice, deleteUserNotice, getRepairData, addRepairRecord, getAllPublicNotice,
-  getPublicNoticeDetail, addPublicNotice, modifyPublicNotice, getAllVenues, createVenue,
-  getVenueOpenTime, getAdminPermission, inidividualReservation, userModifiedInfo, userModifiedPassword, 
-  getStatistics, getVenueStatistics
+async function getAllUserReservation(successHandler, errHandler) {
+  const userStore = useUserStore();
+  const { userId } = storeToRefs(userStore);
+  await httpInstance.get('api/Reservation/GetReservationsByUserId', {
+    params: {
+      userId: userId.value,
+    }
+  }).then((res) => {
+    successHandler(res);
+  }).catch((err) => {
+    console.log(err);
+    errHandler(err.response?.data || '未知错误');
+  })
 }
 
+async function getAllReservation(successHandler, errHandler) {
+  await httpInstance.get('api/Reservation/getReservationList').then((res) => {
+    console.log(res);
+    successHandler(res);
+  }).catch((err) => {
+    console.log(err);
+    errHandler(err?.response?.data);
+  })
+}
+
+export {
+  userLogin, userRegister, getUserInfo, getAllUsers, fetchTeam, createTeam, getAllTeams,
+  getTeamName, getTeamDetail, addTeamUser, updateUserRole, removeTeamUser,
+  getUserReservationGroup, getUserNotice, deleteUserNotice, getRepairData, addRepairRecord,
+  getAllPublicNotice, getPublicNoticeDetail, addPublicNotice, modifyPublicNotice, getAllVenues,
+  getVenueDetail, getAdminVenueDetail, addVenueOpenTime,
+  createVenue, getVenueOpenTime, getAdminPermission, inidividualReservation,
+  getAllUserReservation, getAllReservation, userModifiedInfo, userModifiedPassword,
+  getStatistics, getVenueStatistics
+};

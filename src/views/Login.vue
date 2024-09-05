@@ -19,7 +19,7 @@
           <div>
             <el-checkbox v-model="agreePrivacy">
               已阅读并同意
-              <router-link to="/privacy-policy">隐私协议</router-link>
+              <router-link to="/Privacypolicy">隐私协议</router-link>
             </el-checkbox>
           </div>
           <div class="errDisplay">{{ errMsg }}</div>

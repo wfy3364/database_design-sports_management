@@ -1,6 +1,6 @@
 <template>
   <div>
-    <button @click="showDialog" class="open-dialog-btn">Upload Image</button>
+    <button @click="showDialog" class="open-dialog-btn">点此上传场地图片</button>
 
     <dialog ref="uploadDialog">
       <div class="dialog-content">
@@ -66,7 +66,8 @@ export default {
           }
         });
         this.imageUrl = response.data.data.url;
-        alert(`Upload successful!\nImage URL: ${this.imageUrl}`);
+        // alert(`Upload successful!\nImage URL: ${this.imageUrl}`);
+        this.$emit('upload', this.imageUrl);
         this.hideDialog();
       } catch (error) {
         console.error('Error uploading image:', error);
