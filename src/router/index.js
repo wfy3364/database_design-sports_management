@@ -18,6 +18,8 @@ import UserInfo from '@/views/UserInfo.vue'
 import VenueBrowser from '@/views/VenueBrowser.vue'
 import VenueReservation from '@/views/VenueReservation.vue'
 import Login from '@/views/Login.vue'
+import Privacypolicy from '@/views/Privacypolicy.vue'
+import Uploadphotos from '@/views/Uploadphotos.vue'
 import { storeToRefs } from 'pinia'
 import { useUserStore } from '@/stores/userStore'
 
@@ -92,6 +94,14 @@ const router = createRouter({
         {
           path: '/UserInfo',
           component: UserInfo,
+        },
+        {
+          path: '/Privacypolicy',
+          component: Privacypolicy,
+        },
+        {
+          path: '/Uploadphotos',
+          component: Uploadphotos,
         },
       ]
     },
