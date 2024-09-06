@@ -5,43 +5,33 @@
     </el-card>
 
     <div class="sections">
-      <!-- 团体通知部分 -->
+      <!-- 申请通知部分 -->
       <el-card shadow="hover" class="card">
         <div class="card-header">
-          <h2>团体通知</h2>
+          <h2>管理员通知</h2>
           <el-button type="primary" @click="showMore('team')">更多</el-button>
         </div>
         <!-- 限制显示前10条通知 -->
-        <el-table :data="filteredGroupNotifications.slice(0, 10)" style="width: 100%">
-          <el-table-column prop="id" label="通知编号" width="100"></el-table-column>
-          <el-table-column prop="title" label="标题"></el-table-column>
-          <el-table-column prop="date" label="时间" width="150"></el-table-column>
-          <el-table-column label="操作" width="100">
+        <el-table :data="filteredAdminNotifications.slice(0, 10)" style="width: 100%" 
+        :show-overflow-tooltip="{effect: 'light'}">
+          <el-table-column prop="notificationId" label="通知编号" width="105" sortable></el-table-column>
+          <el-table-column prop="title" label="标题" sortable></el-table-column>
+          <el-table-column label="时间" width="140" sortable>
+            <template #default="scope">
+              {{ convertTime(scope.row.notificationTime) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="150">
             <template #default="scope">
               <el-button @click="viewAnnouncement(scope.row)" size="small">查看</el-button>
+              <el-button :disabled="scope.row.notificationType === 'team/adminCheck' ||
+              scope.row.notificationType === 'team/userCheck'" @click="deleteAnnouncement(scope.row)"
+              size="small" type="danger">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
       </el-card>
 
-      <!-- 预约通知部分 -->
-      <el-card shadow="hover" class="card">
-        <div class="card-header">
-          <h2>预约通知</h2>
-          <el-button type="primary" @click="showMore('reservation')">更多</el-button>
-        </div>
-        <!-- 限制显示前10条通知 -->
-        <el-table :data="filteredBookingNotifications.slice(0, 10)" style="width: 100%">
-          <el-table-column prop="id" label="通知编号" width="100"></el-table-column>
-          <el-table-column prop="title" label="标题"></el-table-column>
-          <el-table-column prop="date" label="时间" width="150"></el-table-column>
-          <el-table-column label="操作" width="100">
-            <template #default="scope">
-              <el-button @click="viewAnnouncement(scope.row)" size="small">查看</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-card>
     </div>
 
     <!-- 模态框显示所有通知 -->
@@ -86,20 +76,36 @@
 
 <script setup>
 import { ref, computed } from 'vue';
+import NotificationDetail from './components/NotificationDetail.vue';
+import { convertTime, timeSort } from '@/apis/utils';
+import { getUserNotice, deleteUserNotice } from '@/apis/requests';
+import { useUserStore } from '@/stores/userStore';
+import { storeToRefs } from 'pinia';
 import { ElCard, ElDialog, ElTable, ElTableColumn, ElButton, ElMessage } from 'element-plus';
+
+const userStore = useUserStore();
+const { userId } = storeToRefs(userStore);
 
 // 模拟通知数据
 const notifications = ref([
-  { id: 1, type: 'teamJoin', title: '加入团体A成功', date: '2024-08-14', content: '您已成功加入团体A。' },
+  { notificationid: 1, notificationtype: 'adminRequest', title: 'A申请注册成为管理员', notificationtime: ('2024-08-14'), content: 'A申请注册成为管理员。' },
+  { notificationid: 2, notificationtype: 'adminRequest', title: 'B申请注册成为管理员', notificationtime: ('2024-08-16'), content: 'B申请注册成为管理员。' },
+  { notificationid: 3, notificationtype: 'adminCancel', title: 'V注销管理员账号', notificationtime: ('2024-08-16'), content: 'V注销管理员。' },
+  { notificationid: 4, notificationtype: 'adminRequest', title: 'D申请注册成为管理员', notificationtime: ('2024-08-18'), content: 'F申请注册成为管理员。' },
+  { notificationid: 5, notificationtype: 'adminRequest', title: 'A申请注册成为管理员', notificationtime: ('2024-08-14'), content: 'A申请注册成为管理员。' },
+  { notificationid: 6, notificationtype: 'adminRequest', title: 'B申请注册成为管理员', notificationtime: ('2024-08-16'), content: 'B申请注册成为管理员。' },
+  { notificationid: 7, notificationtype: 'adminCancel', title: 'V注销管理员账号', notificationtime: ('2024-08-16'), content: 'V注销管理员。' },
+  { notificationid: 8, notificationtype: 'adminRequest', title: 'D申请注册成为管理员', notificationtime: ('2024-08-18'), content: 'F申请注册成为管理员。' },
+  { notificationid: 9, notificationtype: 'adminRequest', title: 'A申请注册成为管理员', notificationtime: ('2024-08-14'), content: 'A申请注册成为管理员。' },
+  { notificationid: 10, notificationtype: 'adminRequest', title: 'B申请注册成为管理员', notificationtime: ('2024-08-16'), content: 'B申请注册成为管理员。' },
+  { notificationid: 11, notificationtype: 'adminCancel', title: 'V注销管理员账号', notificationtime: ('2024-08-16'), content: 'V注销管理员。' },
+  { notificationid: 12 , notificationtype: 'adminRequest', title: 'D申请注册成为管理员', notificationtime: ('2024-08-18'), content: 'F申请注册成为管理员。' },
 ]);
 
-const filteredGroupNotifications = computed(() =>
-  notifications.value.filter(notification => notification.type.startsWith('team'))
+const filteredAdminNotifications = computed(() =>
+  notifications.value.filter(notification => notification.notificationtype.startsWith('admin'))
 );
 
-const filteredBookingNotifications = computed(() =>
-  notifications.value.filter(notification => notification.type.startsWith('reservation'))
-);
 
 const selectedAnnouncement = ref(null);
 const selectedNotifications = ref([]);
@@ -118,14 +124,9 @@ const viewAnnouncement = (announcement) => {
   isDetailModalVisible.value = true;
 };
 
-const showMore = (type) => {
-  if (type === 'team') {
-    selectedNotifications.value = filteredGroupNotifications.value;
-    modalTitle.value = '团体通知';
-  } else if (type === 'reservation') {
-    selectedNotifications.value = filteredBookingNotifications.value;
-    modalTitle.value = '预约通知';
-  }
+const showMore = () => {
+  selectedNotifications.value = filteredGroupNotifications.value;
+  modalTitle.value = '申请通知';
   isModalVisible.value = true;
 };
 
@@ -190,7 +191,7 @@ const handleDecision = async (decision) => {
 
 .sections {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(1, 1fr);
   gap: 20px;
   padding: 20px;
 }

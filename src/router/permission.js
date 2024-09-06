@@ -1,27 +1,46 @@
 import { defineStore } from 'pinia'; 
-
+import { useUserStore } from '@/stores/userStore';
 // 示例菜单数据
-const menuData = [
+const userMenuData = [
   {
     path:'/',
-    title: 'home',
+    title: '主界面',
   },
   {
-    path:'/AdminInfo',
-    title: 'AdminInfo',
+    path:'/TeamManagement',
+    title:'团队管理',
+  },
+  {
+    path:'/TeamCreate',
+    title:'团队创建',
+  },
+  {
+    path:'/VenueBrowser',
+    title:'场地浏览',
+  },
+  {
+    path:'/VenueReservation',
+    title:'场地预约',
   },
   {
     path:'/AdminDevice',
-    title: 'AdminDevice',
+    title:'管理员设备',
   },
   {
-    path:'/AdminNotifications',
-    title: 'AdminNotifications',
+    path:'/AdminDeviceDetail',
+    title:'管理员设备细节',
+  },
+  {
+    path:'/UserInfo',
+    title:'个人信息',
   },
 ];
 
+
+//const type = userMenuData.adminType;
+
 export const usePermissionStoreHook = defineStore('permission', {
   state: () => ({
-    wholeMenus: menuData,
+    wholeMenus: userMenuData,
   }),
 });

@@ -6,7 +6,6 @@ import AdminDevice from '@/views/AdminDevice.vue'
 import AdminDeviceDetail from '@/views/AdminDeviceDetail.vue'
 import AdminDeviceRepair from '@/views/AdminDeviceRepair.vue'
 import AdminNotifications from '@/views/AdminNotifications.vue'
-import AdminVenue from '@/views/AdminVenue.vue'
 import AdminVenueDetail from '@/views/AdminVenueDetail.vue'
 import AdminVenueMaintenance from '@/views/AdminVenueMaintenance.vue'
 import AdminStatistics from '@/views/AdminStatistics.vue'
@@ -55,10 +54,6 @@ const router = createRouter({
         {
           path:'/AdminNotifications',
           component: AdminNotifications,
-        },
-        {
-          path: '/AdminVenue',
-          component: AdminVenue,
         },
         {
           path: '/AdminVenueDetail',

@@ -1,19 +1,25 @@
 <template>
 
 <div class="CornerLogo">
-  <div>场地预约系统</div>
+  <div class="title"> 场地预约系统 </div>
 </div>
 
 </template>
 
+
 <style scoped>
 
 .CornerLogo{
-  display: flex;
+  display: block;
   align-items: center;
   width: 100%;
   height: 50px;
-  background-color: aqua;
+  background-color: cyan;
+}
+
+.title{
+  font-size: x-large;
+  text-align: center;
 }
 
 </style>
