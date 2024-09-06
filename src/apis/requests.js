@@ -2,34 +2,60 @@ import httpInstance from "@/utils/http";
 import router from "@/router/index"
 import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
-import { ElMessage, ElStep } from "element-plus";
 
 // const userStore = useUserStore();
 // const { userId, userName, adminType, adminPermission } = storeToRefs(userStore);
 
-async function userLogin(LoginData, isLogging, errMsg) {
-  const userStore = useUserStore();
-  const { isAuthenticated, userId, userName, adminType } = storeToRefs(userStore);
+// 用户接口操作
+async function userLogin(LoginData, successHandler, errHandler, isLogging, errMsg) {
   await httpInstance.post('/api/User/Login', LoginData).then((res) => {
     if (res.status) {
-      isAuthenticated.value = true;
-      userId.value = res.loginResult.userId;
-      userName.value = res.loginResult.userName;
-      adminType.value = res.loginResult.userType;
-      userStore.token = res.token;
-      isLogging.value = false;
-      // 跳转到home页面
-      router.push('/');
-      ElMessage.success('登录成功');
+      successHandler(res.loginResult);
     } else {
       console.log(res);
-      errMsg.value = '登录失败：' + (res.message || '未知错误');
-      isLogging.value = false;
+      errHandler(res.message || '未知错误');
+    }
+  }).catch((err) => {
+    errHandler(err.response?.data?.message || '登录请求异常');
+  });
+}
+
+//修改用户信息
+async function userModifiedInfo(userInfo, successHandler, errHandler) {
+  const userStore = useUserStore();
+  const { isAuthenticated, userId, userName, adminType } = storeToRefs(userStore);
+  await httpInstance.put(`/api/User/${userId.value}/updateInfo`, userInfo).then((res) => {
+
+    console.log(res);
+    if (res.state) {
+      successHandler();
+    } else {
+      console.log(res);
+      // errHandler();
+      errHandler(res.info);
     }
   }).catch((err) => {
     console.log(err);
-    errMsg.value = '登录失败：' + (err.response?.data?.message || '登录请求异常');
-    isLogging.value = false;
+    errHandler("未知错误")
+  });
+}
+
+//修改用户密码
+async function userModifiedPassword(oldPassword, newPassword, successHandler, errHandler) {
+  const userStore = useUserStore();
+  const { isAuthenticated, userId, userName, adminType } = storeToRefs(userStore);
+  await httpInstance.put(`/api/User/${userId.value}/updatePassword`, newPassword).then((res) => {
+    if (res.state) {
+      successHandler(res);
+      console.log(res.originalPassword);
+      console.log(oldPassword);
+    } else {
+      console.log(res);
+      errHandler();
+    }
+  }).catch((err) => {
+    console.log(err);
+    errHandler();
   });
 }
 
@@ -52,15 +78,28 @@ async function userRegister(RegisterData, isRegistering, registerSuccess, resId,
   })
 }
 
-async function getUserInfo(userData) {
+// 获取用户个人信息
+async function getUserInfo(successHandler, errHandler) {
   const userStore = useUserStore();
   const { userId } = storeToRefs(userStore);
   await httpInstance.get(`/api/User/${userId.value}/info`).then((res) => {
     console.log(res);
-    userData.value = res;
+    if (res.userId) {
+      successHandler(res);
+    }
+    else {
+      errHandler('获取用户ID失败');
+    }
   }).catch((err) => {
-    console.log(err);
-    ElMessage.error('获取用户信息失败：' + (err.response?.data?.message || '未知错误'));
+    errHandler('获取用户信息失败：' + err.response?.data?.message || '未知错误');
+  })
+}
+
+async function getAllUsers(successHandler, errHandler) {
+  await httpInstance.get('api/UserPersonalInfo/all-users').then((res) => {
+    successHandler(res);
+  }).catch((err) => {
+    errHandler(err.response?.message);
   })
 }
 
@@ -171,6 +210,17 @@ async function updateUserRole(updateData, successHandler, errHandler) {
   })
 }
 
+async function getUserReservationGroup(successHandler, errHandler) {
+  const userStore = useUserStore();
+  const { userId } = storeToRefs(userStore);
+  await httpInstance.get(`api/UserGroupInfo/${userId.value}`).then((res) => {
+    successHandler(res);
+  }).catch((err) => {
+    errHandler(err.response?.data?.message || '未知错误');
+  })
+}
+
+
 // 通知类接口
 async function getUserNotice(userId, successHandler, errHandler) {
   await httpInstance.get(`api/User/${userId}/notifications`).then((res) => {
@@ -193,7 +243,6 @@ async function deleteUserNotice(noticeId, successHandler, errHandler) {
   })
 }
 
-
 async function getRepairData(successHandler, errHandler) {
   await httpInstance.get('api/Venue/GetAllRepairRecords').then((res) => {
     console.log(res);
@@ -202,6 +251,19 @@ async function getRepairData(successHandler, errHandler) {
     }
     else {
       errHandler(res.info);
+    }
+  }).catch((err) => {
+    errHandler(err.response?.data?.info || '未知错误');
+  })
+}
+
+async function addRepairRecord(repairData, successHandler, errHandler) {
+  await httpInstance.post('/api/Venue/AddRepair', repairData).then((res) => {
+    if (res.state) {
+      successHandler(res.repairId);
+    }
+    else {
+      errHandler(res.info || '未知错误');
     }
   }).catch((err) => {
     errHandler(err.response?.data?.info || '未知错误');
@@ -263,8 +325,212 @@ async function modifyPublicNotice(noticeData, successHandler, errHandler) {
   })
 }
 
+
+// 场地相关接口
+async function createVenue(venueData, successHandler, errHandler) {
+  await httpInstance.post('/api/Venue/AddVenue', venueData).then((res) => {
+    if (res.state) {
+      successHandler(res);
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
+  }).catch((err) => {
+    errHandler(err.response?.data?.info || '未知错误');
+  })
+}
+
+async function getAllVenues(successHandler, errHandler) {
+  await httpInstance.get('api/Venue/GetAllVenueInfos').then((res) => {
+    if (res.state) {
+      successHandler(res.data);
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
+  }).catch((err) => {
+    errHandler(err.response?.data?.info || '未知错误');
+  })
+}
+
+async function getVenueDetail(venueId, successHandler, errHandler) {
+  await httpInstance.get('api/Venue/GetVenueDetails', {
+    params: {
+      venueId: venueId,
+    }
+  }).then((res) => {
+    if (res.state) {
+      successHandler(res.data);
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
+  }).catch((err) => {
+    errHandler(err.response?.data?.info || '未知错误');
+  })
+}
+
+async function getAdminVenueDetail(venueId, successHandler, errHandler) {
+  await httpInstance.get('api/Venue/GetVenueDetails', {
+    params: {
+      venueId: venueId,
+    }
+  }).then((res) => {
+    console.log(res);
+    if (res.state) {
+      successHandler(res.data);
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
+  }).catch((err) => {
+    console.log(err);
+    errHandler(err.response?.data?.info || '未知错误');
+  })
+}
+
+async function getVenueOpenTime(venueId, date, successHandler, errHandler) {
+  await httpInstance.get('/api/Venue/GetVenueAvailabilityByDate', {
+    params: {
+      venueId: venueId,
+      date: date,
+    }
+  }).then((res) => {
+    console.log(res);
+    if (res.state) {
+      successHandler(res.data);
+    }
+    else if (res.info === '未找到该日期的场地开放时间段') {
+      successHandler([]);
+    }
+    else {
+      errHandler(res.info || '未知错误')
+    }
+  }).catch((err) => {
+    console.log(err);
+    errHandler(err.response?.data?.info || '未知错误');
+  })
+}
+
+async function addVenueOpenTime(openTimeData, successHandler, errHandler) {
+  await httpInstance.post('/api/Venue/AddAvailability', openTimeData).then((res) => {
+    console.log(res);
+    successHandler();
+  }).catch((err) => {
+    console.log(err);
+    errHandler(err.response?.data || '未知错误');
+  })
+}
+
+// 管理员接口
+async function getAdminPermission(successHandler, errHandler) {
+  const userStore = useUserStore();
+  const { adminPermission } = storeToRefs(userStore);
+  await httpInstance.get().then((res) => {
+    if (res.state) {
+      adminPermission.value = {
+        venue: res.data.managedVenues,
+        device: res.data.managedEquipment
+      };
+      successHandler();
+      console.log(adminPermission.value);
+    }
+    else {
+      errHandler('获取管理员权限失败：' + res.info || '未知错误');
+    }
+  }).catch((err) => {
+    errHandler('获取管理员权限失败：' + err.response?.data?.info || '未知错误');
+  })
+}
+
+// 预约接口
+async function inidividualReservation(reservationData, successHandler, errHandler) {
+  const userStore = useUserStore();
+  const { userId } = storeToRefs(userStore);
+  await httpInstance.post('/api/Reservation/createUserReservation', reservationData, {
+    params: {
+      userId: userId.value,
+    }
+  }).then((res) => {
+    if (res.state) {
+      successHandler(res.reservationId);
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
+  }).catch((err) => {
+    console.log(err);
+    errHandler(err.response?.data?.info || '未知错误');
+  })
+}
+
+
+//获取统计数据
+async function getStatistics(venueTypes, successHandler, errHandler) {
+  await httpInstance.get('/api/Venue/AnalyzeVenueData', { params: { venueType: venueTypes } }).then((res) => {
+    console.log(res);
+    if (res.state) {
+      console.log(res.data)
+      successHandler(res.data);
+    }
+    else {
+      errHandler(res.info || '未知错误2');
+    }
+  }).catch((err) => {
+    errHandler(err.response?.data?.info || '未知错误');
+    console.log(err);
+  })
+}
+
+//获取特定场地统计数据
+async function getVenueStatistics(venueIds, successHandler, errHandler) {
+  await httpInstance.get('/api/Venue/AnalyzeVenueData', { params: { venueId: venueIds } }).then((res) => {
+    console.log(res);
+    if (res.state) {
+      console.log(res.data)
+      successHandler(res.data);
+    }
+    else {
+      errHandler(res.info || '未知错误2');
+    }
+  }).catch((err) => {
+    errHandler(err.response?.data?.info || '未知错误');
+    console.log(err);
+  })
+}
+
+async function getAllUserReservation(successHandler, errHandler) {
+  const userStore = useUserStore();
+  const { userId } = storeToRefs(userStore);
+  await httpInstance.get('api/Reservation/GetReservationsByUserId', {
+    params: {
+      userId: userId.value,
+    }
+  }).then((res) => {
+    successHandler(res);
+  }).catch((err) => {
+    console.log(err);
+    errHandler(err.response?.data || '未知错误');
+  })
+}
+
+async function getAllReservation(successHandler, errHandler) {
+  await httpInstance.get('api/Reservation/getReservationList').then((res) => {
+    console.log(res);
+    successHandler(res);
+  }).catch((err) => {
+    console.log(err);
+    errHandler(err?.response?.data);
+  })
+}
+
 export {
-  userLogin, userRegister, getUserInfo, fetchTeam, createTeam, getAllTeams, getTeamName,
-  getTeamDetail, addTeamUser, updateUserRole, removeTeamUser, getUserNotice, deleteUserNotice,
-  getRepairData, getAllPublicNotice, getPublicNoticeDetail, addPublicNotice, modifyPublicNotice
+  userLogin, userRegister, getUserInfo, getAllUsers, fetchTeam, createTeam, getAllTeams,
+  getTeamName, getTeamDetail, addTeamUser, updateUserRole, removeTeamUser,
+  getUserReservationGroup, getUserNotice, deleteUserNotice, getRepairData, addRepairRecord,
+  getAllPublicNotice, getPublicNoticeDetail, addPublicNotice, modifyPublicNotice, getAllVenues,
+  getVenueDetail, getAdminVenueDetail, addVenueOpenTime,
+  createVenue, getVenueOpenTime, getAdminPermission, inidividualReservation,
+  getAllUserReservation, getAllReservation, userModifiedInfo, userModifiedPassword,
+  getStatistics, getVenueStatistics
 };

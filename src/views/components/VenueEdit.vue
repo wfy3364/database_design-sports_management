@@ -1,20 +1,25 @@
 <script setup>
 
 import { ref, computed, onMounted } from 'vue';
-import { dayjs } from 'element-plus';
+import { dayjs, ElMessage, ElStep } from 'element-plus';
 import { convertTime } from '@/apis/utils';
+import Uploadphotos from '../Uploadphotos.vue';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
+import { createVenue, getVenueOpenTime, addVenueOpenTime } from '@/apis/requests';
 
 const detailDialog = ref(true);
 const editingRecord = ref(null);
 const exitConfirmDialog = ref(false);
 const errDialog = ref(false);
+const successDialog = ref(false);
+const resVenueId = ref('');
 const errMsg = ref('');
 const props = defineProps({
   dialogMode: String,
   curRecord: {
     id: String,
+    img: String,
     name: String,
     type: String,
     capacity: Number,
@@ -62,7 +67,32 @@ const dialogTitle = {
 const sports = ref(['足球', '篮球', '网球', '羽毛球', '其它']);
 const customType = ref('');
 
-onMounted(() => {
+async function getCurOpenTime(){
+  await getVenueOpenTime(props.curRecord.id, openDate.value, getOpenTimeSuccess, getOpenTimeErr)
+}
+
+function getOpenTimeSuccess(res){
+  openTime.value = res.map((item) => {
+    return {
+      id: item.availabilityId,
+      start_time: item.startTime,
+      end_time: item.endTime,
+      price: item.price,
+      remain: item.remainingCapacity,
+    }
+  });
+  editingTime.value.push({
+    date: openDate.value,
+    time: openTime.value,
+  });
+  editingDateIndex.value = editingTime.value.length - 1;
+}
+
+function getOpenTimeErr(msg){
+  ElMessage.error('获取场地开放时间失败：' + msg);
+}
+
+onMounted(async () => {
   if(props.dialogMode === 'edit'){
     editingRecord.value = {
       name: props.curRecord.name,
@@ -70,17 +100,9 @@ onMounted(() => {
       capacity: props.curRecord.capacity,
       address: props.curRecord.address,
       description: props.curRecord.description,
+      img: props.curRecord.img,
     };
-    editingTime.value = [{
-      date: openDate.value,
-      time: openTime.value.map(item => {
-      return {
-        id: item.id,
-        period: [item.start_time, item.end_time],
-        remain: item.remain,
-        price: item.price,
-      }})
-    }];
+    await getCurOpenTime();
   }
   else if(props.dialogMode === 'create'){
     editingRecord.value = {
@@ -90,7 +112,12 @@ onMounted(() => {
       capacity: 10,
       address: '',
       description: '',
-    }
+      img: '',
+    };
+    editingTime.value = [{
+      date: openDate.value,
+      time: [],
+    }];
   }
 });
 
@@ -99,32 +126,31 @@ function setDate(val){
   handleDateChange();
 }
 
-function handleDateChange(){
+async function handleDateChange(){
   for(let i = 0; i < editingTime.value.length; i++){
     if(editingTime.value[i].date === openDate.value){
       editingDateIndex.value = i;
       return;
     }
   }
-  // 此处需要获取后端数据
-  editingTime.value.push({
-    date: openDate.value,
-    time: [{
-      id: '3',
-      period: [],
-      remain: 0,
-      price: 10,
-    }]
-  });
-  editingDateIndex.value = editingTime.value.length - 1;
+  if(props.dialogMode === 'create'){
+    editingTime.value.push({
+      date: openDate.value,
+      time: [],
+    });
+    editingDateIndex.value = editingTime.value.length - 1;
+  }
+  else{
+    await getCurOpenTime();
+  }
 }
 
 function dialogExitConfirm(){
-  if(props.dialogMode === 'view'){
-    // detailDialog.value = false;
-    emit('closeModal');
-    return;
-  }
+  // if(props.dialogMode === 'view'){
+  //   // detailDialog.value = false;
+  //   emit('closeModal');
+  //   return;
+  // }
   exitConfirmDialog.value = true;
 }
 
@@ -168,18 +194,77 @@ function validateEdit(){
   return true;
 }
 
+function convertTimeSlots(){
+  let resArr = [];
+  for(const item in editingTime.value){
+    resArr = [...resArr, ...item.time.map(timeSlot => {
+      return {
+        startTime: dayjs(item.date).set('hour', timeSlot.period[0].getHours()).set('minute', timeSlot.period[0].getMinutes()),
+        endTime: dayjs(item.date).set('hour', timeSlot.period[1].getHours()).set('minute', timeSlot.period[1].getMinutes()),
+        price: timeSlot.price,
+        remainingCapacity: timeSlot.remain,
+      }
+    })];
+  }
+  return resArr;
+}
+
 function handleEdit(){
   if(!validateEdit()){
     return;
   }
 }
 
-function handleCreate(){
+async function handleCreate(){
   if(!validateEdit()){
     return;
   }
+  const venueData = {
+    name: editingRecord.value.name,
+    type: editingRecord.value.type,
+    capacity: editingRecord.value.capacity,
+    status: '',
+    maintenanceCount: 0,
+    lastInspectionTime: new Date(),
+    venueImgUrl: editingRecord.value.img,
+    venueLocation: editingRecord.value.address,
+    venueDescription: editingRecord.value.description,
+  };
+  const addOpenTimeSlot = async (res) => {
+    ElMessage.success('创建场地成功');
+    resVenueId.value = res;
+    const timeSlotArr = convertTimeSlots();
+    console.log(timeSlotArr);
+    let curIndex = 0;
+    const step = async () => {
+      if(curIndex === timeSlotArr.length){
+        handleEditSuccess();
+      }
+      curIndex++;
+      await addVenueOpenTime(timeSlotArr[curIndex], step, handleCreateErr);
+    }
+    if(timeSlotArr.length > 0){
+      await addVenueOpenTime(timeSlotArr[curIndex], step, handleCreateErr);
+    }
+    else{
+      handleEditSuccess();
+    }
+  }
+  const handleEditSuccess = () => {
+    successDialog.value = true;
+  }
+  const handleCreateErr = (msg) => {
+    ElMessage.error('创建场地失败：' + msg);
+  }
+  await createVenue(venueData, addOpenTimeSlot, handleCreateErr)
 }
 
+
+
+function handleImgUpload(url){
+  console.log(url);
+  editingRecord.value.img = url;
+}
 
 </script>
 
@@ -187,6 +272,13 @@ function handleCreate(){
   <!-- 详细信息对话框 -->
   <el-dialog v-model="detailDialog" :title="dialogTitle[dialogMode]" align-center :before-close="dialogExitConfirm">
     <div class="dialogContent">
+      <div class="detailTitle">场地图片</div>
+      <div>
+        <img :src="editingRecord.img" alt="未选择图片">
+      </div class="uploadItem">
+      <div class="uploadItem">
+        <uploadphotos @upload="handleImgUpload"></uploadphotos>
+      </div>
       <div class="detailTitle">基本信息</div>
       <div v-if="dialogMode === 'edit'">
         <div class="detailLine">
@@ -226,16 +318,16 @@ function handleCreate(){
         <el-button size="small" @click="setDate(1)">&gt;</el-button>
         <el-button size="small" type="primary" class="addTimeButton" @click="addOpenTimeRow">添加时间</el-button>
       </div>
-      <el-table :data="editingTime[editingDateIndex].time">
+      <el-table :data="editingTime[editingDateIndex]?.time">
         <el-table-column label="时间">
           <template #default="item">
-            <el-time-picker size="small" class="timeSelect" arrow-control is-range 
+            <el-time-picker size="small" class="timeSelect" is-range 
             v-model="item.row.period" style="width: 100%;"></el-time-picker>
           </template>
         </el-table-column>
         <el-table-column label="剩余容量" width="120">
           <template #default="item">
-            <el-input-number size="small" v-model="item.row.remain" :min="0" :max="curRecord.capacity" 
+            <el-input-number size="small" v-model="item.row.remain" :min="0" :max="editingRecord.capacity" 
             style="width: 100%"></el-input-number>
           </template>
         </el-table-column>
@@ -267,9 +359,24 @@ function handleCreate(){
   </el-dialog>
   <!-- 错误提示 -->
   <el-dialog v-model="errDialog" title="编辑失败">
-    {{ errMsg }}
+    <div>{{ errMsg }}</div>
+    <div v-if="dialogMode === 'create' && resVenueId">
+      <div>场地ID：{{ resVenueId }}</div>
+    </div>
     <template #footer>
       <el-button type="primary" @click="errDialog = false">确定</el-button>
+    </template>
+  </el-dialog>
+  <el-dialog v-model="successDialog" title="编辑成功">
+    <div v-if="dialogMode === 'create'">
+      <div>成功创建场地</div>
+      <div>场地ID：{{ resVenueId }}</div>
+    </div>
+    <div v-else>
+      <div>成功编辑场地</div>
+    </div>
+    <template #footer>
+      <el-button type="primary" @click="successDialog = false; emit('closeModal')">确定</el-button>
     </template>
   </el-dialog>
 </template>
@@ -322,5 +429,9 @@ function handleCreate(){
   width: 100%;
 }
 
+.uploadItem{
+  display: flex;
+  justify-content: center;
+}
 
 </style>

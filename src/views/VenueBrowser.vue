@@ -26,6 +26,7 @@
       <div class="FilterControl">
         <el-button type="primary" @click="filterVenues">确认筛选</el-button>
         <el-button @click="filterReset">重置条件</el-button>
+        <el-button v-if="createCheck" @click="handleVenueCreate">添加场地</el-button>
       </div>
     </div>
 
@@ -38,7 +39,7 @@
         @click="viewVenueDetails(venue)" 
         role="button"
       >
-        <img class="venueImg" :src="venue.image" alt="场地图片" />
+        <img class="venueImg" :src="venue.img" alt="场地图片" />
         <div class="venue-details">
           <h3>{{ venue.name }}</h3>
           <p>ID: {{ venue.id }}</p>
@@ -58,9 +59,21 @@
     <el-dialog v-model="showVenueDetail" align-center :title="selectedVenue?.name">
       <div class="detailContent">
         <img class="venueImg" :src="selectedVenue.image" alt="场地图片" />
+        <div class="modalSubtitle">
+          <div class="openDateSelection">
+            <el-button size="small" @click="setDate(-1)">&lt;</el-button>
+            <el-date-picker v-model="venueDate" size="small" 
+            @change="handleDateChange()"></el-date-picker>
+            <el-button size="small" @click="setDate(1)">&gt;</el-button>
+          </div>
+        </div>
         <div class="venue-timeslots">
           <el-table :data="selectedVenue.timeslots" border :default-sort="{ prop: 'time' }">
-            <el-table-column prop="time" label="时间" sortable></el-table-column>
+            <el-table-column label="时间" sortable>
+              <template #default="item">
+                {{ venueTimeFormat(item.row.startTime, item.row.endTime) }}
+              </template>
+            </el-table-column>
             <el-table-column prop="capacity" label="剩余容量" width="105" sortable></el-table-column>
             <el-table-column prop="price" label="价格" width="80" sortable></el-table-column>
             <el-table-column label="操作" width="80">
@@ -72,6 +85,22 @@
         </div>
         
         <!-- 删除场地简介和场地公告部分 -->
+        <div class="modalSubtitle">场地简介</div>
+        <div class="modalItemContent">{{ selectedVenue.description || "暂无简介" }}</div>
+        <div class="modalSubtitle">场地公告</div>
+          <el-table :data="selectedVenue?.announcements" :key="selectedVenue.announcements?.id">
+            <el-table-column prop="title" label="标题"></el-table-column>
+            <el-table-column width="150" label="时间">
+              <template #default="item">
+                {{ convertTime(item.row.time) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="80">
+              <template #default="item">
+                <el-button size="small" @click="viewVenueNotice(item.row.id)">详情</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
         
         <div class="modalSubtitle">其他信息</div>
         <div class="modalItemContent">
@@ -97,14 +126,22 @@
         <el-button type="primary" @click="showVenueDetail = false">确定</el-button>
       </template>
     </el-dialog>
+    <VenueEdit v-if="editVenueDialog" :dialogMode="editDialogMode"
+    @closeModal="handleEditClose"></VenueEdit>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Search } from '@element-plus/icons-vue';
+import { useUserStore } from '@/stores/userStore';
+import { storeToRefs } from 'pinia';
+import VenueEdit from './components/VenueEdit.vue';
 import dayjs from 'dayjs';
+import { convertTime } from '@/apis/utils';
+import { getAllVenues, getVenueDetail } from '@/apis/requests';
+import { ElMessage } from 'element-plus';
 
 // 场地数据示例，包括ID、名称、运动类型、图片、时间段、管理员信息和地址
 const venues = ref([
@@ -157,7 +194,7 @@ const venues = ref([
     totalCapacity: 70,
     image: '',
     timeslots: [
-      { id: 1, time: '2024-08-24 07:00-09:00', capacity: 10, price: 100 },
+      { id: 1, startTime: '2024-08-24 07:00-09:00', capacity: 10, price: 100 },
       { id: 2, time: '2024-08-24 09:00-11:00', capacity: 12, price: 120 },
     ],
     manager: '赵六',
@@ -170,6 +207,9 @@ const venues = ref([
 // 运动类型选项
 const sports = ref(['足球', '篮球', '网球', '羽毛球']);
 
+const userStore = useUserStore();
+const { adminType } = storeToRefs(userStore);
+
 // 定义搜索和筛选相关的状态
 const searchQuery = ref('');
 const selectedSport = ref('');
@@ -179,13 +219,41 @@ const venueDate = ref(dayjs().format("YYYY-MM-DD"));
 const filterDate = ref(dayjs().format("YYYY-MM-DD"));
 const enableDateFilter = ref(false);
 const router = useRouter();
+const createCheck = computed(() => {
+  return adminType.value === 'system';
+})
 
 const filteredVenues = ref([]);
 
+const editVenueDialog = ref(false);
+const editDialogMode = ref('create');
+
+onMounted(async () => {
+  await getAllVenues(initializeVenues, getAllVenuesErr);
+});
+
+
 // 初始化场地列表
-const initializeVenues = () => {
+const initializeVenues = (res) => {
+  console.log(res);
+  venues.value = res.map(item => {
+    return {
+      id: item.venueId,
+      name: item.name,
+      sport: item.type,
+      totalCapacity: item.capacity,
+      img: item.image,
+    }
+  });
+  
   filteredVenues.value = venues.value.sort((a, b) => a.name.localeCompare(b.name));
 };
+
+const getAllVenuesErr = (msg) => {
+  ElMessage.error('获取场地数据失败：' + msg);
+  venues.value = [];
+  filteredVenues.value = [];
+}
 
 // 处理筛选操作的函数
 const filterVenues = () => {
@@ -208,18 +276,69 @@ const filterReset = () => {
   selectedSport.value = '';
   enableDateFilter.value = false;
   filterDate.value = dayjs().format("YYYY-MM-DD");
-  initializeVenues();
+  getAllVenues(initializeVenues, getAllVenuesErr);
 };
 
 // 显示场地详情的函数
-const viewVenueDetails = (venue) => {
-  selectedVenue.value = venue;
-  showVenueDetail.value = true;
+const viewVenueDetails = async (venue) => {
+  console.log(venue);
+  if(adminType.value === 'normal'){
+    await getVenueDetail(venue.id, processVenueDetail, venueDetailErr)
+  }
+  else{
+    router.push({
+      path: '/AdminVenueDetail',
+      query: {
+        venueId: venue.id,
+      }
+    });
+  }
+
+  // selectedVenue.value = venue;
+  // showVenueDetail.value = true;
 };
+
+// {
+//     id: 3,
+//     name: '篮球馆B',
+//     sport: '篮球',
+//     totalCapacity: 50,
+//     image: '',
+//     timeslots: [
+//       { id: 1, time: '2024-08-24 09:00-11:00', capacity: 5, price: 80 },
+//       { id: 2, time: '2024-08-24 11:00-13:00', capacity: 5, price: 90 },
+//     ],
+//     manager: '李四',
+//     address: '北京市海淀区篮球馆路2号',
+//     phone: '010-87654321',
+//   },
+
+const processVenueDetail = (res) => {
+  selectedVenue.value = {
+    id: res.venueId,
+    name: res.name,
+    sport: res.type,
+    totalCapacity: res.capacity,
+    img: res.venueImageUrl,
+
+  }
+  showVenueDetail.value = true;
+}
+
+const venueDetailErr = (msg) => {
+  ElMessage.error('获取场地详细信息失败：' + msg);
+}
 
 const showAnnouncementDetails = (announcement) => {
   alert(`公告详情:\n标题: ${announcement.title}\n时间: ${announcement.time}`);
 };
+
+const venueTimeFormat = (start, end) => {
+  const startStr = convertTime(start);
+  const endStr = convertTime(end);
+  return startStr.slice(startStr.length - 5, startStr.length)
+  + '-' + endStr.slice(endStr.length - 5, endStr.length);
+}
 
 // 关闭模态框的函数
 const closeModal = () => {
@@ -231,8 +350,8 @@ const bookVenue = (venue, slot) => {
   router.push({
     path: '/VenueReservation',
     query: {
-      venue: venue.id,
-      timeslot: slot.id,
+      venueId: venue.id,
+      timeslotId: slot.id,
     },
   });
 };
@@ -245,8 +364,16 @@ const handleDateChange = () => {
   // 处理日期变更逻辑
 };
 
-// 初始化
-initializeVenues();
+const handleVenueCreate = () => {
+  editVenueDialog.value = true;
+}
+
+const handleEditClose = (update) => {
+  editVenueDialog.value = false;
+  if(update){
+    initializeVenues();
+  }
+}
 
 </script>
 
@@ -309,7 +436,7 @@ initializeVenues();
 .venue-list {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
+  /* justify-content: space-between; */
   width: 100%;
   padding: 20px;
   box-sizing: border-box;
@@ -327,6 +454,7 @@ initializeVenues();
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-right: 3.33%;
   margin-bottom: 20px;
   box-sizing: border-box;
   cursor: pointer;
@@ -454,6 +582,10 @@ initializeVenues();
   max-height: 75vh;
 }
 
+.openDateSelection{
+  display: flex;
+  justify-content: center;
+}
 
 </style>
 

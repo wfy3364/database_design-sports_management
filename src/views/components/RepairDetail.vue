@@ -4,12 +4,15 @@ import { ref, computed, onMounted } from 'vue';
 import { convertTime, judgeState } from '@/apis/utils';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
+import { addRepairRecord } from '@/apis/requests';
 
 const detailDialog = ref(true);
 const editingRecord = ref(null);
 const exitConfirmDialog = ref(false);
 const errDialog = ref(false);
+const successDialog = ref(false);
 const errMsg = ref('');
+const resRepairId = ref('');
 const props = defineProps({
   dialogMode: String,
   curRecord: {
@@ -91,7 +94,7 @@ function selectDevice(deviceId){
 function dialogExitConfirm(){
   if(props.dialogMode === 'view'){
     // detailDialog.value = false;
-    emit('closeModal');
+    emit('closeModal', false);
     return;
   }
   exitConfirmDialog.value = true;
@@ -117,12 +120,29 @@ function handleEdit(){
   }
 }
 
-function handleCreate(){
+async function handleCreate(){
   if(!validateEdit()){
     return;
   }
+  const repairData = {
+    equipmentId: editingRecord.value.deviceId,
+    maintenanceStartTime: editingRecord.value.start_time,
+    maintenanceEndTime: editingRecord.value.end_time,
+    maintenanceDetails: editingRecord.value.description,
+  }
+  await addRepairRecord(repairData, handleEditSuccess, handleEditErr)
 }
 
+function handleEditSuccess(res){
+  successDialog.value = true;
+  resRepairId.value = res;
+  emit('closeModal', true);
+}
+
+function handleEditErr(msg){
+  errDialog.value = true;
+  errMsg.value = '编辑维修记录失败：' + msg;
+}
 
 </script>
 
@@ -228,6 +248,14 @@ function handleCreate(){
     <template #footer>
       <el-button type="primary" @click="errDialog = false">确定</el-button>
     </template>
+  </el-dialog>
+  <!-- 成功提示 -->
+  <el-dialog v-model="successDialog" title="编辑成功">
+    <div v-if="mode === 'edit'">成功编辑维修记录</div>
+    <div v-else>
+      <div>成功添加维修记录</div>
+      <div>维修记录ID：{{ resRepairId }}</div>
+    </div>
   </el-dialog>
 </template>
 

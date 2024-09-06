@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import { Line } from 'vue-chartjs';
 import { Chart as ChartJS, LineElement, PointElement, CategoryScale, LinearScale, Filler, Title } from 'chart.js';
+import { getStatistics } from '@/apis/requests';
 
 ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Filler, Title);
 
@@ -240,6 +241,21 @@ const revenueChart = computed(() => ({
     },
   },
 }));
+
+function showStatistics(){
+  getStatistics("羽毛球", getStatisticsSuccess, getStatisticsFailed);
+  return true;
+}
+
+function getStatisticsSuccess(res){
+  console.log(1);
+  // revenueDataList.value = res.reserveDescription;
+}
+
+function getStatisticsFailed(img){
+  console.log(0);
+  ElMessage.error(img);
+}
 </script>
 
 

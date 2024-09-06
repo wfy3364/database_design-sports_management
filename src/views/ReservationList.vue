@@ -83,7 +83,7 @@
           </div>
 
           
-          <el-table :data="filteredAppointments" :key="filteredAppointments.id" :show-overflow-tooltip="{ effect: 'light'}">
+          <el-table :data="filteredAppointments" :key="filteredAppointments?.id" :show-overflow-tooltip="{ effect: 'light'}">
             <el-table-column label="记录号" prop="id" width="100" sortable></el-table-column>
             <el-table-column label="场地名称" prop="venueName" width="110" sortable></el-table-column>
             <!-- <el-table-column label="操作时间" sortable>
@@ -377,14 +377,15 @@
   </template>
   
   <script setup>
-  import { ref, computed } from 'vue';
+  import { ref, computed, onMounted } from 'vue';
   import axios from 'axios';
   import { Search } from '@element-plus/icons-vue'
   import { convertTime } from '@/apis/utils';
   import { useUserStore } from '@/stores/userStore';
   import { storeToRefs } from 'pinia';
-  
-  const isLoggedIn = ref(false);
+  import { getAllReservation, getAllUserReservation } from '@/apis/requests';
+  import { ElMessage } from 'element-plus';
+
   const isFinished = ref(false); // 判断是否签到
   const isPerson = ref(false); // 判断是否是个人预约
   const isTeam = ref(false); // 判断是否是团体预约
@@ -403,7 +404,6 @@
   //const searchPlaceholder = ref(['预约记录ID', '场地名称或ID'])
   const reservationType = ref('0');
   const reservationTypeFilter = ref('2');
-  const statusCode = ref('0');
   const statusFilter = ref('0');
   const operationDateRange = ref([]);
   const operationDateRangeFilter = ref([]);
@@ -491,30 +491,64 @@
       { id: 108, nickname: "吴十", isSigned: "未签到", signTimeTeam: null },
     ]
   };
+  //----------------------------测试数据结束-----------------------------------
+
+  onMounted(async () => {
+    if(userCheck.value){
+      await getAllUserReservation(processReservation, getReservationErr);
+    }
+    else if(adminCheck.value){
+      await getAllReservation(processAdminReservation, getReservationErr);
+    }
+  })
+
+  // appointments.value = [
+  // {
+  //   id: '12345',
+  //   venueId: '1',
+  //   venueName: '体育场',
+  //   startTime: new Date('2023-08-21T10:00:00'),
+  //   endTime: new Date('2023-08-21T12:00:00'),
+  //   price: 100,
+  //   statusCode: 1, // 1: 已预约, 2: 已取消, 3: 已完成, 4: 违约
+  //   operationTime: new Date('2024-08-20T14:30:00'),
+  //   reservationType: 'individual',
+  //   signTime: null,
+  //   userID: '12345',
+  //   userRealName: '测试',
+  //   teamID: null,
+  //   teamName: null,
+  // },
+
+  const processReservation = (res) => {
+    appointments.value = res.map(item => {
+      return {
+        id: item.reservationId,
+        venueId: item.venueId,
+        venueName: item.venueName,
+        timeslotId: item.availabilityId,
+        startTime: item.startTime,
+        endTime: item.endTime,
+        operationTime: item.reservationTime,
+        price: item.paymentAmount,
+        reservationType: item.reservationType,
+      }
+    });
+    filteredAppointments.value = appointments.value;
+  }
+
+
+  const getReservationErr = (msg) => {
+    ElMessage.error('获取预约记录失败：' + msg);
+  }
+
+  const processAdminReservation = (res) => {
+    console.log(res);
+  }
 
 //------------------------ 测试数据--------------------------------
 
-  //从数据库获取数据，currentUser为当前用户
-  // const fetchUserData = async () => {
-  //   try {
-  //     loading.value = true;
-  //     const response = await axios.get('/api/user-data', {
-  //       params: { userId: props.currentUser.id }
-  //     });
-  //     userData.value = response.data;
-  //     //此处还需要获取用户所在团队数据
-  //   } catch (err) {
-  //     error.value = err.message;
-  //   } finally {
-  //     loading.value = false;
-  //   }
-  // };
-
-  // onMounted(() => {
-  //   fetchUserData();
-  // });
-
-  const filteredAppointments = ref(appointments.value);
+  // const filteredAppointments = ref(appointments.value);
 
   //placeholder内容
   const searchPlaceholder = ref([

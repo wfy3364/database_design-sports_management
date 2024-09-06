@@ -19,7 +19,7 @@
           <div>
             <el-checkbox v-model="agreePrivacy">
               已阅读并同意
-              <router-link to="/privacy-policy">隐私协议</router-link>
+              <router-link to="/Privacypolicy">隐私协议</router-link>
             </el-checkbox>
           </div>
           <div class="errDisplay">{{ errMsg }}</div>
@@ -33,17 +33,22 @@
 
 <script setup>
 import { ref } from 'vue';
-// import { useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 // import { storeToRefs } from 'pinia';
 import CryptoJS from 'crypto-js';
 // import { useUserStore } from '@/stores/userStore';
-import { userLogin } from '@/apis/requests';
+import { getAdminPermission, userLogin } from '@/apis/requests';
+import { useUserStore } from '@/stores/userStore';
+import { storeToRefs } from 'pinia';
 
 const username = ref('');
 const password = ref('');
 const isLogging = ref(false);
 const errMsg = ref('');
 const agreePrivacy = ref(false); // 新增的ref，用于跟踪用户是否同意隐私协议
+const userStore = useUserStore();
+const { isAuthenticated, userId, userName, adminType } = storeToRefs(userStore);
+const router = useRouter();
 
 const handleLogin = async () => {
   if (!username.value) {
@@ -76,8 +81,35 @@ const handleLogin = async () => {
     loginData.UserId = username.value;
   }
 
-  await userLogin(loginData, isLogging, errMsg);
+  await userLogin(loginData, adminLoginHandler, LoginErr);
 };
+
+const adminLoginHandler = async (res) => {
+  const LoginSuccess = () => {
+    isAuthenticated.value = true;
+    userId.value = res.userId;
+    userName.value = res.userName;
+    userStore.token = res.token;
+    isLogging.value = false;
+    // 跳转到home页面
+    router.push('/');
+    ElMessage.success('登录成功');
+  }
+
+  adminType.value = res.userType;
+  if(res.userType !== 'normal' && res.userType !== 'system'){
+    await getAdminPermission(LoginSuccess, LoginErr);
+  }
+  else{
+    LoginSuccess();
+  }
+}
+
+const LoginErr = (msg) => {
+  isLogging.value = false;
+  errMsg.value = '登录失败：' + msg;
+}
+
 </script>
 
 <script name="UserLogin">

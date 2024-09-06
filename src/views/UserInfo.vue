@@ -40,8 +40,8 @@
         <template #label>
           <div class="itemLabel">预约权限与违约情况</div>
         </template>
-        <div v-if="userData.reservationPermission === 'y'">有</div>
-        <div v-else>无</div>
+        <div v-if="userData.reservationPermission === 'y'">正常 (总违约次数:{{ userData.violationCount }})</div>
+        <div v-else>封禁中 (总违约次数:{{ userData.violationCount }})</div>
       </el-descriptions-item>
       <!-- <el-descriptions-item width="">
         <template #label>
@@ -61,7 +61,7 @@
             </el-radio-group>
         </div>
       </div>
-      <div class="chart-container">
+      <div class="chart-container" v-if="showStatistics()">
         <Line :data="revenueData" :options="revenueChart" class="line-chart" />
       </div>
       <div class="button-container">
@@ -146,7 +146,7 @@
   import { Chart as ChartJS, LineElement, PointElement, CategoryScale, LinearScale, Filler, Title } from 'chart.js';
   import CryptoJS from 'crypto-js';
   import { useRouter } from 'vue-router';
-  import { userRegister } from '@/apis/requests';
+  import { userModifiedInfo, userModifiedPassword, getStatistics } from '@/apis/requests';
   import { useUserStore } from '@/stores/userStore';
   import { storeToRefs } from 'pinia';
 
@@ -155,9 +155,9 @@
   const userStore = useUserStore();
   const { isAuthenticated, token, userId, userName, adminType, adminPermission } = storeToRefs(userStore);
 
-  const registerConfirm = ref(false);
+  // const registerConfirm = ref(false);
   const successConfirm = ref(false);
-  const isRegistering = ref(false);
+  // const isRegistering = ref(false);
   const resUserId = ref('');  //待填
   const fullName = ref('');    //待填
   const nickname = ref('');    //待填
@@ -184,10 +184,12 @@
     userData.value.realName = tempUserData.value.realName;
     userData.value.contactNumber = tempUserData.value.contactNumber;
     editInformation.value = null;
-    ElMessage({
-      message: '信息修改成功',
-      type: 'success',
-    })
+    const userInfo = {
+      username: userData.value.username,
+      contactNumber: userData.value.contactNumber,
+      realName: userData.value.realName
+    };
+    userModifiedInfo(userInfo, successHandler2, errHandler);
   };
 
   const showPasswordDialog = () => { //打开修改密码界面
@@ -220,32 +222,21 @@
   };
 
   const showPrivacyAgreement = () => {
-    router.push('/privacyAgreement');
+    router.push('/Privacypolicy');
   }
 
   const handleRegister = async () => {
     if (!validateInputs()) {
-      // alert('请确保所有字段填写正确。');
       return;
     }
-    isRegistering.value = true;
-    registerConfirm.value = false;
+    // isRegistering.value = true;
+    // registerConfirm.value = false;
     const encryptedOldPassword = CryptoJS.SHA256(oldPassword.value).toString();
-    const encryptedPassword = CryptoJS.SHA256(password.value).toString();
+    const encryptedPassword = { NewPassword: CryptoJS.SHA256(password.value).toString() };
 
-      // 创建注册数据对象
-    const registerData = {
-      // id: userId,
-      UserName: nickname.value,
-      OldPassword: encryptedOldPassword,
-      Password: encryptedPassword,
-      ContactNumber: phone.value,
-      UserType: 'normal',
-      RealName: fullName.value,
-    };
-
-    console.log('Register Data:', registerData);
-    await userRegister(registerData, isRegistering, successConfirm, errMsg)
+    // await userRegister(registerData, isRegistering, successConfirm, errMsg)
+    userModifiedPassword(encryptedOldPassword, encryptedPassword, successHandler3, errHandler);
+    changePassword.value = null;
   };
   
   const validateInputs = () => {
@@ -256,9 +247,6 @@
       { item: password, name: "密码"},
       { item: confirmPassword, name: "确认密码"}
     ];
-    // if (!fullName.value || !nickname.value || !password.value || !confirmPassword.value || !phone.value) {
-    //   return false;
-    // }
     for(const requiredItem of requiredItems){
       if(!requiredItem.item.value){
         errMsg.value = requiredItem.name + '不能为空';
@@ -291,10 +279,10 @@
   //   registrationTime: '2024-03-15 10:00:00'
   // }
   const userData = ref({
-    userId: '123123',
-    username: '用户昵称',
-    realName: '真实姓名',
-    contactNumber: '1145141919810',
+    userId: '',
+    username: '',
+    realName: '',
+    contactNumber: '',
     isVip: '',
     reservationPermission: '',
     registrationDate: '',
@@ -327,7 +315,7 @@
   const revenueType = ref('daily');
   const getMaxValue = (data) => Math.max(...data);
 
-  const revenueDataList = {
+  const revenueDataList = ref({
     daily: {
       labels: ['08-01', '08-02', '08-03', '08-04', '08-05', '08-06', '08-07'],
       data: [100, 200, 150, 100, 200, 150, 100, 200, 150],
@@ -340,13 +328,13 @@
       labels: ['2023-09', '2023-10', '2023-11', '2023-12', '2024-01', '2024-02', '2024-03', '2024-04', '2024-05', '2024-06', '2024-07', '2024-08'],
       data: [36000, 34000, 33000, 36000, 34000, 33000, 36000, 34000, 33000, 36000, 34000, 33000],
     }
-  };
+  });
   const revenueData = computed(() => ({
-    labels: revenueDataList[revenueType.value].labels,
+    labels: revenueDataList.value[revenueType.value].labels,
     datasets: [
       {
         label: '营收量',
-        data: revenueDataList[revenueType.value].data,
+        data: revenueDataList.value[revenueType.value].data,
         borderColor: '#5733FF',
         backgroundColor: 'rgba(87, 51, 255, 0.2)',
         borderWidth: 3,
@@ -401,9 +389,41 @@
   //     console.log('失败');
   //   }
   // });
+  function successHandler(res){
+    userData.value = res;
+  }
+
+  function successHandler2(res){
+    ElMessage.success("用户信息修改成功");
+  }
+
+  function successHandler3(res){
+    ElMessage.success("用户密码修改成功");
+  }
+
+  function errHandler(msg){
+    ElMessage.error('用户信息修改失败：' + msg);
+  }
+
   onMounted(async () => {
-    await getUserInfo(userData);
+    await getUserInfo(successHandler, errHandler);
   });
+
+  function showStatistics(){
+    getStatistics("羽毛球", getStatisticsSuccess, getStatisticsFailed);
+    return true;
+  }
+
+  function getStatisticsSuccess(res){
+    console.log(1);
+    // revenueDataList.value = res.reserveDescription;
+  }
+
+  function getStatisticsFailed(img){
+    console.log(0);
+    ElMessage.error(img);
+  }
+
   </script>
   
   <style scoped>
