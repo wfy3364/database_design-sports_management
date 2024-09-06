@@ -3,7 +3,7 @@ import { useUserStore } from '@/stores/userStore';
 
 const httpInstance = axios.create({
   baseURL: "http://localhost:5146/", // 后端url !!!test
-  timeout: 5000
+  timeout: 10000
 });
 
 // 拦截器

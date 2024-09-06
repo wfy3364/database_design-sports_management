@@ -58,7 +58,7 @@
         </div> -->
     <el-dialog v-model="showVenueDetail" align-center :title="selectedVenue?.name">
       <div class="detailContent">
-        <img class="venueImg" :src="selectedVenue.image" alt="场地图片" />
+        <img class="venueImg" :src="selectedVenue.img" alt="场地图片" />
         <div class="modalSubtitle">
           <div class="openDateSelection">
             <el-button size="small" @click="setDate(-1)">&lt;</el-button>
@@ -242,7 +242,7 @@ const initializeVenues = (res) => {
       name: item.name,
       sport: item.type,
       totalCapacity: item.capacity,
-      img: item.image,
+      img: item.venueImageUrl,
     }
   });
   
