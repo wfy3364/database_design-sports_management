@@ -88,7 +88,7 @@
               <div class="infoLabel">时间段：</div>
               <div class="infoContent">
                 <div v-if="!selectedTimeslot" class="noSelectInfo">未选择时间段</div>
-                <div v-else>{{ venueTimeFormat(selectedTimeslot.startTime, selectedTimeslot.endTime) }}</div>
+                <div v-else>{{ showReservationTime(selectedTimeslot.startTime, selectedTimeslot.endTime) }}</div>
               </div>
               <el-button size="small" class="infoOption" @click="showTimeslotModal = true" :disabled="!selectedVenue">选择时间</el-button>
             </div>
@@ -117,7 +117,7 @@
         </form>
 
         <!-- 选择团体模态框 -->
-        <el-dialog v-model="showGroupModal" title="选择团体">
+        <el-dialog v-model="showGroupModal" title="选择团体" align-center>
           <el-input v-model="groupSearch" placeholder="搜索团体" size="small" class="mb-2" >
             <template v-slot:append>
               <el-button @click="searchGroups">搜索</el-button>
@@ -127,7 +127,7 @@
             :data="filteredGroups"
             highlight-current-row
             @current-change="handleGroupSelect"
-            ref="groupSelectionRef"
+            ref="groupSelectionRef" max-height="70vh"
           >
             <el-table-column prop="id" label="团体ID" width="100" sortable></el-table-column>
             <el-table-column prop="name" label="团体名称"></el-table-column>
@@ -145,7 +145,7 @@
         </el-dialog>
 
         <!-- 选择场地模态框 -->
-        <el-dialog v-model="showVenueModal" title="选择场地">
+        <el-dialog v-model="showVenueModal" title="选择场地" align-center>
           <el-input v-model="venueSearch" placeholder="搜索场地" size="small" class="mb-2">
             <template v-slot:append>
               <el-button @click="searchVenues">搜索</el-button>
@@ -157,6 +157,7 @@
             :current-row-key="selectedVenue ? selectedVenue.id : ''"
             ref="venueSelectionRef"
             @current-change="handleVenueSelection"
+            max-height="70vh"
           >
             <el-table-column prop="id" label="场地号" width="100" sortable></el-table-column>
             <el-table-column prop="name" label="场地名称" sortable></el-table-column>
@@ -174,7 +175,7 @@
         </el-dialog>
 
         <!-- 选择时间段模态框 -->
-        <el-dialog v-model="showTimeslotModal" title="选择时间段">
+        <el-dialog v-model="showTimeslotModal" title="选择时间段" align-center>
           <!-- <el-input v-model="timeslotSearch" placeholder="搜索时间段" size="small" class="mb-2">
             <template v-slot:append>
               <el-button @click="searchTimeslots">搜索</el-button>
@@ -191,6 +192,7 @@
             highlight-current-row
             ref="timeslotSelectionRef"
             @current-change="handleTimeslotSelection"
+            max-height="70vh"
           >
             <el-table-column label="时间段">
               <template #default="item">
@@ -259,7 +261,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 // import { getVenueDetails, getTimeslotDetails, fetchAllVenues, fetchAllTimeslots } from '@/api'; // 引入API接口
 import { getAllVenues, inidividualReservation, getVenueOpenTime, getUserReservationGroup,
-  getTeamDetail,
+  getTeamDetail, groupReservation,
   getUserInfo
 } from '@/apis/requests';
 import { ElMessage, dayjs } from 'element-plus';
@@ -428,7 +430,7 @@ const getAllVenuesSuccess = (res) => {
 
   filteredVenues.value = [...allVenues.value];
   // filteredTimeslots.value = [...allTimeslots.value];
-  console.log(filteredVenues.value);
+  // console.log(filteredVenues.value);
 }
 
 const getAllVenuesErr = (msg) => {
@@ -472,6 +474,11 @@ const handleReservation = async () => {
     return;
   }
 
+  // if(new Date(selectedTimeslot.value.startTime).getTime() + 60 * 60 * 1000 < Date.now()){
+  //   reservationErr('当前时间段已不可预约，请预约当前时间1小时之后的时间段');
+  //   return;
+  // }
+
   // 如果预约类型为团体，检查团体选择和成员选择
   if (reservationType.value === 'group') {
     if (!selectedGroup.value) {
@@ -500,10 +507,10 @@ const handleReservation = async () => {
   if(reservationType.value === 'individual'){
     const reservationData = {
       venueId: selectedVenue.value.id,
-      availabilityId: selectedTimeslot.value.id,
+      availabilityId: selectedTimeslot.value.availabilityId,
       reservationType: 'individual',
       numOfPeople: reservationCount.value,
-      reservationItem: '',
+      reservationItem: 'any',
     }
     console.log(reservationData);
     await inidividualReservation(reservationData, reservationSuccess, reservationErr)
@@ -511,8 +518,16 @@ const handleReservation = async () => {
   else{
     const reservationData = {
       groupId: selectedGroup.value.id,
-
+      groupName: selectedGroup.value.name,
+      paymentAmount: selectedTimeslot.value.price,
+      venueId: selectedVenue.value.id,
+      availabilityId: selectedTimeslot.value.availabilityId,
+      reservationType: 'group',
+      reservationItem: 'any',
+      userIds: selectedMembers.value.map(user => user.id),
     }
+    console.log(reservationData);
+    await groupReservation(reservationData, reservationSuccess, reservationErr);
   }
 
   // 如果所有检查通过，显示成功信息
@@ -520,7 +535,7 @@ const handleReservation = async () => {
 };
 
 const reservationSuccess = (res) => {
-  resReservationId.value = res.reservationId;
+  resReservationId.value = res;
   successDialog.value = true;
   ElMessage.success('预约成功');
 }
@@ -642,8 +657,14 @@ const selectTimeslot = (row) => {
   timeslotSelectionRef.value.setCurrentRow(row);
 };
 
+const resetTimeslotSelection = () => {
+  selectTimeslot(null);
+}
+
+
 const handleTimeslotSelection = (row) => {
   selectedTimeslot.value = row;
+  console.log(selectedTimeslot.value);
 }
 
 const setDate = (val) => {
@@ -681,6 +702,12 @@ const venueTimeFormat = (start, end) => {
   + '-' + endStr.slice(endStr.length - 5, endStr.length);
 }
 
+const showReservationTime = (start, end) => {
+  const startStr = convertTime(start);
+  const endStr = convertTime(end);
+  return startStr + '-' + endStr.slice(endStr.length - 5, endStr.length);
+}
+
 const confirmTimeslotSelection = () => {
   // 点击确认按钮后关闭模态框并保存选择
   showTimeslotModal.value = false;
@@ -688,6 +715,7 @@ const confirmTimeslotSelection = () => {
 
 const handleMemberSelection = (selection) => {
   selectedMembers.value = selection;
+  // console.log(selectedMembers.value);
 };
 
 const confirmMemberSelection = () => {

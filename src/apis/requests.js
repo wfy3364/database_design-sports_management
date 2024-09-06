@@ -330,7 +330,7 @@ async function modifyPublicNotice(noticeData, successHandler, errHandler) {
 async function createVenue(venueData, successHandler, errHandler) {
   await httpInstance.post('/api/Venue/AddVenue', venueData).then((res) => {
     if (res.state) {
-      successHandler(res);
+      successHandler(res.venueId);
     }
     else {
       errHandler(res.info || '未知错误');
@@ -452,6 +452,7 @@ async function inidividualReservation(reservationData, successHandler, errHandle
       userId: userId.value,
     }
   }).then((res) => {
+    console.log(res);
     if (res.state) {
       successHandler(res.reservationId);
     }
@@ -460,6 +461,20 @@ async function inidividualReservation(reservationData, successHandler, errHandle
     }
   }).catch((err) => {
     console.log(err);
+    errHandler(err.response?.data?.info || '未知错误');
+  })
+}
+
+async function groupReservation(reservationData, successHandler, errHandler) {
+  await httpInstance.post('/api/Reservation/createGroupReservation', reservationData).then((res) => {
+    console.log(res);
+    if (res.state) {
+      successHandler(res.reservationId);
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
+  }).catch((err) => {
     errHandler(err.response?.data?.info || '未知错误');
   })
 }
@@ -555,7 +570,7 @@ async function addMaintenance(maintenanceInfo, successHandler, errHandler) {
 
 //修改保养记录
 async function modifyMaintenance(maintenanceInfo, successHandler, errHandler) {
-  await httpInstance.post('api/Venue/UpdateVenueMaintenance', maintenanceInfo).then((res) => {
+  await httpInstance.put('api/Venue/UpdateVenueMaintenance', maintenanceInfo).then((res) => {
     console.log(res);
     if(res.state){
       successHandler(res);
@@ -575,7 +590,35 @@ async function getAllReservation(successHandler, errHandler) {
     successHandler(res);
   }).catch((err) => {
     console.log(err);
-    errHandler(err?.response?.data);
+    errHandler(err?.response?.data || '未知错误');
+  })
+}
+
+async function getReservationMember(reservationId, successHandler, errHandler) {
+  await httpInstance.get('/api/Reservation/GetGroupReservationMembers', {
+    params: {
+      reservationId: reservationId,
+    }
+  }).then((res) => {
+    console.log(res);
+    // if (res.state) {
+    //   successHandler(res.data);
+    // }
+    // else {
+    //   errHandler(res.info || '未知错误');
+    // }
+    successHandler(res);
+  }).catch((err) => {
+    console.log(err);
+    errHandler(err?.response?.data || '未知错误');
+  })
+}
+
+async function updateReservation(updateData, successHandler, errHandler) {
+  await httpInstance.post('api/Reservation/UpdateReservationStatus', updateData).then((res) => {
+    successHandler();
+  }).catch((err) => {
+    errHandler(err.response?.data || '未知错误');
   })
 }
 
@@ -587,5 +630,6 @@ export {
   getVenueDetail, getAdminVenueDetail, addVenueOpenTime,
   createVenue, getVenueOpenTime, getAdminPermission, inidividualReservation,
   getAllUserReservation, getAllReservation, userModifiedInfo, userModifiedPassword,
-  getStatistics, getVenueStatistics, getMaintenanceList, addMaintenance, modifyMaintenance
+  getStatistics, getVenueStatistics, getMaintenanceList, addMaintenance, modifyMaintenance, 
+  getReservationMember, updateReservation, groupReservation
 };

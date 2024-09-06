@@ -18,8 +18,8 @@ const props = defineProps({
     id: String,
     venueId: String,
     venueName: String,
-    start_time: Date,
-    end_time: Date,
+    convertedStartDate: Date,
+    convertedEndDate: Date,
     description: String,
     state: Number,
   }
@@ -27,7 +27,6 @@ const props = defineProps({
 
 async function addMain(){
   // console.log(editingRecord.value);
-  console.log(editingRecord.value);
   const addMaintenanceData = {
     venueMaintenanceId: '',
     maintenanceStartDate: editingRecord.value.start_time,
@@ -35,7 +34,7 @@ async function addMain(){
     venueId: editingRecord.value.venueId,
     description: editingRecord.value.description,
   }
-  console.log(addMaintenanceData);
+  // console.log(addMaintenanceData);
   await addMaintenance(addMaintenanceData, addMaintenanceSuccess, addMaintenanceFailed);
 }
 
@@ -48,21 +47,19 @@ function addMaintenanceFailed(img){
 }
 
 async function modifyMain(){
-  // console.log(editingRecord.value);
   console.log(editingRecord.value);
   const addMaintenanceData = {
-    venueMaintenanceId: '',
+    venueMaintenanceId: editingRecord.value.venueMaintenanceId,
     maintenanceStartDate: editingRecord.value.start_time,
     maintenanceEndDate: editingRecord.value.end_time,
     venueId: editingRecord.value.venueId,
     description: editingRecord.value.description,
   }
   console.log(addMaintenanceData);
-  await addMaintenance(addMaintenanceData, modifyMaintenanceSuccess, modifyMaintenanceFailed);
+  await modifyMaintenance(addMaintenanceData, modifyMaintenanceSuccess, modifyMaintenanceFailed);
 }
 
 function modifyMaintenanceSuccess(res){
-  maintenanceData.value = 
   console.log('getMaintenanceSuccess');
 }
 
@@ -115,10 +112,12 @@ const EditCheck = computed(() => {
 
 onMounted(() => {
   if(props.dialogMode === 'edit'){
+    console.log(props);
     editingRecord.value = {
+      venueMaintenanceId: props.curRecord.venueMaintenanceId,
       venueId: props.curRecord.venueId,
-      start_time: props.curRecord.start_time,
-      end_time: props.curRecord.end_time,
+      start_time: props.curRecord.convertedStartDate,
+      end_time: props.curRecord.convertedEndDate,
       description: props.curRecord.description,
       state: computed(() => judgeState(editingRecord.value.start_time, editingRecord.value.end_time)),
     };
@@ -181,9 +180,9 @@ function handleCreate(){
 }
 
 function getVenuesSuccess(res){
-  console.log(res);
+  // console.log(res);
   allVenues.value = res
-  console.log(allVenues.value);
+  // console.log(allVenues.value);
 }
 
 function getVenuesFailed(){
@@ -237,13 +236,13 @@ function getVenuesFailed(){
       <div class="detailTitle">时间信息</div>
       <div class="detailLine">
         <div class="detailLabel">开始时间：</div>
-        <div v-if="dialogMode === 'view'"> {{ convertTime(curRecord.start_time) }} </div>
+        <div v-if="dialogMode === 'view'"> {{ convertTime(curRecord.convertedStartDate) }} </div>
         <el-date-picker v-else-if="dialogMode === 'edit' || dialogMode === 'create'"
         type="datetime" size="small" v-model="editingRecord.start_time"></el-date-picker>
       </div>
       <div class="detailLine">
         <div class="detailLabel">结束时间：</div>
-        <div v-if="dialogMode === 'view'"> {{ convertTime(curRecord.end_time) }} </div>
+        <div v-if="dialogMode === 'view'"> {{ convertTime(curRecord.convertedEndDate) }} </div>
         <el-date-picker v-else-if="dialogMode === 'edit' || dialogMode === 'create'"
         type="datetime" size="small" v-model="editingRecord.end_time"></el-date-picker>
       </div>
