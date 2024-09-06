@@ -2,6 +2,9 @@
     <div class="container" url="/public/test.pdf">
         <iframe :src="pdfurl" class="pdf-iframe"></iframe>
     </div>
+    <div class="buttonContainer">
+        <el-button @click="goBack" class = "backButton">返回</el-button>
+    </div>
 </template>
 
 
@@ -12,6 +15,11 @@ export default {
     data() {
         return {
             pdfurl: '/test.pdf'
+        }
+    },
+    methods:{
+        goBack(){
+            history.back();
         }
     }
 }
@@ -34,4 +42,18 @@ export default {
     border: none;
     object-fit: contain;
 }
+
+.buttonContainer {
+    margin: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.backButton {
+    font-size: large;
+    width: 200px;
+    height: 80px;
+
+}
+
 </style>

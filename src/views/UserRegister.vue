@@ -35,7 +35,8 @@
             </el-checkbox>
           </div>
           <div class="errDisplay">{{ errMsg }}</div>
-          <div>已有账号? <router-link to="/login">点此登录</router-link></div>
+          <div>已有账号? <router-link to="/login">点此登录</router-link>
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp  申请注册管理员? <router-link to="/AdminRegister">点此前往</router-link></div>
           <el-button class="registerButton" @click="validateInputs() && (registerConfirm = true)" 
           type="primary" size="large" :disabled="!agreePrivacy">注册</el-button>
         </form>

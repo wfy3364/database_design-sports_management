@@ -6,6 +6,7 @@ import AdminDevice from '@/views/AdminDevice.vue'
 import AdminDeviceDetail from '@/views/AdminDeviceDetail.vue'
 import AdminDeviceRepair from '@/views/AdminDeviceRepair.vue'
 import AdminNotifications from '@/views/AdminNotifications.vue'
+import AdminRegister from '@/views/AdminRegister.vue'
 import AdminVenueDetail from '@/views/AdminVenueDetail.vue'
 import AdminVenueMaintenance from '@/views/AdminVenueMaintenance.vue'
 import AdminStatistics from '@/views/AdminStatistics.vue'
@@ -106,10 +107,6 @@ const router = createRouter({
           component: UserInfo,
         },
         {
-          path: '/Privacypolicy',
-          component: Privacypolicy,
-        },
-        {
           path: '/Uploadphotos',
           component: Uploadphotos,
         },
@@ -122,8 +119,18 @@ const router = createRouter({
     },
     {
       path: '/UserRegister',
-      name: 'register',
+      name: 'UserRegister',
       component: UserRegister,
+    },
+    {
+      path: '/AdminRegister',
+      name: 'AdminRegister',
+      component: AdminRegister,
+    },
+    {
+      path: '/Privacypolicy',
+      name: 'Privacypolicy',
+      component: Privacypolicy,
     },
   ]
 })
@@ -131,7 +138,7 @@ const router = createRouter({
 router.beforeEach(async (to, from) => {
   const userStore = useUserStore();
   const { isAuthenticated } = storeToRefs(userStore);
-  if (!isAuthenticated.value && to.name != 'login' && to.name != 'register') {
+  if (!isAuthenticated.value && to.name != 'login' && to.name != 'AdminRegister' && to.name != 'UserRegister' && to.name != 'Privacypolicy') {
     return { path: '/Login' };
   }
   return true;

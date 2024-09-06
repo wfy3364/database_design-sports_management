@@ -1,18 +1,21 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router'; // 导入 useRouter
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router'; // 导入 useRoute
 import { convertTime, judgeState } from '@/apis/utils';
 import RepairDetail from './components/RepairDetail.vue';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
 
-const router = useRouter(); // 初始化路由器
+const route = useRoute(); // 初始化路由器
+const router = useRouter();
+const id = ref();
 const curRecord = ref(null);
 const detailDialog = ref(false);
 const dialogMode = ref('view');
 const userStore = useUserStore();
 const { adminType, adminPermission } = storeToRefs(userStore);
 const deviceEdit = ref(false);
+const recordDetails = ref('');
 
 function showRepairDetail(record, mode){
   curRecord.value = record;
@@ -26,13 +29,7 @@ const EditCheck = computed(() => { //检查管理员权限
         record.deviceId in adminPermission.value.device
 });
 
-const deviceInfo = ref({
-  id: 1,
-  name: "设备01",
-  venue: "场地1",
-  state: 0,
-  introTime: "2024-08-20 13:00"
-});
+const deviceInfo = ref('');
 
 const tempDeviceInfo = ref({
   name: deviceInfo.value.name,
@@ -44,6 +41,59 @@ const tempDeviceInfo = ref({
 //   "设备名称：": deviceInfo.value.name,
 //   "设备引入时间：": deviceInfo.value.introTime, 
 // });
+
+
+const devices = [
+  {
+    id: 1,
+    name: '设备1',
+    state: 0,
+    introTime: '2024-08-12',
+    venueid: 1,
+    venuename: '篮球场',
+  },
+  {
+    id: 2,
+    name: '设备3',
+    state: 1,
+    introTime: '2024-08-15',
+    venueid: 1,
+    venuename: '篮球场',
+  },
+  {
+    id: 3,
+    name: '设备5',
+    state: 2,
+    introTime: '2024-08-16',
+    venueid: 2,
+    venuename: '羽毛球场',
+  },
+  {
+    id: 4,
+    name: '设备13',
+    state: 3,
+    introTime: '2024-08-18',
+    venueid: 3,
+    venuename: '健身房',
+  },
+  {
+    id: 5,
+    name: '设备11',
+    state: 2,
+    introTime: '2024-08-18',
+    venueid: 3,
+    venuename: '健身房',
+  },
+  {
+    id: 6,
+    name: '设备18',
+    state: 3,
+    introTime: '2024-08-14',
+    venueid: 5,
+    venuename: '田径场',
+  },
+  // 更多设备数据...
+];
 
 // 计算维修记录状态
 const repairRecord = [{
@@ -78,14 +128,54 @@ const repairRecord = [{
 },
 {
   id: 4,
-  deviceId: 1,
-  deviceName: '设备1',
+  deviceId: 2,
+  deviceName: '设备2',
   venueId: 1,
   venueName: '场地1',
   start_time: new Date("September 19, 2024 13:00:00"),
   end_time: new Date("September 19, 2024 14:00:00"),
   description: "这里是维修描述文字",
-}];
+},
+{
+  id: 5,
+  deviceId: 2,
+  deviceName: '设备2',
+  venueId: 1,
+  venueName: '场地1',
+  start_time: new Date("August 19, 2024 13:00:00"),
+  end_time: new Date("August 19, 2024 14:00:00"),
+  description: "维修描述过长时，多余内容隐藏，当鼠标移动到对应位置时以提示框的方式显示",
+},
+{
+  id: 6,
+  deviceId: 4,
+  deviceName: '设备5',
+  venueId: 1,
+  venueName: '场地1',
+  start_time: new Date("August 19, 2024 13:00:00"),
+  end_time: new Date("August 19, 2024 14:00:00"),
+  description: "维修描述过长时，多余内容隐藏，当鼠标移动到对应位置时以提示框的方式显示",
+},
+{
+  id: 7,
+  deviceId: 4,
+  deviceName: '设备5',
+  venueId: 1,
+  venueName: '场地1',
+  start_time: new Date("August 19, 2024 13:00:00"),
+  end_time: new Date("August 19, 2024 14:00:00"),
+  description: "维修描述过长时，多余内容隐藏，当鼠标移动到对应位置时以提示框的方式显示",
+},
+{
+  id: 8,
+  deviceId: 1,
+  deviceName: '设备1',
+  venueId: 1,
+  venueName: '场地1',
+  start_time: new Date("August 19, 2024 13:00:00"),
+  end_time: new Date("August 19, 2024 14:00:00"),
+  description: "维修描述过长时，多余内容隐藏，当鼠标移动到对应位置时以提示框的方式显示",
+},];
 
 repairRecord.map((record) => {
   record.start_str = convertTime(record.start_time);
@@ -140,6 +230,15 @@ const options = [
     label: '场地5',
   },
 ]
+
+onMounted(async () => {
+  const { deviceId } = route.query;
+  id.value = deviceId;
+  deviceInfo.value = devices.find(item => item.id == deviceId);
+  console.log(deviceInfo);
+  recordDetails.value = repairRecord.filter(item => item.deviceId == deviceId);
+})
+
 </script>
 
 <template>
@@ -184,7 +283,7 @@ const options = [
     <div class="DetailArea">
       <div class="MaintainenceArea">
         <div class="MaintainenceTitle">维修记录</div>
-        <el-table :data="repairRecord" border>
+        <el-table :data="recordDetails" border>
           <el-table-column prop="id" label="编号" width="55"></el-table-column>
           <el-table-column prop="start_str" label="时间" width="140"></el-table-column>
           <el-table-column prop="description" label="描述" :show-overflow-tooltip="{ effect: 'light'}"></el-table-column>

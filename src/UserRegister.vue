@@ -28,13 +28,14 @@
             <el-input v-model="phone" id="phone" type="text" />
           </div>
           <!-- 新增的隐私协议多选框 -->
-          <div>
+          <!-- <div>
             <el-checkbox v-model="agreePrivacy">
               已阅读并同意
               <router-link to="/privacy-policy">隐私协议</router-link>
             </el-checkbox>
-          </div>
+          </div> -->
           <div class="errDisplay">{{ errMsg }}</div>
+          <div>申请注册管理员? <router-link to="/AdminRegister">点此前往</router-link></div>
           <div>已有账号? <router-link to="/login">点此登录</router-link></div>
           <el-button class="registerButton" @click="validateInputs() && (registerConfirm = true)" 
           type="primary" size="large" :disabled="!agreePrivacy">注册</el-button>

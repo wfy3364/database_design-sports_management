@@ -78,6 +78,24 @@ async function userRegister(RegisterData, isRegistering, registerSuccess, resId,
   })
 }
 
+async function adminRegister(RegisterData, contactAdminId, isRegistering, registerSuccess, resId, errMsg) {
+  await httpInstance.post('/api/User/Register', RegisterData).then((res) => {
+    if (res.state) {
+      resId.value = res.userId;
+      isRegistering.value = false;
+      registerSuccess.value = true;
+    }
+    else {
+      console.log(res);
+      errMsg.value = '注册失败：' + (res.info || '未知错误');
+      isRegistering.value = false;
+    }
+  }).catch((err) => {
+    console.log(err);
+    errMsg.value = '注册失败：' + (err.response?.data?.info || '登录请求异常');
+    isRegistering.value = false;
+  })
+}
 // 获取用户个人信息
 async function getUserInfo(successHandler, errHandler) {
   const userStore = useUserStore();
@@ -525,7 +543,7 @@ async function getAllReservation(successHandler, errHandler) {
 }
 
 export {
-  userLogin, userRegister, getUserInfo, getAllUsers, fetchTeam, createTeam, getAllTeams,
+  userLogin, userRegister, adminRegister, getUserInfo, getAllUsers, fetchTeam, createTeam, getAllTeams,
   getTeamName, getTeamDetail, addTeamUser, updateUserRole, removeTeamUser,
   getUserReservationGroup, getUserNotice, deleteUserNotice, getRepairData, addRepairRecord,
   getAllPublicNotice, getPublicNoticeDetail, addPublicNotice, modifyPublicNotice, getAllVenues,

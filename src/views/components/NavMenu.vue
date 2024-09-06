@@ -1,15 +1,23 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from "vue-router";
 import { ref, computed } from "vue";
+import { storeToRefs } from "pinia";
+import { useUserStore } from '@/stores/userStore'
 import { usePermissionStoreHook } from "@/router/permission";
 import LaySidebarItem from "./SidebarItem.vue";
 import { ElScrollbar, ElMenu } from "element-plus";
 
 const route = useRoute();
 const router = useRouter();
+const userStore = useUserStore();
+const { adminType } = storeToRefs(userStore);
 
 const menuData = computed(() => {
-  return usePermissionStoreHook().wholeMenus;
+  console.log(adminType.value);
+  if (adminType.value == "normal")
+    return usePermissionStoreHook().userWholeMenus;
+  else
+    return usePermissionStoreHook().adminWholeMenus;
 });
 
 const defaultActive = computed(() => route.path);

@@ -34,10 +34,10 @@
         <div class="device-details">
           <h3>{{ device.name }}</h3>
           <p>ID: {{ device.id }}</p>
-          <p v-if="device.status === 0" style="color: green">使用中</p>
-          <p v-if="device.status === 1" style="color: red">维修中</p>
-          <p v-if="device.status === 2" style="color: orange">待维修</p>
-          <p v-if="device.status === 3" style="color: gray">未使用</p>
+          <p v-if="device.state === 0" style="color: green">使用中</p>
+          <p v-if="device.state === 1" style="color: red">维修中</p>
+          <p v-if="device.state === 2" style="color: orange">待维修</p>
+          <p v-if="device.state === 3" style="color: gray">未使用</p>
         </div>
       </div>
     </div>
@@ -45,14 +45,16 @@
     <el-dialog v-model="showDeviceDetail" align-center :title="selectedDevice?.name">
       <div class="detailContent">
         <div>ID: {{ selectedDevice.id }}</div>
-        <div v-if="selectedDevice.status === 0" style="color: green">使用中</div>
-        <div v-if="selectedDevice.status === 1" style="color: red">维修中</div>
-        <div v-if="selectedDevice.status === 2" style="color: orange">待维修</div>
-        <div v-if="selectedDevice.status === 3" style="color: gray">未使用</div>
+        <div v-if="selectedDevice.state === 0" style="color: green">使用中</div>
+        <div v-if="selectedDevice.state === 1" style="color: red">维修中</div>
+        <div v-if="selectedDevice.state === 2" style="color: orange">待维修</div>
+        <div v-if="selectedDevice.state === 3" style="color: gray">未使用</div>
         <div>引入时间： {{ selectedDevice.introTime }} </div>
         <div>所在场地id： {{ selectedDevice.venueid }} </div>
         <div>所在场地名称： {{ selectedDevice.venuename }} </div>
-        <div>维修记录：  <el-button @click="showDeviceRecords"> 显示维修记录 </el-button> </div>
+        <div>维修记录：  
+          <el-button class="Button" @click="goToDeviceRecords(selectedDevice.id)"> 查看维修记录</el-button>
+        </div>
       </div>
       <template #footer>
         <el-button type="primary" @click="showDeviceDetail = false">确定</el-button>
@@ -62,7 +64,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { Search } from '@element-plus/icons-vue';
 import dayjs from 'dayjs';
@@ -71,7 +73,7 @@ const devices = ref([
   {
     id: 1,
     name: '设备1',
-    status: 0,
+    state: 0,
     introTime: '2024-08-12',
     venueid: 1,
     venuename: '篮球场',
@@ -79,7 +81,7 @@ const devices = ref([
   {
     id: 2,
     name: '设备3',
-    status: 1,
+    state: 1,
     introTime: '2024-08-15',
     venueid: 1,
     venuename: '篮球场',
@@ -87,7 +89,7 @@ const devices = ref([
   {
     id: 3,
     name: '设备5',
-    status: 2,
+    state: 2,
     introTime: '2024-08-16',
     venueid: 2,
     venuename: '羽毛球场',
@@ -95,7 +97,7 @@ const devices = ref([
   {
     id: 4,
     name: '设备13',
-    status: 3,
+    state: 3,
     introTime: '2024-08-18',
     venueid: 3,
     venuename: '健身房',
@@ -103,7 +105,7 @@ const devices = ref([
   {
     id: 5,
     name: '设备11',
-    status: 2,
+    state: 2,
     introTime: '2024-08-18',
     venueid: 3,
     venuename: '健身房',
@@ -111,7 +113,7 @@ const devices = ref([
   {
     id: 6,
     name: '设备18',
-    status: 3,
+    state: 3,
     introTime: '2024-08-14',
     venueid: 5,
     venuename: '田径场',
@@ -141,13 +143,16 @@ const initializeDevices = () => {
 
 // 处理筛选操作的函数
 const filterDevices = () => {
-  filteredDevices.value = Devices.value.filter(device => {
+  filteredDevices.value = devices.value.filter(device => {
     const matchesSearchQuery = searchQuery.value
       ? (isNaN(+searchQuery.value)
         ? device.name.includes(searchQuery.value)
         : device.id.toString() === searchQuery.value)
       : true;
-    return matchesSearchQuery && matchesSport && matchesDate;
+    const matchesDate = enableDateFilter.value
+      ? device.introTime.some(slot => slot.time.includes(filterDate.value))
+      : true;
+    return matchesSearchQuery && matchesDate;
   }).sort((a, b) => a.name.localeCompare(b.name));
 };
 
@@ -163,33 +168,45 @@ const viewDeviceDetails = (device) => {
   showDeviceDetail.value = true;
 };
 
-const showAnnouncementDetails = (announcement) => {
-  alert(`公告详情:\n标题: ${announcement.title}\n时间: ${announcement.time}`);
-};
-
-// 关闭模态框的函数
-const closeModal = () => {
-  selectedDevice.value = null; 
-};
-
-// 处理场地预约的函数
-const bookVenue = (venue, slot) => {
+const goToDeviceRecords = async (id) => {
+  console.log(id);
   router.push({
-    path: '/VenueReservation',
+    path: '/AdminDeviceDetail',
     query: {
-      venue: venue.id,
-      timeslot: slot.id,
-    },
+      deviceId: id,
+    }
   });
-};
 
-const setDate = (val) => {
-  venueDate.value = dayjs(venueDate.value).add(val, "day").format("YYYY-MM-DD");
+  // selectedVenue.value = venue;
+  // showVenueDetail.value = true;
 };
+// const showAnnouncementDetails = (announcement) => {
+//   alert(`公告详情:\n标题: ${announcement.title}\n时间: ${announcement.time}`);
+// };
 
-const handleDateChange = () => {
-  // 处理日期变更逻辑
-};
+// // 关闭模态框的函数
+// const closeModal = () => {
+//   selectedDevice.value = null; 
+// };
+
+// // 处理场地预约的函数
+// const bookVenue = (venue, slot) => {
+//   router.push({
+//     path: '/VenueReservation',
+//     query: {
+//       venue: venue.id,
+//       timeslot: slot.id,
+//     },
+//   });
+// };
+
+// const setDate = (val) => {
+//   venueDate.value = dayjs(venueDate.value).add(val, "day").format("YYYY-MM-DD");
+// };
+
+// const handleDateChange = () => {
+//   // 处理日期变更逻辑
+// };
 
 // 初始化
 initializeDevices();
@@ -280,7 +297,7 @@ initializeDevices();
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
-.venue-item:hover {
+.device-item:hover {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   transform: translateY(-5px);
 }
@@ -396,8 +413,6 @@ initializeDevices();
   margin: 20px 0;
 }
 
-.detailContent{
-}
 
 
 </style>

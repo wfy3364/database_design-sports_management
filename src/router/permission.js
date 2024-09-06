@@ -19,6 +19,28 @@ const userMenuData = [
     title:'场地浏览',
   },
   {
+    path:'/UserInfo',
+    title:'个人信息',
+  },
+];
+const adminMenuData = [
+  {
+    path:'/',
+    title: '主界面',
+  },
+  {
+    path:'/TeamManagement',
+    title:'团队管理',
+  },
+  {
+    path:'/TeamCreate',
+    title:'团队创建',
+  },
+  {
+    path:'/VenueBrowser',
+    title:'场地浏览',
+  },
+  {
     path:'/VenueReservation',
     title:'场地预约',
   },
@@ -27,20 +49,17 @@ const userMenuData = [
     title:'管理员设备',
   },
   {
-    path:'/AdminDeviceDetail',
-    title:'管理员设备细节',
-  },
-  {
     path:'/UserInfo',
     title:'个人信息',
   },
 ];
 
-
 //const type = userMenuData.adminType;
 
 export const usePermissionStoreHook = defineStore('permission', {
+  
   state: () => ({
-    wholeMenus: userMenuData,
+    userWholeMenus: userMenuData,
+    adminWholeMenus: adminMenuData,
   }),
 });
