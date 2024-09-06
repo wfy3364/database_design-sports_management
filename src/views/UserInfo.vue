@@ -1,11 +1,16 @@
 <template>
   <div class="container">
-    <div class="userInfoTitle">
+    <div class="userInfoTitle" v-if="adminType.value == 'normal'">
       <div class="title">用户账号信息</div>
       <!-- [修改位置] 添加编辑按钮 -->
       <el-button type="primary" @click="showEditDialog" class = "edit-button">编辑</el-button>
     </div>
-    <el-descriptions :column="2" border>
+    <div class="userInfoTitle" v-if="adminType.value != 'normal'">
+      <div class="title">管理员账号信息</div>
+      <!-- [修改位置] 添加编辑按钮 -->
+      <el-button type="primary" @click="showEditDialog" class = "edit-button">编辑</el-button>
+    </div>
+    <el-descriptions :column="2" border v-if="adminType.value == 'normal'">
       <el-descriptions-item min-width="">
         <template #label>
           <div class="itemLabel">用户ID</div>
@@ -43,11 +48,25 @@
         <div v-if="userData.reservationPermission === 'y'">正常 (总违约次数:{{ userData.violationCount }})</div>
         <div v-else>封禁中 (总违约次数:{{ userData.violationCount }})</div>
       </el-descriptions-item>
+    </el-descriptions>
+    <el-descriptions :column="2" border v-if="adminType.value != 'normal'">
+      <el-descriptions-item min-width="">
+        <template #label>
+          <div class="itemLabel">管理员ID</div>
+        </template>
+        {{ userData.userId }}
+      </el-descriptions-item>
+      <el-descriptions-item width="">
+        <template #label>
+          <div class="itemLabel">管理员姓名</div>
+        </template>
+        {{ userData.realName }}
+      </el-descriptions-item>
       <!-- <el-descriptions-item width="">
         <template #label>
-          <div class="itemLabel">违约次数</div>
+          <div class="itemLabel">联系电话</div>
         </template>
-        {{ userData.violationCount }}
+        {{ userData.contactNumber }}
       </el-descriptions-item> -->
     </el-descriptions>
     <div class="StatisticsContent">
@@ -402,11 +421,25 @@
   }
 
   function errHandler(msg){
-    ElMessage.error('用户信息修改失败：' + msg);
+    console.log(isAuthenticated.value);
+    console.log(userId.value);
+    console.log(userName.value);
+    console.log(adminType.value);
+    console.log(adminPermission);
+    ElMessage.error(msg);
   }
 
   onMounted(async () => {
-    await getUserInfo(successHandler, errHandler);
+    if(adminType.value == 'normal'){
+      console.log(111);
+      await getUserInfo(successHandler, errHandler);
+    }
+    else{
+      console.log(userId.value)
+      userData.value.userId = userId.value;
+      userData.value.realName = userName.value;
+      //需要添加管理员联系电话
+    }
   });
 
   function showStatistics(){

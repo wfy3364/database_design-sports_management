@@ -83,7 +83,8 @@
           </div>
 
           
-          <el-table :data="filteredAppointments" :key="filteredAppointments?.id" :show-overflow-tooltip="{ effect: 'light'}">
+          <el-table :data="filteredAppointments" :key="filteredAppointments?.id" :show-overflow-tooltip="{ effect: 'light'}"
+          v-loading="reservationLoading">
             <el-table-column label="记录号" prop="id" width="100" sortable></el-table-column>
             <el-table-column label="场地名称" prop="venueName" width="110" sortable></el-table-column>
             <!-- <el-table-column label="操作时间" sortable>
@@ -103,17 +104,17 @@
             <el-table-column v-if="userCheck || reservationTypeFilter !== '0'" label="团体号" prop="teamID" width="110" sortable></el-table-column>
             <el-table-column v-if="userCheck || reservationTypeFilter !== '0'" label="团体名称" prop="teamName" width="110" sortable></el-table-column>
             <el-table-column prop="price" label="支付价格" width="110" sortable></el-table-column>
-            <el-table-column label="状态" width="100" sortable>
+            <el-table-column prop="status" label="状态" width="100" sortable>
               <!-- 状态类型：已预约、已取消、已完成、违约 -->
-              <template #default="{ row }">
+              <!-- <template #default="{ row }">
                 {{ getStatusName(row.statusCode) }}
-              </template>
+              </template> -->
             </el-table-column>
             <el-table-column label="操作" width="190">
               <template #default="item">
                 <el-button size="small" type="primary" @click="showAppointmentDetails(item.row)">详情</el-button>
-                <el-button v-if="userCheck" size="small" :disabled="!canCancel" @click="cancelAppointment(item.row)">取消预约</el-button>
-                <el-button v-if="item.row.statusCode === 1 && adminCheck"
+                <el-button v-if="userCheck" size="small" :disabled="!cancelCheck(item.row)" @click="cancelAppointment(item.row)">取消预约</el-button>
+                <el-button v-if="adminCheck && (item.row.status === '已预约' || item.row.reservationType === 'group')"
                 size="small" @click="signConfirm(item.row)">签到</el-button>
               </template>
             </el-table-column>
@@ -135,8 +136,10 @@
           <p>预约编号：{{ selectedAppointment.id }}</p>
           <p>场地名称：{{ selectedAppointment.venueName }}</p>
           <p>预约时间：{{ formatAppointmentTime(selectedAppointment.startTime, selectedAppointment.endTime) }}</p>
+          <p>操作时间：{{  convertTime(selectedAppointment.operationTime) }}</p>
           <p>支付价格：{{ selectedAppointment.price }}</p>
-          <p>状态：{{ getStatusName(selectedAppointment.statusCode) }}</p>
+          <!-- <p>状态：{{ getStatusName(selectedAppointment.statusCode) }}</p> -->
+          <p>状态：{{ selectedAppointment.status }} </p>
           <div v-if="isFinished">
             <p>签到时间：{{ convertTime(selectedAppointment.signTime) }}</p>
           </div>
@@ -148,16 +151,17 @@
           <p>预约编号：{{ selectedAppointment.id }}</p>
           <p>场地名称：{{ selectedAppointment.venueName }}</p>
           <p>预约时间：{{ formatAppointmentTime(selectedAppointment.startTime, selectedAppointment.endTime) }}</p>
+          <p>操作时间：{{  convertTime(selectedAppointment.operationTime) }}</p>
           <p>支付价格：{{ selectedAppointment.price }}</p>
           <p>团体号：{{ selectedAppointment.teamID }}</p>
           <p>团体名称：{{ selectedAppointment.teamName }}</p>
           <div v-if="teamDetailsData">
-            <el-table :data="teamDetailsData.members" style="width: 100%; max-height: 70%; overflow-y: auto;">
+            <el-table :data="teamDetailsData" style="width: 100%; max-height: 70%; overflow-y: auto;">
               <el-table-column prop="id" label="成员ID" width="100"></el-table-column>
               <el-table-column prop="nickname" label="成员昵称"></el-table-column>
               <el-table-column prop="isSigned" label="状态" width="100">
                 <template #default="{ row }">
-                  <el-tag :type="getIsSignedTags(row.isSigned)">{{ row.isSigned }}</el-tag>
+                  <el-tag :type="getIsSignedTags(row.status)">{{ row.status }}</el-tag>
                 </template>  
               </el-table-column>
               <el-table-column prop="signTimeTeam" label="签到时间">
@@ -170,6 +174,9 @@
             </el-table>
           </div>
         </div>
+        <template #footer>
+          <el-button type="primary" @click="showDetailModal = false">确定</el-button>
+        </template>
       </el-dialog>
 
       <!-- 查看详细模态框(弃用) -->
@@ -309,25 +316,25 @@
         <p>预约时间：{{ formatAppointmentTime(signingAppointment.startTime, signingAppointment.endTime) }}</p>
         <p>团体号：{{ signingAppointment.teamID }}</p>
         <p>团体名称：{{ signingAppointment.teamName }}</p>
-        <el-table :data="teamDetailsData.members" :show-overflow-tooltip="{ effect: 'light'}" 
+        <el-table :data="teamDetailsData" :show-overflow-tooltip="{ effect: 'light'}" 
         style="width: 100%; max-height: 70%; overflow-y: auto;">
         <el-table-column prop="id" label="成员ID" width="100"></el-table-column>
         <el-table-column prop="nickname" label="成员昵称"></el-table-column>
         <el-table-column prop="isSigned" label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="getIsSignedTags(row.isSigned)">{{ row.isSigned }}</el-tag>
+            <el-tag :type="getIsSignedTags(row.status)">{{ row.status }}</el-tag>
           </template>  
         </el-table-column>
         <el-table-column prop="signTimeTeam" label="签到时间">
           <template #default="{ row }">
-            <div v-if="isSignedTeam(row.isSigned)">
+            <div v-if="isSignedTeam(row.status)">
               {{ convertTime(row.signTimeTeam) }}
             </div>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="80">
           <template #default="{ row }">
-            <el-button size="small" v-if="row.isSigned === '未签到'" @click="teamSignConfirm(row)">签到</el-button>
+            <el-button size="small" v-if="row.status === '已预约'" @click="teamSignConfirm(row)">签到</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -383,7 +390,9 @@
   import { convertTime } from '@/apis/utils';
   import { useUserStore } from '@/stores/userStore';
   import { storeToRefs } from 'pinia';
-  import { getAllReservation, getAllUserReservation } from '@/apis/requests';
+  import { getAllReservation, getAllUserReservation, getReservationMember,
+    updateReservation,
+  } from '@/apis/requests';
   import { ElMessage } from 'element-plus';
 
   const isFinished = ref(false); // 判断是否签到
@@ -416,13 +425,15 @@
   const signingAppointment = ref(null);
   const teamSignDialog = ref(false);
   const userStore = useUserStore();
-  const { adminType, adminPermission } = storeToRefs(userStore);
+  const reservationLoading = ref(false);
+  const { userId, adminType, adminPermission } = storeToRefs(userStore);
   // const adminType = ref('system');
   // const adminPermission = ref({
   //   venue: [],
   //   device: [],
   // });
   // const isTeamSearch = ref(false);
+  const filteredAppointments = ref([]);
 
 //----------------------------测试数据-----------------------------------
 
@@ -475,52 +486,40 @@
   }
   ];
 
-  const teamDetailsData = {
-    id: 1,
-    name: "技术创新小组",
-    description: "致力于探索和实现前沿技术的应用",
-    createdAt: "2023-01-15",
-    members: [
-      { id: 101, nickname: "张三", isSigned: "已签到", signTimeTeam: "2023-08-23T11:00:00" },
-      { id: 102, nickname: "李四", isSigned: "未签到", signTimeTeam: null },
-      { id: 103, nickname: "王五", isSigned: "已签到", signTimeTeam: "2023-08-23T11:00:00" },
-      { id: 104, nickname: "赵六", isSigned: "未签到", signTimeTeam: null },
-      { id: 105, nickname: "钱七", isSigned: "已签到", signTimeTeam: "2023-08-23T11:00:00" },
-      { id: 106, nickname: "孙八", isSigned: "未签到", signTimeTeam: null },
-      { id: 107, nickname: "周九", isSigned: "已签到", signTimeTeam: "2023-08-23T11:00:00" },
-      { id: 108, nickname: "吴十", isSigned: "未签到", signTimeTeam: null },
-    ]
-  };
+  const teamDetailsData = ref([]);
+  // const teamDetailsData = {
+  //   id: 1,
+  //   name: "技术创新小组",
+  //   description: "致力于探索和实现前沿技术的应用",
+  //   createdAt: "2023-01-15",
+  //   members: [
+  //     { id: 101, nickname: "张三", isSigned: "已签到", signTimeTeam: "2023-08-23T11:00:00" },
+  //     { id: 102, nickname: "李四", isSigned: "未签到", signTimeTeam: null },
+  //     { id: 103, nickname: "王五", isSigned: "已签到", signTimeTeam: "2023-08-23T11:00:00" },
+  //     { id: 104, nickname: "赵六", isSigned: "未签到", signTimeTeam: null },
+  //     { id: 105, nickname: "钱七", isSigned: "已签到", signTimeTeam: "2023-08-23T11:00:00" },
+  //     { id: 106, nickname: "孙八", isSigned: "未签到", signTimeTeam: null },
+  //     { id: 107, nickname: "周九", isSigned: "已签到", signTimeTeam: "2023-08-23T11:00:00" },
+  //     { id: 108, nickname: "吴十", isSigned: "未签到", signTimeTeam: null },
+  //   ]
+  // };
   //----------------------------测试数据结束-----------------------------------
 
   onMounted(async () => {
     if(userCheck.value){
+      reservationLoading.value = true;
       await getAllUserReservation(processReservation, getReservationErr);
     }
     else if(adminCheck.value){
-      await getAllReservation(processAdminReservation, getReservationErr);
+      if(adminType.value === 'system'){
+        reservationLoading.value = true;
+        await getAllReservation(processAdminReservation, getReservationErr);
+      }
     }
   })
 
-  // appointments.value = [
-  // {
-  //   id: '12345',
-  //   venueId: '1',
-  //   venueName: '体育场',
-  //   startTime: new Date('2023-08-21T10:00:00'),
-  //   endTime: new Date('2023-08-21T12:00:00'),
-  //   price: 100,
-  //   statusCode: 1, // 1: 已预约, 2: 已取消, 3: 已完成, 4: 违约
-  //   operationTime: new Date('2024-08-20T14:30:00'),
-  //   reservationType: 'individual',
-  //   signTime: null,
-  //   userID: '12345',
-  //   userRealName: '测试',
-  //   teamID: null,
-  //   teamName: null,
-  // },
-
   const processReservation = (res) => {
+    console.log(res);
     appointments.value = res.map(item => {
       return {
         id: item.reservationId,
@@ -532,18 +531,46 @@
         operationTime: item.reservationTime,
         price: item.paymentAmount,
         reservationType: item.reservationType,
+        userID: item.reservationType === 'individual' ? item.userDetails[0].userId : null,
+        userRealName: item.reservationType === 'individual' ? item.userDetails[0].realName : null,
+        teamID: item.reservationType === 'group' ? item.groupDetails?.groupId : null,
+        teamName: item.reservationType === 'group' ? item.groupDetails?.groupName : null, 
+        status: item.reservationType === 'individual' ? item.userDetails[0].status : null,
       }
     });
+    console.log(appointments.value);
+    reservationLoading.value = false;
     filteredAppointments.value = appointments.value;
   }
 
 
   const getReservationErr = (msg) => {
     ElMessage.error('获取预约记录失败：' + msg);
+    reservationLoading.value = false;
   }
 
   const processAdminReservation = (res) => {
     console.log(res);
+    appointments.value = res.map(item => {
+      return {
+        id: item.reservationId,
+        venueId: item.venueId,
+        venueName: item.venueName,
+        timeslotId: item.availabilityId,
+        startTime: item.startTime,
+        endTime: item.endTime,
+        operationTime: item.reservationTime,
+        price: item.paymentAmount,
+        reservationType: item.reservationType,
+        userID: item.reservationType === 'individual' ? item.userId : null,
+        userRealName: item.reservationType === 'individual' ? item.userName : null,
+        teamID: item.reservationType === 'group' ? item.groupReservationListDto?.groupId : null,
+        teamName: item.reservationType === 'group' ? item.groupReservationListDto?.groupName : null, 
+        status: item.reservationType === 'individual' ? item.status : null,
+      }
+    });
+    reservationLoading.value = false;
+    filteredAppointments.value = appointments.value;
   }
 
 //------------------------ 测试数据--------------------------------
@@ -561,21 +588,21 @@
   const adminCheck = computed(() => adminType.value === 'system' || adminType.value === 'venue'
   || adminType.value === 'venue-device');
 
-  const getStatusName = (statusCode) => {
-    const statusMap = {
-      1: '已预约',
-      2: '已取消',
-      3: '已签到',
-      4: '违约'
-    };
-    const result = statusMap[statusCode] || '未知状态';
-    //console.log('Result:', statusCode);
-    return result;
-  };
+  // const getStatusName = (statusCode) => {
+  //   const statusMap = {
+  //     1: '已预约',
+  //     2: '已取消',
+  //     3: '已签到',
+  //     4: '违约'
+  //   };
+  //   const result = statusMap[statusCode] || '未知状态';
+  //   //console.log('Result:', statusCode);
+  //   return result;
+  // };
 
   const getIsSignedTags = (isSigned) => {
     const isSignedTags = {
-      '未签到': 'warning',
+      '已预约': 'warning',
       '已签到': 'success',
       '已取消': 'info'
     };
@@ -732,14 +759,57 @@
   };
 
   //打开预约详情模态框
-  const showAppointmentDetails = (appointment) => {
+  const showAppointmentDetails = async (appointment) => {
     selectedAppointment.value = appointment;
     isFinished.value = (appointment.statusCode == '3');
     isPerson.value = (appointment.reservationType == 'individual')
     isTeam.value = (appointment.reservationType == 'group')
-    showDetailModal.value = true;
+    if(isTeam.value){
+      await getReservationMember(appointment.id, processAppointmentDetail, getAppointmentDetailErr);
+    }
+    else{
+      showDetailModal.value = true;
+    }
     //console.log(selectedAppointment.value);
   };
+
+    // const teamDetailsData = {
+  //   id: 1,
+  //   name: "技术创新小组",
+  //   description: "致力于探索和实现前沿技术的应用",
+  //   createdAt: "2023-01-15",
+  //   members: [
+  //     { id: 101, nickname: "张三", isSigned: "已签到", signTimeTeam: "2023-08-23T11:00:00" },
+  //     { id: 102, nickname: "李四", isSigned: "未签到", signTimeTeam: null },
+  //     { id: 103, nickname: "王五", isSigned: "已签到", signTimeTeam: "2023-08-23T11:00:00" },
+  //     { id: 104, nickname: "赵六", isSigned: "未签到", signTimeTeam: null },
+  //     { id: 105, nickname: "钱七", isSigned: "已签到", signTimeTeam: "2023-08-23T11:00:00" },
+  //     { id: 106, nickname: "孙八", isSigned: "未签到", signTimeTeam: null },
+  //     { id: 107, nickname: "周九", isSigned: "已签到", signTimeTeam: "2023-08-23T11:00:00" },
+  //     { id: 108, nickname: "吴十", isSigned: "未签到", signTimeTeam: null },
+  //   ]
+  // };
+
+  const processAppointmentDetail = (res) => {
+    teamDetailsData.value = res.map(item => {
+      return {
+        id: item.userId,
+        nickname: item.username,
+        status: item.status,
+        signedTimeTeam: item.checkInTime,
+        realname: item.realName,
+      }
+    });
+    console.log(teamDetailsData.value);
+    console.log(res);
+    showDetailModal.value = true;
+
+  }
+
+  const getAppointmentDetailErr = (msg) => {
+    ElMessage.error('获取预约详情失败：' + msg);
+    selectedAppointment.value = null;
+  }
 
   //打开取消预约模态框
   const cancelAppointment = (appointment) => {
@@ -748,32 +818,54 @@
   };
 
   //确认删除
-  const confirmCancel = () => {
+  const confirmCancel = async () => {
     // 将取消原因插入预约记录
-    axios.post('/api/appointments/cancel', {
-      id: cancellingAppointment.value.id,
-      //reason: cancelReason.value
-    })
-    .then(response => {
-      showCancelModal.value = false;
-      // cancelReason.value = '';
-      cancellingAppointment.value = null;
-      // 刷新预约列表
-      searchAppointments();
-    })
-    .catch(error => {
-      console.error('Error canceling appointment:', error);
-      showCancelModal.value = false;
-    });
+    // axios.post('/api/appointments/cancel', {
+    //   id: cancellingAppointment.value.id,
+    //   //reason: cancelReason.value
+    // })
+    // .then(response => {
+    //   showCancelModal.value = false;
+    //   // cancelReason.value = '';
+    //   cancellingAppointment.value = null;
+    //   // 刷新预约列表
+    //   searchAppointments();
+    // })
+    // .catch(error => {
+    //   console.error('Error canceling appointment:', error);
+    //   showCancelModal.value = false;
+    // });
+    const updateData = {
+      reservationId: cancellingAppointment.value.id,
+      userId: userId.value,
+      status: '已取消',
+    }
+    await updateReservation(updateData, cancelSuccess, cancelErr);
   };
+
+  const cancelSuccess = () => {
+    ElMessage.info('已取消预约');
+    showCancelModal.value = false;
+    getAllUserReservation(processReservation, getReservationErr);
+  }
+
+  const cancelErr = (msg) => {
+    ElMessage.error('取消预约失败：' + msg);
+  }
+
 
   //判断是否禁用
   const canCancel = computed(() => {
     const now = new Date()
-    const startTime = new Date(cancellingAppointment.startTime)
+    const startTime = new Date(cancellingAppointment.value.startTime)
     const oneHourBefore = new Date(startTime.getTime() - 60 * 60 * 1000)
     return now < oneHourBefore
   })
+
+  const cancelCheck = (appointment) => {
+    // console.log(appointment);
+    return new Date(appointment.startTime).getTime() - 60 * 60 * 1000 > Date.now();
+  }
 
   //关闭查看详细模态框
   const handleCloseDetails = () => {
@@ -805,25 +897,44 @@
   //   };
   //test cancel end
 
+  const signErr = (msg) => {
+    infoDialogTitle.value = '签到失败';
+    infoDialogContent.value = msg;
+    infoDialog.value = true;
+  }
+
   const signCheck = (record) => {
     const curTime = Date.now();
-    if(curTime < record.startTime.getTime() - 1000 * 60 * 30 || curTime > record.endTime.getTime()){
-      infoDialogTitle.value = '签到失败';
-      infoDialogContent.value = '当前不在可签到时间段内';
-      infoDialog.value = true;
+    if(curTime < new Date(record.startTime).getTime() - 1000 * 60 * 30 
+    || curTime > new Date(record.endTime).getTime()){
+      signErr('当前不在可签到时间段内');
       return false;
     }
     return true;
   }
 
-  const signConfirm = (record) => {
+  const signConfirm = async (record) => {
     signingAppointment.value = record;
     if(record.reservationType === 'individual' && signCheck(record)){
       signConfirmDialog.value = true;
     }
     else if(record.reservationType === 'group'){
-      teamSignDialog.value = true;
+      await getReservationMember(signingAppointment.value.id, getSignMemberSuccess, 
+      getAppointmentDetailErr);
     }
+  }
+
+  const getSignMemberSuccess = (res) => {
+    teamDetailsData.value = res.map(item => {
+      return {
+        id: item.userId,
+        nickname: item.username,
+        status: item.status,
+        signedTimeTeam: item.checkInTime,
+        realname: item.realName,
+      }
+    });
+    teamSignDialog.value = true;
   }
 
   const teamSignConfirm = (user) => {
@@ -835,9 +946,27 @@
     signConfirmDialog.value = true;
   }
 
-  const handleSign = () => {
+  const handleSign = async () => {
     if(!signCheck(signingAppointment.value)){
       return;
+    }
+    const updateData = {
+      reservationId: signingAppointment.value.id,
+      userId: signingAppointment.value.userID,
+      status: '已签到',
+      checkInTime: new Date(),
+    }
+    await updateReservation(updateData, signSuccess, signErr);
+  }
+
+  const signSuccess = () => {
+    ElMessage.success('签到成功');
+    signConfirmDialog.value = false;
+    reservationLoading.value = true;
+    getAllReservation(processAdminReservation, getReservationErr);
+    if(teamSignDialog.value === true){
+      getReservationMember(signingAppointment.value.id, getSignMemberSuccess, 
+      getAppointmentDetailErr);
     }
   }
 

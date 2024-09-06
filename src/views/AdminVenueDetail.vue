@@ -18,15 +18,6 @@ const { adminType, adminPermission } = storeToRefs(userStore);
 const route = useRoute();
 const router = useRouter();
 
-
-// const venueInfo = ref({
-//   id: '1',
-//   name: "场地01",
-//   type: "羽毛球",
-//   capacity: 100,
-//   address: "曹安公路4800号",
-//   description: "这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介，这里是场地简介",
-// });
 const venueInfo = ref([]);
 
 const EditCheck = computed(() => {
@@ -34,39 +25,17 @@ const EditCheck = computed(() => {
         (adminType.value === 'venue' || adminType.value === 'venue-device') &&
         adminPermission.value.venue.includes(venueInfo.id);
 });
-// const EditCheck = ref(true);
 
-// const openTime = [{
-//   period: "13:00-14:00",
-//   start_time: new Date("2024-09-01T13:00:00"),
-//   end_time: new Date("2024-09-01T14:00:00"),
-//   remain: 10,
-//   price: 19.99,
-// },{
-//   period: "09:00-10:00",
-//   start_time: new Date("2024-09-01T09:00:00"),
-//   end_time: new Date("2024-09-01T10:00:00"),
-//   remain: 5,
-//   price: 9.99,
-// }];
 const openTime = ref([]);
-
-// const venueDevices = [{
-//   id: 1,
-//   name: "设备1",
-// }, {
-//   id: 2,
-//   name: "设备2",
-// }];
 const venueDevices = ref([]);
 
-const overviewDisplay = {
-  "场地ID：": venueInfo.value.id,
-  "场地名称：": venueInfo.value.name,
-  "运动类型：": venueInfo.value.type,
-  "场地容量：": venueInfo.value.capacity,
-  "场地地址：": venueInfo.value.address,
-}
+// const overviewDisplay = {
+//   "场地ID：": venueInfo.value.id,
+//   "场地名称：": venueInfo.value.name,
+//   "运动类型：": venueInfo.value.type,
+//   "场地容量：": venueInfo.value.capacity,
+//   "场地地址：": venueInfo.value.address,
+// }
 
 const openDate = ref(dayjs().format("YYYY-MM-DD"));
 
@@ -92,6 +61,7 @@ onMounted(async () => {
     await getAdminVenueDetail(venueId, processVenueDetail, getVenueDetailErr)
     .then(getCurOpenTime).then(() => {
       venueInfo.value.state = getVenueState();
+      console.log(venueInfo.value);
     });
   }
 })
@@ -104,6 +74,7 @@ function processVenueDetail(res){
     capacity: res.capacity,
     address: res.venueLocation,
     img: res.venueImageUrl,
+    description: res.venueDescription,
   };
   venueDevices.value = res.venueDevices.map(item => {
     return { id: item.equipmentId, name: item.equipmentName }
@@ -149,10 +120,11 @@ function getVenueDetailErr(msg){
 
 function setDate(val){
   openDate.value = dayjs(openDate.value).add(val, "day").format("YYYY-MM-DD");
+  handleDateChange();
 }
 
 async function handleDateChange(){
-  for(let i = 0; i < editingTime.value.length; i++){
+  for(let i = 0; i < openTime.value.length; i++){
     if(openTime.value[i].date === openDate.value){
       openDateIndex.value = i;
       return;
@@ -172,7 +144,7 @@ function deviceLink(deviceId){
 
 // 计算场地当前状态
 function getVenueState(){
-  for(const item in openTime){
+  for(const item in openTime.time){
     const curState = judgeState(item.start_time, item.end_time);
     if(curState === 1){
       return 1;
@@ -197,17 +169,28 @@ function viewMaintenanceDetail(id){
   })
 }
 
+function backVenueBrowser(){
+  router.push('/VenueBrowser');
+}
+
+const venueTimeFormat = (start, end) => {
+  const startStr = convertTime(start);
+  const endStr = convertTime(end);
+  return startStr.slice(startStr.length - 5, startStr.length)
+  + '-' + endStr.slice(endStr.length - 5, endStr.length);
+}
+
 </script>
 
 <template>
   <div class="AdminVenueDetail">
     <div class="AdminVenueHeader">
-      <el-button class="BackButton">&lt;&nbsp;&nbsp;场地总览</el-button>
+      <el-button class="BackButton" @click="backVenueBrowser">&lt;&nbsp;&nbsp;场地总览</el-button>
       <div class="AdminVenueTitle">{{ venueInfo.name }}</div>
       <el-button class="EditButton" :disabled="!EditCheck" @click="showEditDialog()">编辑</el-button>
     </div>
     <div class="VenueOverview">
-      <img class="VenueImg" alt="场馆图片"/>
+      <img class="VenueImg" :src="venueInfo.img" alt="场馆图片"/>
       <div class="OverviewText">
         <div class="OverviewLine">
           <div class="OverviewDescription">场地ID：</div>
@@ -258,7 +241,11 @@ function viewMaintenanceDetail(id){
           <el-button size="small" @click="setDate(1)">&gt;</el-button>
         </div>
         <el-table :data="openTime[openDateIndex]?.time" class="infoTable" border :default-sort="{ prop: 'period'}">
-          <el-table-column prop="period" label="时间" sortable :resizable="false"></el-table-column>
+          <el-table-column label="时间" sortable :resizable="false">
+            <template #default="item">
+              {{ venueTimeFormat(item.row.start_time, item.row.end_time) }}
+            </template>
+          </el-table-column>
           <el-table-column prop="remain" label="剩余容量" width="105" sortable :resizable="false"></el-table-column>
           <el-table-column prop="price" label="价格" width="80" sortable :resizable="false"></el-table-column>
         </el-table>
@@ -339,6 +326,7 @@ function viewMaintenanceDetail(id){
 .VenueImg{
   width: 300px;
   height: 300px;
+  margin-right: 20px;
 }
 
 .OverviewText{

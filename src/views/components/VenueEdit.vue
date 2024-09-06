@@ -196,7 +196,7 @@ function validateEdit(){
 
 function convertTimeSlots(){
   let resArr = [];
-  for(const item in editingTime.value){
+  for(const item of editingTime.value){
     resArr = [...resArr, ...item.time.map(timeSlot => {
       return {
         startTime: dayjs(item.date).set('hour', timeSlot.period[0].getHours()).set('minute', timeSlot.period[0].getMinutes()),
@@ -221,15 +221,16 @@ async function handleCreate(){
   }
   const venueData = {
     name: editingRecord.value.name,
-    type: editingRecord.value.type,
+    type: editingRecord.value.type === '其它' ? customType.value : editingRecord.value.type,
     capacity: editingRecord.value.capacity,
     status: '',
     maintenanceCount: 0,
     lastInspectionTime: new Date(),
-    venueImgUrl: editingRecord.value.img,
+    venueImageUrl: editingRecord.value.img,
     venueLocation: editingRecord.value.address,
     venueDescription: editingRecord.value.description,
   };
+  console.log(venueData);
   const addOpenTimeSlot = async (res) => {
     ElMessage.success('创建场地成功');
     resVenueId.value = res;
@@ -237,14 +238,17 @@ async function handleCreate(){
     console.log(timeSlotArr);
     let curIndex = 0;
     const step = async () => {
+      curIndex++;
       if(curIndex === timeSlotArr.length){
         handleEditSuccess();
       }
-      curIndex++;
-      await addVenueOpenTime(timeSlotArr[curIndex], step, handleCreateErr);
+      console.log({ venueId: resVenueId.value, ...timeSlotArr[curIndex]});
+      await addVenueOpenTime({ venueId: resVenueId.value, ...timeSlotArr[curIndex]}, 
+      step, handleCreateErr);
     }
     if(timeSlotArr.length > 0){
-      await addVenueOpenTime(timeSlotArr[curIndex], step, handleCreateErr);
+      await addVenueOpenTime({ venueId: resVenueId.value, ...timeSlotArr[curIndex]}, 
+      step, handleCreateErr);
     }
     else{
       handleEditSuccess();
