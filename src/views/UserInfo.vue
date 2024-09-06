@@ -1,16 +1,16 @@
 <template>
   <div class="container">
-    <div class="userInfoTitle" v-if="adminType.value == 'normal'">
+    <div class="userInfoTitle" v-if="adminType == 'normal' ">
       <div class="title">用户账号信息</div>
       <!-- [修改位置] 添加编辑按钮 -->
       <el-button type="primary" @click="showEditDialog" class = "edit-button">编辑</el-button>
     </div>
-    <div class="userInfoTitle" v-if="adminType.value != 'normal'">
+    <div class="userInfoTitle" v-if="adminType != 'normal'">
       <div class="title">管理员账号信息</div>
       <!-- [修改位置] 添加编辑按钮 -->
       <el-button type="primary" @click="showEditDialog" class = "edit-button">编辑</el-button>
     </div>
-    <el-descriptions :column="2" border v-if="adminType.value == 'normal'">
+    <el-descriptions :column="2" border v-if="adminType == 'normal'">
       <el-descriptions-item min-width="">
         <template #label>
           <div class="itemLabel">用户ID</div>
@@ -49,7 +49,7 @@
         <div v-else>封禁中 (总违约次数:{{ userData.violationCount }})</div>
       </el-descriptions-item>
     </el-descriptions>
-    <el-descriptions :column="2" border v-if="adminType.value != 'normal'">
+    <el-descriptions :column="2" border v-if="adminType != 'normal'">
       <el-descriptions-item min-width="">
         <template #label>
           <div class="itemLabel">管理员ID</div>
@@ -191,6 +191,10 @@
   const changePassword = ref(null); //修改密码界面
   const quitConfirm = ref(null); //登出确认界面
 
+
+  onMounted ( () => {
+    console.log(adminType.value);
+  })
   const showEditDialog = () => {
     editInformation.value = 1;
   }
