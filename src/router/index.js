@@ -1,10 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeLayout from '@/views/HomeLayout.vue'
 import Home from '@/views/Home.vue'
-import AdminVenue from '@/views/AdminVenue.vue'
-import AdminVenueDetail from '@/views/AdminVenueDetail.vue'
+import AdminInfo from '@/views/AdminInfo.vue'
+import AdminDevice from '@/views/AdminDevice.vue'
 import AdminDeviceDetail from '@/views/AdminDeviceDetail.vue'
 import AdminDeviceRepair from '@/views/AdminDeviceRepair.vue'
+import AdminNotifications from '@/views/AdminNotifications.vue'
+import AdminVenue from '@/views/AdminVenue.vue'
+import AdminVenueDetail from '@/views/AdminVenueDetail.vue'
 import AdminVenueMaintenance from '@/views/AdminVenueMaintenance.vue'
 import AdminStatistics from '@/views/AdminStatistics.vue'
 import PublicNotice from '@/views/PublicNotice.vue'
@@ -34,12 +37,8 @@ const router = createRouter({
           component: Home,
         },
         {
-          path: '/AdminVenue',
-          component: AdminVenue,
-        },
-        {
-          path: '/AdminVenueDetail',
-          component: AdminVenueDetail,
+          path: '/AdminDevice',
+          component: AdminDevice,
         },
         {
           path: '/AdminDeviceDetail',
@@ -48,6 +47,22 @@ const router = createRouter({
         {
           path: '/AdminDeviceRepair',
           component: AdminDeviceRepair,
+        },
+        {
+          path:'/AdminInfo',
+          component: AdminInfo,
+        },
+        {
+          path:'/AdminNotifications',
+          component: AdminNotifications,
+        },
+        {
+          path: '/AdminVenue',
+          component: AdminVenue,
+        },
+        {
+          path: '/AdminVenueDetail',
+          component: AdminVenueDetail,
         },
         {
           path: '/AdminVenueMaintenance',
