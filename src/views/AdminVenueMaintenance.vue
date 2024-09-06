@@ -6,6 +6,8 @@ import { convertTime, judgeState } from '@/apis/utils';
 import MaintenanceDetail from './components/MaintenanceDetail.vue';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
+import { getMaintenanceList, getAllVenues } from '@/apis/requests';
+import { onMounted } from 'vue';
 
 const searchType = ref('0');
 const searchContent = ref('');
@@ -20,42 +22,61 @@ const dialogMode = ref('view');
 const userStore = useUserStore();
 const { adminType, adminPermission } = storeToRefs(userStore);
 
-const maintenanceData = ref([{
-  id: 1,
-  venueId: 1,
-  venueName: '场地1',
-  start_time: '2024-08-20 13:00',
-  end_time: '2024-08-20 14:00',
-  description: '场地正常保养',
-},
-{
-  id: 2,
-  venueId: 2,
-  venueName: '场地名称过长时的展示',
-  start_time: '2024-08-20 13:00',
-  end_time: '2024-08-20 14:00',
-  description: '保养描述过长时以提示框的方式显示保养描述过长时以提示框的方式显示保养描述过长时以提示框的方式显示',
-},
-{
-  id: 3,
-  venueId: 3,
-  venueName: '场地2',
-  start_time: '2024-08-21 13:00',
-  end_time: '2024-09-21 14:00',
-  description: '场地正常保养',
-},
-{
-  id: 4,
-  venueId: 2,
-  venueName: '场地名称过长时的展示',
-  start_time: '2024-09-20 15:00',
-  end_time: '2024-09-20 16:00',
-  description: '场地正常保养',
-}]);
+const maintenanceData = ref([
+//   {
+//   venueMaintenanceId: 1,
+//   venueId: 1,
+//   venueName: '场地1',
+//   start_time: '2024-08-20 13:00',
+//   end_time: '2024-08-20 14:00',
+//   description: '场地正常保养',
+// },
+// {
+//   venueMaintenanceId: 2,
+//   venueId: 2,
+//   venueName: '场地名称过长时的展示',
+//   start_time: '2024-08-20 13:00',
+//   end_time: '2024-08-20 14:00',
+//   description: '保养描述过长时以提示框的方式显示保养描述过长时以提示框的方式显示保养描述过长时以提示框的方式显示',
+// },
+// {
+//   venueMaintenanceId: 3,
+//   venueId: 3,
+//   venueName: '场地2',
+//   start_time: '2024-08-21 13:00',
+//   end_time: '2024-09-21 14:00',
+//   description: '场地正常保养',
+// },
+// {
+//   venueMaintenanceId: 4,
+//   venueId: 2,
+//   venueName: '场地名称过长时的展示',
+//   start_time: '2024-09-20 15:00',
+//   end_time: '2024-09-20 16:00',
+//   description: '场地正常保养',
+// }
+]);
 
-maintenanceData.value = maintenanceData.value.map(item => {
-  return {...item, state: judgeState(item.start_time, item.end_time)}
-});
+const allVenues = ref([
+//   {
+//   id: '1',
+//   name: '场地1',
+//   state: '正常',
+//   introTime: '2024-09-01T12:00:00',
+// },
+// {
+//   id: '2',
+//   name: '场地2',
+//   state: '正常',
+//   introTime: '2024-09-01T12:00:00',
+// },
+// {
+//   id: '3',
+//   name: '场地3',
+//   state: '正常',
+//   introTime: '2024-09-01T12:00:00',
+// }
+]);
 
 const tempMaintenanceData = ref([...maintenanceData.value]);  //临时存储的场地数据
 
@@ -91,27 +112,33 @@ const shortcuts = [
 
 const dateRange = ref([]);
 
-const filteredData = ref(maintenanceData);
+const filteredData = ref([]);
 
 function handleSearch(){
+  console.log(maintenanceData.value)
   filteredData.value = maintenanceData.value;
   if (stateOption.value !== '3') {
+    console.log(1);
     filteredData.value = filteredData.value.filter(item => item.state === +stateOption.value);
   }
   
   if (searchContent.value) {
+    console.log(2);
     filteredData.value = filteredData.value.filter(item => {
       const searchTerm = searchContent.value.toLowerCase();
-      return (searchType.value === '0' && (item.id == searchTerm)) ||
+      return (searchType.value === '0' && (item.venueMaintenanceId == searchTerm)) ||
              (searchType.value === '1' && (item.venueId == searchTerm || item.venueName.toLowerCase().includes(searchTerm)));
     });
   }
 
   if(dateRange.value.length > 0){
+    console.log(3);
     const startTime = dateRange.value[0].getTime() || 0;
     const endTime = dateRange.value[1].getTime() + 3600 * 1000 * 24 || Infinity;
     filteredData.value = filteredData.value.filter(item => {
-      return item.start_time.getTime() >= startTime && item.start_time.getTime() < endTime;
+      const start_date = new Date(item.convertedStartDate);
+      const end_date = new Date(item.convertedEndDate);
+      return start_date.getTime() >= startTime && end_date.getTime() < endTime;
     });
   }
 }
@@ -151,6 +178,63 @@ const EditCheck = computed(() => { //检查管理员权限
         (adminType.value === 'device' || adminType.value === 'venue-device') &&
         record.deviceId in adminPermission.value.device
 });
+
+// function getMaintenance(){
+//   getMaintenanceList(getMaintenanceSuccess, getMaintenanceFailed);
+// }
+maintenanceData.value = maintenanceData.value.map(item => {
+  return {...item, state: judgeState(item.start_time, item.end_time)}
+});
+
+function getMaintenanceSuccess(res){
+  console.log('getMaintenanceSuccess');
+  console.log(res);
+  maintenanceData.value = res.data;
+  maintenanceData.value = maintenanceData.value.map(item => ({
+    ...item,
+    convertedStartDate: convertTime(item.maintenanceStartDate),
+    convertedEndDate: convertTime(item.maintenanceEndDate),
+    venueName: findVenueName(String(item.venueId)),
+    state: judgeState(item.maintenanceStartDate, item.maintenanceEndDate)
+  }));
+  filteredData.value = maintenanceData.value;
+  console.log(filteredData.value);
+}
+
+
+
+const venueTimeFormat = (start, end) => {
+  const startStr = convertTime(start);
+  const endStr = convertTime(end);
+  return startStr.slice(startStr.length - 5, startStr.length)
+  + '-' + endStr.slice(endStr.length - 5, endStr.length);
+}
+
+const findVenueName = (id) => {
+  const venue = allVenues.value.find(venue => venue.venueId === id);
+  return venue ? venue.name : 'Venue not found';
+};
+
+function getMaintenanceFailed(img){
+  ElMessage.error(img);
+}
+
+
+onMounted(async () => {
+  await getAllVenues(getVenuesSuccess, getVenuesFailed);
+  await getMaintenanceList(getMaintenanceSuccess, getMaintenanceFailed);
+  // filteredData.value.
+});
+
+function getVenuesSuccess(res){
+  // console.log(res);
+  allVenues.value = res;
+  // console.log(allVenues.value);
+}
+
+function getVenuesFailed(){
+  ElMessage.error("获取场地信息失败");
+}
 </script>
 
 <template>
@@ -195,10 +279,10 @@ const EditCheck = computed(() => { //检查管理员权限
       </div>
     </div>
     <el-table :data="filteredData" :show-overflow-tooltip="{ effect: 'light'}">
-      <el-table-column prop="id" label="记录编号" width="105" sortable></el-table-column>
+      <el-table-column prop="venueMaintenanceId" label="记录编号" width="105" sortable></el-table-column>
       <el-table-column prop="venueId" label="场地编号" width="105" sortable></el-table-column>
       <el-table-column prop="venueName" label="场地名称" width="105" sortable></el-table-column>
-      <el-table-column prop="start_time" label="保养开始时间" width="135" sortable></el-table-column>
+      <el-table-column prop="convertedStartDate" label="保养开始时间" width="135" sortable></el-table-column>
       <el-table-column prop="description" label="描述"></el-table-column>
       <el-table-column label="状态" width="80">
         <template #default="item">
@@ -215,41 +299,6 @@ const EditCheck = computed(() => { //检查管理员权限
       </el-table-column>
     </el-table>
   </div>
-  <!-- <el-dialog v-model="maintenanceEdit" title="编辑信息" align-center>
-    <div class="modalBody">
-      <el-form :model="tempMaintenanceData" label-width="120px">
-        <div class="detailTitle">基本信息</div>
-          <div v-if="dialogMode === 'view' || dialogMode === 'edit'">
-            <div class="detailLine">
-              <div class="detailLabel">保养记录编号：</div>
-              <div> {{ tempMaintenanceData.id }} </div>
-            </div>
-            <div class="detailLine">
-              <div class="detailLabel">保养场地编号：</div>
-              <div> {{ tempMaintenanceData.venueId }} </div>
-            </div>
-            <div class="detailLine">
-              <div class="detailLabel">保养场地名称：</div>
-              <div> {{ tempMaintenanceData.venueName }} </div>
-            </div>
-            <div class="detailLine">
-              <div class="detailLabel">场地编号：</div>
-              <div> {{ curRecord.venueId }} </div>
-            </div>
-            <div class="detailLine">
-              <div class="detailLabel">场地名称：</div>
-              <div> {{ curRecord.venueName }} </div>
-            </div>
-          </div>
-      </el-form>
-    </div>
-    <template #footer>
-      <div class="smallButtonContainer"> 
-        <el-button class="smallButton" @click="closeMaintenanceEdit">取消</el-button>
-        <el-button class="smallButton" type="primary" @click="saveMaintenanceEdit">保存</el-button>
-      </div>
-    </template>
-  </el-dialog> -->
   <MaintenanceDetail v-if="detailDialog" :dialogMode="dialogMode" :curRecord="curRecord" 
   @closeModal="detailDialog = false" @editModal="showRepairDetail(curRecord, 'edit')"></MaintenanceDetail>
 </template>

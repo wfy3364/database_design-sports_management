@@ -4,6 +4,8 @@ import { ref, computed, onMounted } from 'vue';
 import { convertTime, judgeState } from '@/apis/utils';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
+import { addMaintenance, getAllVenues, modifyMaintenance } from '@/apis/requests';
+import { ElMessage } from 'element-plus';
 
 const detailDialog = ref(true);
 const editingRecord = ref(null);
@@ -23,6 +25,51 @@ const props = defineProps({
   }
 });
 
+async function addMain(){
+  // console.log(editingRecord.value);
+  console.log(editingRecord.value);
+  const addMaintenanceData = {
+    venueMaintenanceId: '',
+    maintenanceStartDate: editingRecord.value.start_time,
+    maintenanceEndDate: editingRecord.value.end_time,
+    venueId: editingRecord.value.venueId,
+    description: editingRecord.value.description,
+  }
+  console.log(addMaintenanceData);
+  await addMaintenance(addMaintenanceData, addMaintenanceSuccess, addMaintenanceFailed);
+}
+
+function addMaintenanceSuccess(res){
+  console.log('getMaintenanceSuccess');
+}
+
+function addMaintenanceFailed(img){
+  ElMessage.error(img);
+}
+
+async function modifyMain(){
+  // console.log(editingRecord.value);
+  console.log(editingRecord.value);
+  const addMaintenanceData = {
+    venueMaintenanceId: '',
+    maintenanceStartDate: editingRecord.value.start_time,
+    maintenanceEndDate: editingRecord.value.end_time,
+    venueId: editingRecord.value.venueId,
+    description: editingRecord.value.description,
+  }
+  console.log(addMaintenanceData);
+  await addMaintenance(addMaintenanceData, modifyMaintenanceSuccess, modifyMaintenanceFailed);
+}
+
+function modifyMaintenanceSuccess(res){
+  maintenanceData.value = 
+  console.log('getMaintenanceSuccess');
+}
+
+function modifyMaintenanceFailed(img){
+  ElMessage.error(img);
+}
+
 const emit = defineEmits(['closeModal', 'editModal']);
 
 const userStore = useUserStore();
@@ -34,7 +81,7 @@ const dialogTitle = {
   'create': '添加保养记录',
 }
 
-const allVenues = [{
+const allVenues = ref([{
   id: '1',
   name: '场地1',
   state: '正常',
@@ -51,7 +98,7 @@ const allVenues = [{
   name: '场地3',
   state: '正常',
   introTime: '2024-09-01T12:00:00',
-}];
+}]);
 
 const recordVenue = ref({
   venueId: '未选择保养',
@@ -88,7 +135,7 @@ onMounted(() => {
 });
 
 function selectVenue(venueId){
-  recordVenue.value = allVenues.filter((venue) => {
+  recordVenue.value = allVenues.value.filter((venue) => {
     return venue.id === venueId;
   })[0] || {
     venueId: '未选择保养',
@@ -123,21 +170,32 @@ function handleEdit(){
   if(!validateEdit()){
     return;
   }
+  modifyMain()
 }
 
 function handleCreate(){
   if(!validateEdit()){
     return;
   }
+  addMain()
 }
 
+function getVenuesSuccess(res){
+  console.log(res);
+  allVenues.value = res
+  console.log(allVenues.value);
+}
+
+function getVenuesFailed(){
+  ElMessage.error("获取场地信息失败");
+}
 
 </script>
 
 <template>
   <!-- 详细信息对话框 -->
   <el-dialog v-model="detailDialog" :title="dialogTitle[dialogMode]" align-center :before-close="dialogExitConfirm">
-    <div class="dialogContent">
+    <div class="dialogContent" v-if="getAllVenues(getVenuesSuccess, getVenuesFailed)">
       <div class="detailTitle">基本信息</div>
       <div v-if="dialogMode === 'view' || dialogMode === 'edit'">
         <div class="detailLine">
@@ -157,8 +215,8 @@ function handleCreate(){
         <div class="detailLine">
           <div class="detailLabel">保养场地：</div>
           <el-select filterable v-model="editingRecord.venueId" size="small" width="1000" @change="selectVenue(editingRecord.venueId)">
-            <el-option v-for="venue in allVenues" size="small" :value="venue.id"
-            :label="venue.id + ' ' + venue.name"></el-option>
+            <el-option v-for="venue in allVenues" size="small" :value="venue.venueId"
+            :label="venue.venueId + ' ' + venue.name"></el-option>
           </el-select>
         </div>
       </div>

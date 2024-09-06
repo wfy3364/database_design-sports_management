@@ -499,6 +499,7 @@ async function getVenueStatistics(venueIds, successHandler, errHandler) {
   })
 }
 
+
 async function getAllUserReservation(successHandler, errHandler) {
   const userStore = useUserStore();
   const { userId } = storeToRefs(userStore);
@@ -511,6 +512,60 @@ async function getAllUserReservation(successHandler, errHandler) {
   }).catch((err) => {
     console.log(err);
     errHandler(err.response?.data || '未知错误');
+  })
+}
+
+//获取所有保养记录
+async function getMaintenanceList(successHandler, errHandler) {
+  await httpInstance.get('api/Venue/GetAllVenueMaintenances').then((res) => {
+    console.log(res);
+    successHandler(res);
+  }).catch((err) => {
+    errHandler(err.response?.data?.info || '未知错误');
+    console.log(err);
+  })
+}
+
+// //获取某个场地的保养记录
+// async function getVenueMaintenanceList(successHandler, errHandler) {
+//   await httpInstance.get('/VenueMaintenance/AddMaintenance').then((res) => {
+//     console.log(res);
+//     successHandler(res);
+//   }).catch((err) => {
+//     errHandler(err.response?.data?.info || '未知错误');
+//     console.log(err);
+//   })
+// }
+
+//添加保养记录
+async function addMaintenance(maintenanceInfo, successHandler, errHandler) {
+  await httpInstance.post('api/Venue/AddMaintenance', maintenanceInfo).then((res) => {
+    console.log(res);
+    if(res.state){
+      successHandler(res);
+    }
+    else{
+      errHandler(err.response?.data?.info || '未知错误');
+    }
+  }).catch((err) => {
+    errHandler(err.response?.data?.info || '未知错误');
+    console.log(err);
+  })
+}
+
+//修改保养记录
+async function modifyMaintenance(maintenanceInfo, successHandler, errHandler) {
+  await httpInstance.post('api/Venue/UpdateVenueMaintenance', maintenanceInfo).then((res) => {
+    console.log(res);
+    if(res.state){
+      successHandler(res);
+    }
+    else{
+      errHandler(err.response?.data?.info || '未知错误');
+    }
+  }).catch((err) => {
+    errHandler(err.response?.data?.info || '未知错误');
+    console.log(err);
   })
 }
 
@@ -532,5 +587,5 @@ export {
   getVenueDetail, getAdminVenueDetail, addVenueOpenTime,
   createVenue, getVenueOpenTime, getAdminPermission, inidividualReservation,
   getAllUserReservation, getAllReservation, userModifiedInfo, userModifiedPassword,
-  getStatistics, getVenueStatistics
+  getStatistics, getVenueStatistics, getMaintenanceList, addMaintenance, modifyMaintenance
 };
