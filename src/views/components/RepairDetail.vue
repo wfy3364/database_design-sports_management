@@ -4,7 +4,8 @@ import { ref, computed, onMounted } from 'vue';
 import { convertTime, judgeState } from '@/apis/utils';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
-import { addRepairRecord } from '@/apis/requests';
+import { addRepairRecord, getAllDevice } from '@/apis/requests';
+import { ElMessage } from 'element-plus';
 
 const detailDialog = ref(true);
 const editingRecord = ref(null);
@@ -39,14 +40,15 @@ const dialogTitle = {
   'create': '添加维修记录',
 }
 
-const allDevices = [{
-  id: '1',
-  name: '设备1',
-  state: '正常',
-  introTime: '2024-09-01T12:00:00',
-  venueId: '1',
-  venueName: '场地1',
-}];
+// const allDevices = [{
+//   id: '1',
+//   name: '设备1',
+//   state: '正常',
+//   introTime: '2024-09-01T12:00:00',
+//   venueId: '1',
+//   venueName: '场地1',
+// }];
+const allDevices = ref([]);
 
 const recordDevice = ref({
   venueId: '未选择设备',
@@ -80,7 +82,23 @@ onMounted(() => {
       state: computed(() => judgeState(editingRecord.value.start_time, editingRecord.value.end_time)),
     }
   }
+  getAllDevice(handleDeviceData, getDeviceErr);
 });
+
+function handleDeviceData(res){
+  allDevices.value = res.map(item => {
+    return {
+      id: item.equipmentId,
+      name: equipmentName,
+      venueId: item.venueId,
+      venueName: item.venueName,
+    }
+  });
+}
+
+function getDeviceErr(msg){
+  ElMessage.error('获取所有设备信息失败：' + msg);
+}
 
 function selectDevice(deviceId){
   recordDevice.value = allDevices.filter((device) => {
@@ -142,6 +160,17 @@ function handleEditSuccess(res){
 function handleEditErr(msg){
   errDialog.value = true;
   errMsg.value = '编辑维修记录失败：' + msg;
+}
+
+function handleEditChange(){
+  editingRecord.value = {
+    deviceId: props.curRecord.deviceId,
+    start_time: props.curRecord.start_time,
+    end_time: props.curRecord.end_time,
+    description: props.curRecord.description,
+    state: computed(() => judgeState(editingRecord.value.start_time, editingRecord.value.end_time)),
+  };
+  emit('editModal');
 }
 
 </script>
@@ -225,7 +254,7 @@ function handleEditErr(msg){
     <template #footer>
       <div v-if="dialogMode === 'view'">
         <el-button type="primary" @click="emit('closeModal')">确定</el-button>
-        <el-button v-if="EditCheck" @click="emit('editModal')">编辑</el-button>
+        <el-button v-if="EditCheck" @click="handleEditChange">编辑</el-button>
       </div>
       <div v-else-if="dialogMode === 'edit' || dialogMode === 'create'">
         <el-button v-if="dialogMode === 'edit'" type="primary" @click="handleEdit">确定</el-button>

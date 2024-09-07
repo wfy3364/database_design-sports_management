@@ -372,7 +372,7 @@ async function getAllVenues(successHandler, errHandler) {
 }
 
 async function getVenueDetail(venueId, successHandler, errHandler) {
-  await httpInstance.get('api/Venue/GetVenueDetails', {
+  await httpInstance.get('api/Venue/GetVenueAdminAndAnnouncements', {
     params: {
       venueId: venueId,
     }
@@ -431,9 +431,15 @@ async function getVenueOpenTime(venueId, date, successHandler, errHandler) {
 }
 
 async function addVenueOpenTime(openTimeData, successHandler, errHandler) {
+  console.log(openTimeData)
   await httpInstance.post('/api/Venue/AddAvailability', openTimeData).then((res) => {
     console.log(res);
-    successHandler();
+    if (res.state) {
+      successHandler();
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
   }).catch((err) => {
     console.log(err);
     errHandler(err.response?.data || '未知错误');
@@ -574,10 +580,10 @@ async function getMaintenanceList(successHandler, errHandler) {
 async function addMaintenance(maintenanceInfo, successHandler, errHandler) {
   await httpInstance.post('api/Venue/AddMaintenance', maintenanceInfo).then((res) => {
     console.log(res);
-    if(res.state){
+    if (res.state) {
       successHandler(res);
     }
-    else{
+    else {
       errHandler(err.response?.data?.info || '未知错误');
     }
   }).catch((err) => {
@@ -590,10 +596,10 @@ async function addMaintenance(maintenanceInfo, successHandler, errHandler) {
 async function modifyMaintenance(maintenanceInfo, successHandler, errHandler) {
   await httpInstance.put('api/Venue/UpdateVenueMaintenance', maintenanceInfo).then((res) => {
     console.log(res);
-    if(res.state){
+    if (res.state) {
       successHandler(res);
     }
-    else{
+    else {
       errHandler(err.response?.data?.info || '未知错误');
     }
   }).catch((err) => {
@@ -640,14 +646,158 @@ async function updateReservation(updateData, successHandler, errHandler) {
   })
 }
 
+async function editVenueInfo(venueId, venueData, successHandler, errHandler) {
+  await httpInstance.put('/api/Venue/EditVenue', venueData, {
+    params: {
+      venueId: venueId,
+    }
+  }).then((res) => {
+    console.log(res);
+    if (res.state) {
+      successHandler()
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
+  }).catch((err) => {
+    errHandler(err.response?.data?.info);
+  })
+}
+
+async function editVenueOpenTime(editData, successHandler, errHandler) {
+  await httpInstance.put('/api/Venue/EditAvailability', editData).then((res) => {
+    console.log(res);
+    if (res.state) {
+      successHandler();
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
+  }).catch((err) => {
+    console.log(err);
+    errHandler(err.response?.data?.info || '未知错误');
+  })
+}
+
+async function deleteVenueOpenTime(timeslotId, successHandler, errHandler) {
+  await httpInstance.post('/api/Venue/DeleteAvailability', {
+    availabilityId: timeslotId,
+  }).then((res) => {
+    if (res.state) {
+      successHandler();
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
+  }).catch((err) => {
+    errHandler(err.response?.data?.info || '未知错误');
+  })
+}
+
+async function deletePublicNotice(noticeId, successHandler, errHandler) {
+  await httpInstance.post('/api/Announcement/deleteAnnouncement', { announcementId: noticeId }).then((res) => {
+    // console.log(res);
+    if (res.status) {
+      successHandler();
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
+  }).catch((err) => {
+    errHandler(err.response?.data?.info, '未知错误');
+  })
+}
+
+async function getVenueAdmin(venueId, successHandler, errHandler) {
+  await httpInstance.get('api/Venue/GetVenueDetailsAnnouncement', {
+    params: {
+      venueId: venueId,
+    }
+  }).then((res) => {
+    console.log(res);
+    if (res.state) {
+      successHandler(res.data);
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
+  }).catch((err) => {
+    console.log(err);
+    errHandler(err.response?.data?.info || '未知错误');
+  })
+}
+
+async function getAllDevice(successHandler, errHandler) {
+  await httpInstance.get('api/Venue/GetAllEquipment').then(res => {
+    console.log(res);
+    if (res.state) {
+      successHandler(res.data);
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
+  }).catch((err) => {
+    errHandler(err.response?.data?.info || '未知错误');
+  })
+}
+
+async function updateVenueAdmin(updateData, successHandler, errHandler) {
+  await httpInstance.post('api/Venue/UpdateVenueAdmin', updateData).then((res) => {
+    console.log(res);
+    if (res.state) {
+      successHandler();
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
+  }).catch((err) => {
+    console.log(err);
+    errHandler(err.response?.data?.info || '未知错误');
+  })
+}
+
+async function getAllAdmin(successHandler, errHandler) {
+  await httpInstance.get('api/Admin/allAdmins/').then((res) => {
+    console.log(res);
+    if (res.state) {
+      successHandler(res.data);
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
+  }).catch((err) => {
+    errHandler(err.response?.data?.info || '未知错误');
+  })
+}
+
+async function filterVenueByDate(date, successHandler, errHandler) {
+  await httpInstance.get('api/VenueAvailability/GetVenueAvailability', {
+    params: {
+      dateReq: date
+    }
+  }).then((res) => {
+    successHandler(res);
+  }).catch((err) => {
+    console.log(err);
+    if (err.response?.data === '未找到符合要求的场地') {
+      successHandler([]);
+    }
+    else {
+      errHandler(err.response?.data || '未知错误');
+    }
+  })
+}
+
 export {
   userLogin, userRegister, adminRegister, getUserInfo, getAllUsers, fetchTeam, createTeam, getAllTeams,
   getTeamName, getTeamDetail, addTeamUser, updateUserRole, removeTeamUser,
   getUserReservationGroup, getUserNotice, deleteUserNotice, getRepairData, addRepairRecord,
   getAllPublicNotice, getPublicNoticeDetail, addPublicNotice, modifyPublicNotice, getAllVenues,
-  getVenueDetail, getAdminVenueDetail, addVenueOpenTime,
-  createVenue, getVenueOpenTime, getAdminPermission, inidividualReservation,
-  getAllUserReservation, getAllReservation, userModifiedInfo, userModifiedPassword,
-  getStatistics, getVenueStatistics, getMaintenanceList, addMaintenance, modifyMaintenance, 
+  getVenueDetail, getAdminVenueDetail, addVenueOpenTime, editVenueInfo, editVenueOpenTime,
+  deleteVenueOpenTime, deletePublicNotice, getVenueAdmin, getAllDevice, updateVenueAdmin, getAllAdmin,
+  filterVenueByDate, createVenue, getVenueOpenTime, getAdminPermission, inidividualReservation,
+  groupReservation, getAllUserReservation, getAllReservation, userModifiedInfo, getReservationMember,
+  updateReservation, userModifiedPassword, getStatistics, getVenueStatistics,
+  getStatistics, getVenueStatistics, getMaintenanceList, addMaintenance, modifyMaintenance,
   getReservationMember, updateReservation, groupReservation
 };

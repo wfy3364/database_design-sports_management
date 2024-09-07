@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { dayjs, ElMessage } from 'element-plus';
 // import router from '@/router/index'
-import { getAdminVenueDetail, getVenueOpenTime } from '@/apis/requests';
+import { getAdminVenueDetail, getVenueAdmin, getVenueOpenTime } from '@/apis/requests';
 import { convertTime, judgeState } from '@/apis/utils';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
@@ -60,6 +60,8 @@ onMounted(async () => {
   if(venueId){
     await getAdminVenueDetail(venueId, processVenueDetail, getVenueDetailErr)
     .then(getCurOpenTime).then(() => {
+      getVenueAdmin(venueInfo.value.id, getVenueAdminSuccess, getVenueAdminErr);
+    }).then(() => {
       venueInfo.value.state = getVenueState();
       console.log(venueInfo.value);
     });
@@ -160,6 +162,25 @@ function showEditDialog(){
   editDialog.value = true;
 }
 
+function getVenueAdminSuccess(res){
+  console.log(res);
+  if(res.venueAdminDto){
+    venueInfo.value.admin = res.venueAdminDto.map(item => {
+    return {
+      id: item.adminId,
+      name: item.realName,
+    };
+  });
+  }
+  else{
+    venueInfo.value.admin = [];
+  }
+}
+
+function getVenueAdminErr(msg){
+  ElMessage.error('获取场地管理员失败：' + msg);
+}
+
 function viewMaintenanceDetail(id){
   router.push({
     path: '/AdminVenueMaintenance',
@@ -178,6 +199,16 @@ const venueTimeFormat = (start, end) => {
   const endStr = convertTime(end);
   return startStr.slice(startStr.length - 5, startStr.length)
   + '-' + endStr.slice(endStr.length - 5, endStr.length);
+}
+
+async function handleEditClose(){
+  editDialog.value = false;
+  const { venueId } = route.query;
+  openTime.value = [];
+  await getAdminVenueDetail(venueId, processVenueDetail, getVenueDetailErr)
+    .then(getCurOpenTime).then(() => {
+      venueInfo.value.state = getVenueState()
+    });
 }
 
 </script>
@@ -214,14 +245,22 @@ const venueTimeFormat = (start, end) => {
         </div>
         <div class="OverviewLine">
           <div class="OverviewDescription">设备：</div>
-          <el-button v-for="vdevice in venueDevices" size="small" 
-          @click="deviceLink(vdevice.id)">{{ vdevice.name }}</el-button>
+          <div class="OverviewContent">
+            <el-button v-for="vdevice in venueDevices" size="small" 
+            @click="deviceLink(vdevice.id)">{{ vdevice.name }}</el-button>
+          </div>
         </div>
         <div class="OverviewLine">
           <div class="OverviewDescription">当前状态：</div>
           <span v-if="venueInfo.state === 0" style="color: green">开放</span>
           <span v-if="venueInfo.state === 1" style="color: red">关闭</span>
           <span v-if="venueInfo.state === 2" style="color: gray">未确定</span>
+        </div>
+        <div class="OverviewLine">
+          <div class="OverviewDescription">管理员：</div>
+          <div class="OverviewContent">
+            <el-tag v-for="admin in venueInfo.admin">{{ admin.name }}</el-tag>
+          </div>
         </div>
       </div>
     </div>
@@ -268,10 +307,10 @@ const venueTimeFormat = (start, end) => {
               <div v-if="item.row.state === 2" style="color: red">待保养</div>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="140">
+          <el-table-column label="操作" width="80">
             <template #default="item">
               <el-button size="small" type="primary" @click="viewMaintenanceDetail(item.row.id)">详情</el-button>
-              <el-button size="small" v-if="EditCheck">编辑</el-button>
+              <!-- <el-button size="small" v-if="EditCheck">编辑</el-button> -->
             </template>
           </el-table-column>
         </el-table>
@@ -279,7 +318,7 @@ const venueTimeFormat = (start, end) => {
     </div>
   </div>
   <VenueEdit v-if="editDialog" :dialogMode="dialogMode" :curRecord="venueInfo" 
-  @closeModal="editDialog = false"></VenueEdit>
+  @closeModal="handleEditClose"></VenueEdit>
 </template>
 <style scoped>
 
@@ -333,7 +372,7 @@ const venueTimeFormat = (start, end) => {
   display: flex;
   flex-direction: column;
   justify-content: space-evenly;
-  max-width: 800px;
+  width: calc(90% - 300px);
 }
 
 .OverviewLine{

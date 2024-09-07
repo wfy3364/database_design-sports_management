@@ -6,7 +6,9 @@ import { convertTime } from '@/apis/utils';
 import Uploadphotos from '../Uploadphotos.vue';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
-import { createVenue, getVenueOpenTime, addVenueOpenTime } from '@/apis/requests';
+import { createVenue, getVenueOpenTime, addVenueOpenTime, editVenueInfo, editVenueOpenTime, 
+  deleteVenueOpenTime, updateVenueAdmin, getAllAdmin
+} from '@/apis/requests';
 
 const detailDialog = ref(true);
 const editingRecord = ref(null);
@@ -25,13 +27,14 @@ const props = defineProps({
     capacity: Number,
     address: String,
     description: String,
+    admin: Array,
   },
 });
 
 const emit = defineEmits(['closeModal']);
 
 const userStore = useUserStore();
-const { adminType, adminPermission } = storeToRefs(userStore);
+const { userId, userName, adminType, adminPermission } = storeToRefs(userStore);
 
 // 检查管理员编辑权限
 // const EditCheck = computed(() => {
@@ -67,6 +70,15 @@ const dialogTitle = {
 const sports = ref(['足球', '篮球', '网球', '羽毛球', '其它']);
 const customType = ref('');
 
+const adminOptions = ref([{
+  id: '100001',
+  name: ''
+}, {
+  id: '100002',
+  name: 'abc',
+}])
+const venueAdmins = ref([]);
+
 async function getCurOpenTime(){
   await getVenueOpenTime(props.curRecord.id, openDate.value, getOpenTimeSuccess, getOpenTimeErr)
 }
@@ -81,15 +93,36 @@ function getOpenTimeSuccess(res){
       remain: item.remainingCapacity,
     }
   });
+  // console.log(openTime.value);
   editingTime.value.push({
     date: openDate.value,
-    time: openTime.value,
+    time: openTime.value.map(item => {
+      return {
+        id: item.id,
+        period: [item.start_time, item.end_time],
+        remain: item.remain,
+        price: item.price,
+      }
+    }),
   });
   editingDateIndex.value = editingTime.value.length - 1;
 }
 
 function getOpenTimeErr(msg){
   ElMessage.error('获取场地开放时间失败：' + msg);
+}
+
+function processAdminData(res){
+  adminOptions.value = res.map(item => {
+    return {
+      id: item.adminId,
+      name: item.realName,
+    }
+  });
+}
+
+function getAdminErr(msg){
+  ElMessage.error('获取管理员信息失败：' + msg);
 }
 
 onMounted(async () => {
@@ -102,23 +135,26 @@ onMounted(async () => {
       description: props.curRecord.description,
       img: props.curRecord.img,
     };
+    venueAdmins.value = props.curRecord.admin.map(item => item.id);
     await getCurOpenTime();
   }
   else if(props.dialogMode === 'create'){
     editingRecord.value = {
-      id: '',
+      id: null,
       name: '',
       type: '',
       capacity: 10,
       address: '',
       description: '',
       img: '',
+      admin: [userId.value],
     };
     editingTime.value = [{
       date: openDate.value,
       time: [],
     }];
   }
+  getAllAdmin(processAdminData, getAdminErr);
 });
 
 function setDate(val){
@@ -191,28 +227,118 @@ function validateEdit(){
     errDialog.value = true;
     return false;
   }
+  if(venueAdmins.value.length == 0){
+    errMsg.value = '至少选择一个场地管理员';
+    errDialog.value = true;
+    return false;
+  }
   return true;
 }
 
 function convertTimeSlots(){
   let resArr = [];
+  const offset = dayjs().utcOffset();
+  console.log(offset);
   for(const item of editingTime.value){
     resArr = [...resArr, ...item.time.map(timeSlot => {
-      return {
-        startTime: dayjs(item.date).set('hour', timeSlot.period[0].getHours()).set('minute', timeSlot.period[0].getMinutes()),
-        endTime: dayjs(item.date).set('hour', timeSlot.period[1].getHours()).set('minute', timeSlot.period[1].getMinutes()),
+      const data = {
+        startTime: dayjs(item.date).set('hour', dayjs(timeSlot.period[0]).get('hour'))
+        .set('minute', dayjs(timeSlot.period[0]).get('minute')).add(offset, 'minute'),
+        endTime: dayjs(item.date).set('hour', dayjs(timeSlot.period[1]).get('hour'))
+        .set('minute', dayjs(timeSlot.period[1]).get('minute')).add(offset, 'minute'),
         price: timeSlot.price,
         remainingCapacity: timeSlot.remain,
       }
+      if(timeSlot.id){
+        data.availabilityId = timeSlot.id;
+      }
+      return data;
     })];
   }
   return resArr;
 }
 
-function handleEdit(){
+async function handleEdit(){
   if(!validateEdit()){
     return;
   }
+  const venueData = {
+    name: editingRecord.value.name,
+    type: editingRecord.value.type === '其它' ? customType.value : editingRecord.value.type,
+    capacity: editingRecord.value.capacity,
+    status: 'any',
+    maintenanceCount: 0,
+    lastInspectionTime: new Date(),
+    venueImageUrl: editingRecord.value.img,
+    venueLocation: editingRecord.value.address,
+    venueDescription: editingRecord.value.description,
+  };
+  const editTimeSlot = async () => {
+    const timeSlotArr = convertTimeSlots();
+    console.log(timeSlotArr);
+    console.log(deletedTimeId);
+    let addIndex = 0;
+    let deleteIndex = 0;
+    const addStep = async () => {
+      addIndex++;
+      if(addIndex === timeSlotArr.length){
+        if(deletedTimeId.value.length > 0){
+          await deleteVenueOpenTime(deletedTimeId.value[deleteIndex], deleteStep, handleEditErr);
+        }
+        else{
+          await addVenueAdmin();
+        }
+        return;
+      }
+      if(timeSlotArr[addIndex].availabilityId){
+        await editVenueOpenTime(timeSlotArr[addIndex], addStep, handleEditErr);
+      }
+      else{
+        await addVenueOpenTime({ venueId: props.curRecord.id, ...timeSlotArr[addIndex]}, 
+        addStep, handleEditErr);
+      }
+    }
+    const deleteStep = async () => {
+      deleteIndex++;
+      if(deleteIndex === deletedTimeId.value.length){
+        await addVenueAdmin();
+        return;
+      }
+      await deleteVenueOpenTime(deletedTimeId.value[deleteIndex], deleteStep, handleEditErr);
+    }
+
+    if(timeSlotArr.length > 0){
+      if(timeSlotArr[addIndex].availabilityId){
+        await editVenueOpenTime(timeSlotArr[addIndex], addStep, handleEditErr);
+      }
+      else{
+        await addVenueOpenTime({ venueId: props.curRecord.id, ...timeSlotArr[addIndex]}, 
+        addStep, handleEditErr);
+      }
+    }
+    else if(deletedTimeId.value.length > 0){
+      await deleteVenueOpenTime(deletedTimeId.value[deleteIndex], deleteStep, handleEditErr);
+    }
+    else{
+      await addVenueAdmin();
+    }
+  }
+  const addVenueAdmin = async () => {
+    const updateData = {
+      venueId: props.curRecord.id,
+      venueAdmins: venueAdmins.value,
+    }
+    // console.log(venueAdmins.value);
+    // console.log(updateData);
+    await updateVenueAdmin(updateData, handleEditSuccess, handleEditErr);
+  }
+  const handleEditSuccess = () => {
+    successDialog.value = true;
+  }
+  const handleEditErr = (msg) => {
+    ElMessage.error('创建场地失败：' + msg);
+  }
+  await editVenueInfo(props.curRecord.id, venueData, editTimeSlot, handleEditErr);
 }
 
 async function handleCreate(){
@@ -230,7 +356,7 @@ async function handleCreate(){
     venueLocation: editingRecord.value.address,
     venueDescription: editingRecord.value.description,
   };
-  console.log(venueData);
+  // console.log(venueData);
   const addOpenTimeSlot = async (res) => {
     ElMessage.success('创建场地成功');
     resVenueId.value = res;
@@ -240,9 +366,10 @@ async function handleCreate(){
     const step = async () => {
       curIndex++;
       if(curIndex === timeSlotArr.length){
-        handleEditSuccess();
+        await addVenueAdmin();
+        return;
       }
-      console.log({ venueId: resVenueId.value, ...timeSlotArr[curIndex]});
+      // console.log({ venueId: resVenueId.value, ...timeSlotArr[curIndex]});
       await addVenueOpenTime({ venueId: resVenueId.value, ...timeSlotArr[curIndex]}, 
       step, handleCreateErr);
     }
@@ -251,8 +378,15 @@ async function handleCreate(){
       step, handleCreateErr);
     }
     else{
-      handleEditSuccess();
+      await addVenueAdmin();
     }
+  }
+  const addVenueAdmin = async () => {
+    const updateData = {
+      venueId: resVenueId.value,
+      venueAdmins: venueAdmins.value,
+    }
+    await updateVenueAdmin(updateData, handleEditSuccess, handleCreateErr);
   }
   const handleEditSuccess = () => {
     successDialog.value = true;
@@ -263,10 +397,8 @@ async function handleCreate(){
   await createVenue(venueData, addOpenTimeSlot, handleCreateErr)
 }
 
-
-
 function handleImgUpload(url){
-  console.log(url);
+  // console.log(url);
   editingRecord.value.img = url;
 }
 
@@ -346,11 +478,17 @@ function handleImgUpload(url){
           </template>
         </el-table-column>
       </el-table>
+      <div class="detailTitle">场地管理员</div>
+      <el-select multiple filterable reserve-keyword placeholder="管理员ID或名称" 
+        v-model="venueAdmins">
+          <el-option v-for="admin in adminOptions" :label="admin.id + ' ' + admin.name"
+          :value="admin.id"></el-option>
+      </el-select>
     </div>
     <template #footer>
       <el-button v-if="dialogMode === 'edit'" type="primary" @click="handleEdit">确定</el-button>
       <el-button v-else-if="dialogMode === 'create'" type="primary" @click="handleCreate">确定</el-button>
-      <el-button v-if="EditCheck" @click="exitConfirmDialog = true">取消</el-button>
+      <el-button @click="exitConfirmDialog = true">取消</el-button>
     </template>
   </el-dialog>
   <!-- 确认提示 -->

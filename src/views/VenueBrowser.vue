@@ -59,13 +59,12 @@
     <el-dialog v-model="showVenueDetail" align-center :title="selectedVenue?.name">
       <div class="detailContent">
         <img class="venueImg" :src="selectedVenue.img" alt="场地图片" />
-        <div class="modalSubtitle">
-          <div class="openDateSelection">
-            <el-button size="small" @click="setDate(-1)">&lt;</el-button>
-            <el-date-picker v-model="venueDate" size="small" 
-            @change="handleDateChange()"></el-date-picker>
-            <el-button size="small" @click="setDate(1)">&gt;</el-button>
-          </div>
+        <div class="modalSubtitle">开放时间段</div>
+        <div class="openDateSelection">
+          <el-button size="small" @click="setDate(-1)">&lt;</el-button>
+          <el-date-picker v-model="venueDate" size="small" 
+          @change="handleDateChange()"></el-date-picker>
+          <el-button size="small" @click="setDate(1)">&gt;</el-button>
         </div>
         <div class="venue-timeslots">
           <el-table :data="selectedVenue.timeslots" border :default-sort="{ prop: 'time' }">
@@ -133,14 +132,14 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { Search } from '@element-plus/icons-vue';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
 import VenueEdit from './components/VenueEdit.vue';
 import dayjs from 'dayjs';
 import { convertTime } from '@/apis/utils';
-import { getAllVenues, getVenueDetail } from '@/apis/requests';
+import { getAllVenues, getVenueDetail, filterVenueByDate } from '@/apis/requests';
 import { ElMessage } from 'element-plus';
 
 // 场地数据示例，包括ID、名称、运动类型、图片、时间段、管理员信息和地址
@@ -219,7 +218,9 @@ const venueDate = ref(dayjs().format("YYYY-MM-DD"));
 const filterDate = ref(dayjs().format("YYYY-MM-DD"));
 const enableDateFilter = ref(false);
 const router = useRouter();
+const route = useRoute();
 const createCheck = computed(() => {
+  // return adminType.value === 'venue' || adminType.value === 'venue-device';
   return adminType.value === 'system';
 })
 
@@ -245,8 +246,11 @@ const initializeVenues = (res) => {
       img: item.venueImageUrl,
     }
   });
-  
   filteredVenues.value = venues.value.sort((a, b) => a.name.localeCompare(b.name));
+  const { venueId } = route.query;
+  if(venueId && adminType.value === 'normal'){
+    viewVenueDetails(venues.value.find((venue, index) => venue.id === venueId));
+  }
 };
 
 const getAllVenuesErr = (msg) => {
@@ -256,7 +260,7 @@ const getAllVenuesErr = (msg) => {
 }
 
 // 处理筛选操作的函数
-const filterVenues = () => {
+const filterVenues = async () => {
   filteredVenues.value = venues.value.filter(venue => {
     const matchesSearchQuery = searchQuery.value
       ? (isNaN(+searchQuery.value)
@@ -264,11 +268,29 @@ const filterVenues = () => {
         : venue.id.toString() === searchQuery.value)
       : true;
     const matchesSport = selectedSport.value ? venue.sport === selectedSport.value : true;
-    const matchesDate = enableDateFilter.value
-      ? venue.timeslots.some(slot => slot.time.includes(filterDate.value))
-      : true;
-    return matchesSearchQuery && matchesSport && matchesDate;
+    return matchesSearchQuery && matchesSport;
   }).sort((a, b) => a.name.localeCompare(b.name));
+  if(enableDateFilter.value){
+    const handleVenueDateSearch = (res) => {
+      const venueDateRes = [...new Set(res.map(res => res.venueId))];
+      const filterRes = [];
+      for(const venue of venueDateRes){
+        for(const allvenue of filteredVenues.value){
+          if(venue === allvenue.id){
+            filterRes.push(allvenue);
+            break;
+          }
+        }
+      }
+      console.log(venueDateRes);
+      console.log(filterRes);
+      filteredVenues.value = filterRes;
+    }
+    const filterVenueDateErr = (msg) => {
+      ElMessage.error('查找场地失败：' + msg);
+    }
+    await filterVenueByDate(filterDate.value, handleVenueDateSearch, filterVenueDateErr);
+  }
 };
 
 const filterReset = () => {
@@ -283,6 +305,7 @@ const filterReset = () => {
 const viewVenueDetails = async (venue) => {
   console.log(venue);
   if(adminType.value === 'normal'){
+    selectedVenue.value = venue;
     await getVenueDetail(venue.id, processVenueDetail, venueDetailErr)
   }
   else{
@@ -293,35 +316,30 @@ const viewVenueDetails = async (venue) => {
       }
     });
   }
-
-  // selectedVenue.value = venue;
-  // showVenueDetail.value = true;
 };
 
-// {
-//     id: 3,
-//     name: '篮球馆B',
-//     sport: '篮球',
-//     totalCapacity: 50,
+// id: 4,
+//     name: '游泳馆D',
+//     sport: '网球',
+//     totalCapacity: 70,
 //     image: '',
 //     timeslots: [
-//       { id: 1, time: '2024-08-24 09:00-11:00', capacity: 5, price: 80 },
-//       { id: 2, time: '2024-08-24 11:00-13:00', capacity: 5, price: 90 },
+//       { id: 1, startTime: '2024-08-24 07:00-09:00', capacity: 10, price: 100 },
+//       { id: 2, time: '2024-08-24 09:00-11:00', capacity: 12, price: 120 },
 //     ],
-//     manager: '李四',
-//     address: '北京市海淀区篮球馆路2号',
-//     phone: '010-87654321',
+//     manager: '赵六',
+//     address: '北京市丰台区游泳馆路4号',
+//     phone: '010-11223344',
 //   },
 
 const processVenueDetail = (res) => {
-  selectedVenue.value = {
-    id: res.venueId,
-    name: res.name,
-    sport: res.type,
-    totalCapacity: res.capacity,
-    img: res.venueImageUrl,
+  selectedVenue.value.announcements = res.announcements.map(item => {
+    return {
+      title: item.title,
+      time: item.publishDate
+    }
+  });
 
-  }
   showVenueDetail.value = true;
 }
 

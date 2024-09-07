@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import { ref, onMounted } from 'vue'
 import PublicNoticeModal from './components/PublicNoticeModal.vue';
 import NotificationDetail from './components/NotificationDetail.vue';
-import { getAllPublicNotice, getPublicNoticeDetail, getUserNotice } from '@/apis/requests';
+import { getAllPublicNotice, getAllVenues, getPublicNoticeDetail, getUserNotice } from '@/apis/requests';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
 import { ElMessage } from 'element-plus';
@@ -51,35 +51,36 @@ const publicNoticeData = ref([]);
 const userNoticeData = ref([]);
 const curUserNotice = ref(null);
 
-const venueData = [{
-  id: 1,
-  name: "场地1",
-  img: "", // 此处放场地图片的url
-  type: "羽毛球",
-  capacity: 100,
-  state: 0,
-}, {
-  id: 2,
-  name: "场地2",
-  img: "",
-  type: "篮球",
-  capacity: 50,
-  state: 1,
-}, {
-  id: 3,
-  name: "场地3",
-  img: "",
-  type: "乒乓球",
-  capacity: 100,
-  state: 2,
-}, {
-  id: 4,
-  name: "场地4",
-  img: "",
-  type: "abc",
-  capacity: 100,
-  state: 0,
-}];
+// const venueData = [{
+//   id: 1,
+//   name: "场地1",
+//   img: "", // 此处放场地图片的url
+//   type: "羽毛球",
+//   capacity: 100,
+//   state: 0,
+// }, {
+//   id: 2,
+//   name: "场地2",
+//   img: "",
+//   type: "篮球",
+//   capacity: 50,
+//   state: 1,
+// }, {
+//   id: 3,
+//   name: "场地3",
+//   img: "",
+//   type: "乒乓球",
+//   capacity: 100,
+//   state: 2,
+// }, {
+//   id: 4,
+//   name: "场地4",
+//   img: "",
+//   type: "abc",
+//   capacity: 100,
+//   state: 0,
+// }];
+const venueData = ref([]);
 
 const showPublicNotice = ref(false);
 const PublicNoticeMode = ref('');
@@ -156,18 +157,42 @@ function switchEditMode(){
   PublicNoticeMode.value = 'edit';
 }
 
+async function loadVenues(){
+  await getAllVenues(processVenueData, loadVenueErr);
+}
+
+// const venueData = [{
+//   id: 1,
+//   name: "场地1",
+//   img: "", // 此处放场地图片的url
+//   type: "羽毛球",
+//   capacity: 100,
+//   state: 0,
+// }, {
+
+function processVenueData(res) {
+  venueData.value = res.map(venue => {
+    return {
+      id: venue.venueId,
+      name: venue.name,
+      type: venue.type,
+      capacity: venue.capacity,
+      img: venue.venueImageUrl,
+    }
+  })
+}
+
+function loadVenueErr(msg){
+  ElMessage.error('获取场地数据失败：' + msg);
+}
+
 function viewVenueDetail(venue){
-  if(adminType === 'normal'){
-    
-  }
-  else{
-    router.push({
-      path: '/AdminVenueDetail',
-      query: {
-        venueId: venue.id,
-      }
-    });
-  }
+  router.push({
+    path: adminType.value === 'normal' ? '/VenueBrowser' :'/AdminVenueDetail',
+    query: {
+      venueId: venue.id,
+    }
+  });
 }
 
 function changeRoute(path){
@@ -186,6 +211,7 @@ function judgeNoticeType(type){
 onMounted(() => {
   getPublicNoticeBasic();
   loadNotification();
+  loadVenues();
 });
 
 </script>
@@ -251,12 +277,12 @@ onMounted(() => {
           <div class="VenueText">名称：{{ venue.name }}</div>
           <div class="VenueText">类型：{{ venue.type }}</div>
           <div class="VenueText">容量：{{ venue.capacity }}</div>
-          <div class="VenueText">
+          <!-- <div class="VenueText">
             <span>状态：</span>
             <span v-if="venue.state === 0" style="color: green">开放</span>
             <span v-if="venue.state === 1" style="color: red">关闭</span>
             <span v-if="venue.state === 2" style="color: orange">保养</span>
-          </div>
+          </div> -->
         </div>
       </div>
     </div>

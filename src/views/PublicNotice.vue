@@ -192,7 +192,8 @@ function FilterReset(){
         </el-button>
       </div>
     </div>
-    <el-table :data="filteredNotice" :show-overflow-tooltip="{ effect: 'light'}" v-loading="tableLoading">
+    <el-table :data="filteredNotice" :show-overflow-tooltip="{ effect: 'light'}" v-loading="tableLoading"
+    max-height="calc(100vh - 290px)">
       <el-table-column label="编号" prop="id" width="80" sortable></el-table-column>
       <el-table-column label="标题" prop="title" width="110" sortable></el-table-column>
       <el-table-column label="内容">

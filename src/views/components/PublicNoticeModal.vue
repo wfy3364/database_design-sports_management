@@ -5,7 +5,7 @@ import { convertTime } from '@/apis/utils';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
 import { ElMessage } from 'element-plus';
-import { addPublicNotice, modifyPublicNotice } from '@/apis/requests';
+import { addPublicNotice, getAllVenues, modifyPublicNotice, deletePublicNotice } from '@/apis/requests';
 
 const props = defineProps({
   mode: String,
@@ -43,23 +43,31 @@ const contentEmptyErr = ref('');
 const venueFilter = ref([]);
 const successDialog = ref(false);
 const resNoticeId = ref('');
+const updateEmit = ref(false);
 // console.log(venueFilter.value);
-const venueOptions = [
-  { id: 1, name: '场地1'},
-  { id: 2, name: '场地2'},
-];
+// const venueOptions = [
+//   { id: 1, name: '场地1'},
+//   { id: 2, name: '场地2'},
+// ];
+const venueOptions = ref([]);
 const isLoading = ref(false);
 
 function handleClose(){
-  emit('closeModal', false);
+  emit('closeModal', updateEmit.value);
 }
 
 async function handleDelete(){
-  
+  await deletePublicNotice(props.notice.id, deleteSuccess, deleteErr);
 }
 
 function deleteSuccess(){
+  ElMessage.info('已删除公告');
+  updateEmit.value = true;
+  handleClose();
+}
 
+function deleteErr(msg){
+  ElMessage.error('删除公告失败：' + msg);
 }
 
 function dialogConfirm(){
@@ -67,7 +75,9 @@ function dialogConfirm(){
   if(confirmAction.value === 'delete'){
     handleDelete(); 
   }
-  handleClose();
+  else{
+    handleClose();
+  }
 }
 
 function confirmDialogClose(){
@@ -104,6 +114,20 @@ function errDisplay(msg, val){
   msg.value = val;
 }
 
+function processVenueInfo(res){
+  venueOptions.value = res.map(venue => {
+    return {
+      id: venue.venueId,
+      name: venue.name,
+    }
+  });
+  console.log(venueOptions.value);
+}
+
+function getVenueErr(msg){
+  ElMessage.error('获取所有场地失败：' + msg);
+}
+
 async function submitEdit(){
   if(!validateEdit()){
     return;
@@ -138,7 +162,7 @@ async function submitCreate(){
 function createSuccess(res){
   successDialog.value = true;
   resNoticeId.value = res;
-  emit('closeModal', true);
+  updateEmit.value = true;
 }
 
 function editErr(msg){
@@ -171,7 +195,7 @@ onMounted(() => {
       content: props.notice.content,
       noticeVenues: props.notice.venues,
     };
-    venueFilter.value = props.notice.venues.map(obj => obj.id);
+    venueFilter.value = props.notice.venues.map(obj => obj.venueId);
   }
   else if(props.mode === 'create'){
     modifiedNotice.value = {
@@ -180,6 +204,7 @@ onMounted(() => {
       noticeVenues: [],
     }
   }
+  getAllVenues(processVenueInfo, getVenueErr);
 });
 
 </script>
@@ -200,7 +225,9 @@ onMounted(() => {
         </div>
         <div class="infoLine">
           <div class="noticeInfo">涉及场地：</div>
-          <el-tag v-for="venue in notice.venues">{{ venue.name }}</el-tag>
+          <div>
+            <el-tag v-for="venue in notice.venues">{{ venue.venueName }}</el-tag>
+          </div>
         </div>
         <div class="infoLine">
           <div class="noticeInfo">公告管理员：</div>
@@ -269,11 +296,11 @@ onMounted(() => {
       </div>
     </template>
   </el-dialog>
-  <el-dialog title="发布成功" v-model="successDialog">
+  <el-dialog title="发布成功" v-model="successDialog" :before-close="handleClose">
     <div>发布公告成功！</div>
     <div>公告ID：{{ resNoticeId }}</div>
     <template #footer>
-      <el-button @click="successDialog = false">确定</el-button>
+      <el-button @click="handleClose">确定</el-button>
     </template>
   </el-dialog>
 </template>

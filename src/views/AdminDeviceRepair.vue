@@ -81,9 +81,30 @@ async function loadRepairData(){
   tableLoading.value = true;
   await getRepairData(handleLoadSuccess, handleLoadErr);
 }
-
+// {
+//   id: '4',
+//   deviceId: '4',
+//   deviceName: '设备1',
+//   venueId: '2',
+//   venueName: '场地名称过长时的展示',
+//   start_time: new Date("August 21, 2024 14:00:00"),
+//   end_time: new Date("August 21, 2024 15:00:00"),
+//   description: '设备描述测试：设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，设备描述的内容可以很长，',
+// }]);
 function handleLoadSuccess(res){
-  repairData.value = res;
+  repairData.value = res.map(item => {
+    return {
+      id: item.maintenanceRecordId,
+      deviceId: item.equipmentId,
+      deviceName: item.equipmentName,
+      venueId: item.venueId,
+      venueName: item.venueName,
+      start_time: item.maintenanceStartTime,
+      end_time: item.maintenanceEndTime,
+      description: item.maintenanceDetails,
+    }
+  });
+  console.log(res);
   errMsg.value = '';
   tableLoading.value = false;
   repairData.value = repairData.value.map(item => {
