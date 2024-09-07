@@ -2,6 +2,7 @@
 
 import { ref, computed } from 'vue';
 import { Search } from '@element-plus/icons-vue'
+import { useRoute} from 'vue-router'; // 导入 useRoute
 import { convertTime, judgeState } from '@/apis/utils';
 import MaintenanceDetail from './components/MaintenanceDetail.vue';
 import { useUserStore } from '@/stores/userStore';
@@ -9,6 +10,7 @@ import { storeToRefs } from 'pinia';
 import { getMaintenanceList, getAllVenues } from '@/apis/requests';
 import { onMounted } from 'vue';
 
+const route = useRoute(); // 初始化路由器
 const searchType = ref('0');
 const searchContent = ref('');
 const searchPlaceholder = ['保养记录ID', '场地名称或ID'];
@@ -118,12 +120,10 @@ function handleSearch(){
   console.log(maintenanceData.value)
   filteredData.value = maintenanceData.value;
   if (stateOption.value !== '3') {
-    console.log(1);
     filteredData.value = filteredData.value.filter(item => item.state === +stateOption.value);
   }
   
   if (searchContent.value) {
-    console.log(2);
     filteredData.value = filteredData.value.filter(item => {
       const searchTerm = searchContent.value.toLowerCase();
       return (searchType.value === '0' && (item.venueMaintenanceId == searchTerm)) ||
@@ -132,7 +132,6 @@ function handleSearch(){
   }
 
   if(dateRange.value.length > 0){
-    console.log(3);
     const startTime = dateRange.value[0].getTime() || 0;
     const endTime = dateRange.value[1].getTime() + 3600 * 1000 * 24 || Infinity;
     filteredData.value = filteredData.value.filter(item => {
@@ -168,6 +167,7 @@ function FilterReset(){
 // }
 
 function showMaintenanceDetail(record, mode){
+  console.log(record);
   curRecord.value = record;
   dialogMode.value = mode;
   detailDialog.value = true;
@@ -223,7 +223,16 @@ function getMaintenanceFailed(img){
 onMounted(async () => {
   await getAllVenues(getVenuesSuccess, getVenuesFailed);
   await getMaintenanceList(getMaintenanceSuccess, getMaintenanceFailed);
-  // filteredData.value.
+  const { maintenanceId, mode } = route.query;
+  if(maintenanceId){
+    filteredData.value = maintenanceData.value;
+    console.log(filteredData.value);
+    filteredData.value = filteredData.value.filter(item => {
+      return (item.venueMaintenanceId == maintenanceId);
+    });
+    console.log(filteredData.value[0]);
+    showMaintenanceDetail(filteredData.value[0], mode);
+  }
 });
 
 function getVenuesSuccess(res){

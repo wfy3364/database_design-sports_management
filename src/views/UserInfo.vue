@@ -62,14 +62,26 @@
         </template>
         {{ userData.realName }}
       </el-descriptions-item>
-      <!-- <el-descriptions-item width="">
+      <el-descriptions-item width="">
         <template #label>
           <div class="itemLabel">联系电话</div>
         </template>
         {{ userData.contactNumber }}
-      </el-descriptions-item> -->
+      </el-descriptions-item>
+      <el-descriptions-item width="">
+        <template #label>
+          <div class="itemLabel">管理权限</div>
+        </template>
+        {{ adminType }}
+      </el-descriptions-item>
+      <el-descriptions-item width="">
+        <template #label>
+          <div class="itemLabel">管理场地</div>
+        </template>
+        {{ adminPermission.venue }}
+      </el-descriptions-item>
     </el-descriptions>
-    <div class="StatisticsContent">
+    <div class="StatisticsContent" v-if="adminType == 'normal'">
       <div class="subTitleHeader">
         <div class="subTitleText">个人预约统计</div>
         <div class="controls">
@@ -83,15 +95,17 @@
       <div class="chart-container" v-if="showStatistics()">
         <Line :data="revenueData" :options="revenueChart" class="line-chart" />
       </div>
+    </div>
+    <div class="SettingButton">
       <div class="button-container">
-        <el-button class="button" @click="showPasswordDialog">修改密码</el-button>
-        <el-button class="button" @click="showPrivacyAgreement">查看隐私协议</el-button>
-        <el-button class="button" @click="showQuitDialog" type="danger">退出登录</el-button>
+          <el-button class="button" @click="showPasswordDialog">修改密码</el-button>
+          <el-button class="button" @click="showPrivacyAgreement">查看隐私协议</el-button>
+          <el-button class="button" @click="showQuitDialog" type="danger">退出登录</el-button>
       </div>
     </div>
   </div>
 
-  <div v-if="editInformation" class="modal" @click="closeEditDialog">
+  <div v-if="editInformation && adminType == 'normal'" class="modal" @click="closeEditDialog">
     <div class="modal-content" @click.stop>
       <div class="modalHeader">
         <div class="modalTitle">编辑信息</div>
@@ -117,7 +131,30 @@
     </div>
   </div>
 
-  <div v-if="changePassword" class="modal">
+  <div v-if="editInformation && adminType != 'normal'" class="modal" @click="closeEditDialog">
+    <div class="modal-content" @click.stop>
+      <div class="modalHeader">
+        <div class="modalTitle">编辑信息</div>
+        <el-button class="smallButton" type="danger" @click="closeEditDialog">关闭</el-button>
+      </div>
+      <div class="modalBody">
+        <el-form :model="tempUserData" ref="form" label-width="120px">
+          <el-form-item label="姓名" prop="realname">
+            <el-input v-model="tempUserData.realName" placeholder="请输入姓名"></el-input>
+          </el-form-item>
+          <el-form-item label="联系电话" prop="phone">
+            <el-input v-model="tempUserData.contactNumber" placeholder="请输入联系电话"></el-input>
+          </el-form-item>
+            <div class="smallButtonContainer"> 
+              <el-button class="smallButton" @click="closeEditDialog">取消</el-button>
+              <el-button class="smallButton" type="primary" @click="updateUserInfo">保存</el-button>
+            </div>
+        </el-form>
+      </div>
+    </div>
+  </div>
+
+  <div v-if="changePassword && adminType == 'normal'" class="modal">
     <div class="modal-content2" @click.stop>
       <form @submit.prevent="handleLogin">
         <div class="modalHeader">
@@ -159,7 +196,7 @@
   
   <script setup>
   import { ref, onMounted, computed } from 'vue';
-  import { getUserInfo } from '@/apis/requests'
+  import { getUserInfo, getAdminInfo, getAdminManagedItems } from '@/apis/requests'
   import { convertTime } from '@/apis/utils'
   import { Line } from 'vue-chartjs';
   import { Chart as ChartJS, LineElement, PointElement, CategoryScale, LinearScale, Filler, Title } from 'chart.js';
@@ -192,9 +229,9 @@
   const quitConfirm = ref(null); //登出确认界面
 
 
-  onMounted ( () => {
-    console.log(adminType.value);
-  })
+  // onMounted ( () => {
+  //   console.log(adminType.value);
+  // })
   const showEditDialog = () => {
     editInformation.value = 1;
   }
@@ -203,16 +240,22 @@
   }
   // 保存用户信息
   const updateUserInfo = () => {
-    userData.value.username = tempUserData.value.username;
-    userData.value.realName = tempUserData.value.realName;
-    userData.value.contactNumber = tempUserData.value.contactNumber;
-    editInformation.value = null;
-    const userInfo = {
-      username: userData.value.username,
-      contactNumber: userData.value.contactNumber,
-      realName: userData.value.realName
-    };
-    userModifiedInfo(userInfo, successHandler2, errHandler);
+    if(adminType.value == 'normal'){
+      userData.value.username = tempUserData.value.username;
+      userData.value.realName = tempUserData.value.realName;
+      userData.value.contactNumber = tempUserData.value.contactNumber;
+      editInformation.value = null;
+      const userInfo = {
+        username: userData.value.username,
+        contactNumber: userData.value.contactNumber,
+        realName: userData.value.realName
+      };
+      userModifiedInfo(userInfo, successHandler2, errHandler);
+    }
+    else{
+      userData.value.realName = tempUserData.value.realName;
+      userData.value.contactNumber = tempUserData.value.contactNumber;
+    }
   };
 
   const showPasswordDialog = () => { //打开修改密码界面
@@ -401,17 +444,6 @@
       },
     },
   }));
-  // 从后端获取用户信息
-  // onMounted(async () => {
-  //   try {
-  //     const response = await fetch('/api/user-info');
-  //     userInfo.value = await response.json();
-  //     console.error('成功');
-  //   } catch (error) {
-  //     console.error('获取用户信息失败:', error);
-  //     console.log('失败');
-  //   }
-  // });
   function successHandler(res){
     userData.value = res;
   }
@@ -424,25 +456,31 @@
     ElMessage.success("用户密码修改成功");
   }
 
+  function getAdminInfoSuccess(res){
+    console.log(res.data);
+    userData.value = res.data;
+    userData.value.userId = userId.value;
+  }
+
+  function getAdminItemsSuccess(res){
+    console.log("success");
+    console.log(res);
+    adminPermission.value.device = res.data.managedEquipment;
+    adminPermission.value.venue = res.data.managedVenues;
+    console.log(adminPermission.value);
+  }
+
   function errHandler(msg){
-    console.log(isAuthenticated.value);
-    console.log(userId.value);
-    console.log(userName.value);
-    console.log(adminType.value);
-    console.log(adminPermission);
     ElMessage.error(msg);
   }
 
   onMounted(async () => {
     if(adminType.value == 'normal'){
-      console.log(111);
       await getUserInfo(successHandler, errHandler);
     }
     else{
-      console.log(userId.value)
-      userData.value.userId = userId.value;
-      userData.value.realName = userName.value;
-      //需要添加管理员联系电话
+      await getAdminInfo(getAdminInfoSuccess, errHandler);
+      await getAdminManagedItems(getAdminItemsSuccess, errHandler)
     }
   });
 
@@ -452,12 +490,10 @@
   }
 
   function getStatisticsSuccess(res){
-    console.log(1);
     // revenueDataList.value = res.reserveDescription;
   }
 
   function getStatisticsFailed(img){
-    console.log(0);
     ElMessage.error(img);
   }
 
@@ -657,5 +693,10 @@
 
   .modalBody {
     margin-top: 20px;
+  }
+
+  .SettingButton {
+    margin-top: 5%;
+    padding: 10px;
   }
   </style>

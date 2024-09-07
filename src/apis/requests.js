@@ -793,6 +793,26 @@ async function filterVenueByDate(date, successHandler, errHandler) {
   })
 }
 
+async function getAdminInfo(successHandler, errHandler) {
+  const userStore = useUserStore();
+  const { userId } = storeToRefs(userStore);
+  await httpInstance.get(`api/Admin/${userId.value}/info`).then((res) => {
+    successHandler(res.data);
+  }).catch((err) => {
+    errHandler(err.response?.data || '未知错误');
+  })
+}
+
+async function getAdminManagedItems(successHandler, errHandler) {
+  const userStore = useUserStore();
+  const { userId } = storeToRefs(userStore);
+  await httpInstance.get(`api/Admin/${userId.value}/managedItems`).then((res) => {
+    successHandler(res.data);
+  }).catch((err) => {
+    errHandler(err.response?.data || '未知错误');
+  })
+}
+
 export {
   userLogin, userRegister, adminRegister, getUserInfo, getAllUsers, fetchTeam, createTeam, getAllTeams,
   getTeamName, getTeamDetail, addTeamUser, updateUserRole, removeTeamUser,
@@ -804,4 +824,5 @@ export {
   getAllUserReservation, getAllReservation, userModifiedInfo, getReservationMember,
   userModifiedPassword, getStatistics, getVenueStatistics, getMaintenanceList, addMaintenance,
   modifyMaintenance, updateReservation, groupReservation
+  ,getAdminInfo, getAdminManagedItems
 };

@@ -170,6 +170,7 @@ function handleEdit(){
     return;
   }
   modifyMain()
+  detailDialog.value = false;
 }
 
 function handleCreate(){
@@ -177,6 +178,7 @@ function handleCreate(){
     return;
   }
   addMain()
+  detailDialog.value = false;
 }
 
 function getVenuesSuccess(res){
