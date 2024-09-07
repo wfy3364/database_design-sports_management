@@ -796,8 +796,7 @@ export {
   getVenueDetail, getAdminVenueDetail, addVenueOpenTime, editVenueInfo, editVenueOpenTime,
   deleteVenueOpenTime, deletePublicNotice, getVenueAdmin, getAllDevice, updateVenueAdmin, getAllAdmin,
   filterVenueByDate, createVenue, getVenueOpenTime, getAdminPermission, inidividualReservation,
-  groupReservation, getAllUserReservation, getAllReservation, userModifiedInfo, getReservationMember,
-  updateReservation, userModifiedPassword, getStatistics, getVenueStatistics,
-  getStatistics, getVenueStatistics, getMaintenanceList, addMaintenance, modifyMaintenance,
-  getReservationMember, updateReservation, groupReservation
+  getAllUserReservation, getAllReservation, userModifiedInfo, getReservationMember,
+  userModifiedPassword, getStatistics, getVenueStatistics, getMaintenanceList, addMaintenance,
+  modifyMaintenance, updateReservation, groupReservation
 };
