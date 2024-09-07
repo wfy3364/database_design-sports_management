@@ -6,7 +6,8 @@ import { convertTime } from '@/apis/utils';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
 import { 
-  getAllVenues, createDevice
+  getAllVenues, createDevice,
+  editDeviceInfo
 } from '@/apis/requests';
 
 const editingRecord = ref(null);
@@ -86,11 +87,6 @@ function validateEdit(){
     errDialog.value = true;
     return false;
   }
-  if(!editingRecord.value.venueid){
-    errMsg.value = '设备场地不能为空';
-    errDialog.value = true;
-    return false;
-  }
   return true;
 }
 
@@ -98,7 +94,12 @@ async function handleEdit(){
   if(!validateEdit()){
     return;
   }
- 
+  const deviceData = {
+    equipmentId: editingRecord.value.id,
+    equipmentName: editingRecord.value.name,
+    venueId: editingRecord.value.venueid,
+  }
+  await editDeviceInfo(deviceData, createDeviceSuccess, createDeviceErr)
 }
 
 async function handleCreate(){

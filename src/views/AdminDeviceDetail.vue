@@ -7,13 +7,14 @@ import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
 import { ElMessage } from 'element-plus';
 import { getDeviceInfo } from '@/apis/requests';
+import DeviceEdit from './components/DeviceEdit.vue';
 
 const route = useRoute(); // 初始化路由器
 const router = useRouter();
-const id = ref();
+// const id = ref();
 const curRecord = ref(null);
 const detailDialog = ref(false);
-const dialogMode = ref('view');
+const dialogMode = ref('edit');
 const userStore = useUserStore();
 const { adminType, adminPermission } = storeToRefs(userStore);
 const deviceEdit = ref(false);
@@ -190,27 +191,20 @@ function closeDeviceEdit() {
   deviceEdit.value = false;
 }
 
-function saveDeviceEdit() {
-  deviceInfo.value.name=tempDeviceInfo.value.name;
-  deviceInfo.value.venue=tempDeviceInfo.value.venue;
-  ElMessage({
-    message: '信息修改成功',
-    type: 'success',
-  })
-  deviceEdit.value = false;
-}
+// function saveDeviceEdit() {
+//   deviceInfo.value.name=tempDeviceInfo.value.name;
+//   deviceInfo.value.venue=tempDeviceInfo.value.venue;
+//   ElMessage({
+//     message: '信息修改成功',
+//     type: 'success',
+//   })
+//   deviceEdit.value = false;
+// }
 
 // 跳转到设备列表页面
 function goToDeviceList() {
   router.push('/AdminDevice'); // 设备列表页面的路由地址
 }
-
-// id: 1,
-//     name: '设备1',
-//     state: 0,
-//     introTime: '2024-08-12',
-//     venueid: 1,
-//     venuename: '篮球场',
 
 const processDeviceInfo = (res) => {
   deviceInfo.value.id = res.equipmentId;
@@ -219,6 +213,7 @@ const processDeviceInfo = (res) => {
   deviceInfo.value.venueid =  res.venueId;
   deviceInfo.value.venuename = res.venueName;
   recordDetails.value = res.repairRecords;
+  deviceInfo.value.state = getDeviceState();
 }
 
 const getDeviceInfoErr = (msg) => {
@@ -236,9 +231,16 @@ const viewVenueDetail = () => {
 }
 
 const getDeviceState = () => {
-  for(const record of recordDetails){
-    
+  for(const record of recordDetails.value){
+    const state = judgeState(record.maintenanceStartTime, record.maintenanceEndTime);
+    if(state === 1){
+      return 1;
+    }
+    else if(state === 3){
+      return 2;
+    }
   }
+  return 0;
 }
 
 const value = ref('')
@@ -316,8 +318,8 @@ onMounted(async () => {
           <div class="OverviewDescription">状态：</div>
           <span v-if="deviceInfo?.state === 0" style="color: green">使用中</span>
           <span v-if="deviceInfo?.state === 1" style="color: red">维修中</span>
-          <span v-if="deviceInfo?.state === 2" style="color: orange">待维修</span>
-          <span v-if="deviceInfo?.state === 3" style="color: gray">未使用</span>
+          <span v-if="deviceInfo?.state === 2" style="color: gray">未确定</span>
+          <!-- <span v-if="deviceInfo?.state === 3" style="color: gray">未使用</span> -->
         </div>
       </div>
     </div>
@@ -347,7 +349,9 @@ onMounted(async () => {
   </div>
   <RepairDetail v-if="detailDialog" :dialogMode="dialogMode" :curRecord="curRecord" 
   @closeModal="detailDialog = false" @editModal="showRepairDetail(curRecord, 'edit')"></RepairDetail>
-    <el-dialog v-model="deviceEdit" title="编辑信息" align-center>
+  <DeviceEdit v-if="deviceEdit" :dialogMode="dialogMode" :curRecord="deviceInfo" 
+  @closeModal="closeDeviceEdit"></DeviceEdit>
+    <!-- <el-dialog v-model="deviceEdit" title="编辑信息" align-center>
       <div class="modalBody">
         <el-form :model="tempDeviceInfo" label-width="120px">
           <div class="form-row">
@@ -373,7 +377,7 @@ onMounted(async () => {
           <el-button class="smallButton" type="primary" @click="saveDeviceEdit">保存</el-button>
         </div>
       </template>
-    </el-dialog>
+    </el-dialog> -->
 </template>
 
 <style scoped>

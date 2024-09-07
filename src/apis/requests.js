@@ -16,6 +16,7 @@ async function userLogin(LoginData, successHandler, errHandler, isLogging, errMs
       errHandler(res.message || '未知错误');
     }
   }).catch((err) => {
+    console.log(err);
     errHandler(err.response?.data?.message || '登录请求异常');
   });
 }
@@ -78,22 +79,18 @@ async function userRegister(RegisterData, isRegistering, registerSuccess, resId,
   })
 }
 
-async function adminRegister(RegisterData, contactAdminId, isRegistering, registerSuccess, resId, errMsg) {
-  await httpInstance.post('/api/User/Register', RegisterData).then((res) => {
+async function adminRegister(RegisterData, successHandler, errHandler) {
+  await httpInstance.post('/api/Admin/register', RegisterData).then((res) => {
+    console.log(res);
     if (res.state) {
-      resId.value = res.userId;
-      isRegistering.value = false;
-      registerSuccess.value = true;
+      successHandler(res.adminId);
     }
     else {
-      console.log(res);
-      errMsg.value = '注册失败：' + (res.info || '未知错误');
-      isRegistering.value = false;
+      errHandler(res.info || '未知错误');
     }
   }).catch((err) => {
     console.log(err);
-    errMsg.value = '注册失败：' + (err.response?.data?.info || '登录请求异常');
-    isRegistering.value = false;
+    errHandler(err.response?.data?.info || '未知错误');
   })
 }
 // 获取用户个人信息
@@ -832,8 +829,51 @@ async function getDeviceInfo(deviceId, successHandler, errHandler) {
       equipmentId: deviceId,
     }
   }).then((res) => {
+    console.log(res);
     if (res.state) {
       successHandler(res.data);
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
+  }).catch((err) => {
+    console.log(err);
+    errHandler(err.response?.data?.info || '未知错误');
+  })
+}
+
+async function editDeviceInfo(editData, successHandler, errHandler) {
+  await httpInstance.put('api/Venue/EditDevice', editData).then((res) => {
+    if (res.state) {
+      successHandler();
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
+  }).catch((err) => {
+    errHandler(err.response?.data?.info || '未知错误');
+  });
+}
+
+async function getAdminNotice(adminData, successHandler, errHandler) {
+  await httpInstance.post('api/Admin/AdminNoticeData', adminData).then((res) => {
+    if (res.status) {
+      successHandler(res.data || []);
+    }
+    else {
+      successHandler(res);
+    }
+  }).catch((err) => {
+    console.log(err);
+    errHandler(err.response?.data?.info || '未知错误');
+  });
+}
+
+async function adminValidate(adminData, successHandler, errHandler) {
+  await httpInstance.put(`api/Admin/updateAdminInfo/${adminId}`, adminData).then((res) => {
+    console.log(res);
+    if (res.state) {
+      successHandler();
     }
     else {
       errHandler(res.info || '未知错误');
@@ -842,6 +882,7 @@ async function getDeviceInfo(deviceId, successHandler, errHandler) {
     errHandler(err.response?.data?.info || '未知错误');
   })
 }
+
 
 export {
   userLogin, userRegister, adminRegister, getUserInfo, getAllUsers, fetchTeam, createTeam, getAllTeams,
@@ -854,5 +895,5 @@ export {
   getAllUserReservation, getAllReservation, userModifiedInfo, getReservationMember,
   userModifiedPassword, getStatistics, getVenueStatistics, getMaintenanceList, addMaintenance,
   modifyMaintenance, updateReservation, groupReservation, getAdminInfo, getAdminManagedItems,
-  createDevice, getDeviceInfo
+  createDevice, getDeviceInfo, editDeviceInfo, getAdminNotice, adminValidate,
 };

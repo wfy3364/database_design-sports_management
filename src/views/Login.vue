@@ -1,9 +1,10 @@
 <template>
   <div class="loginOuterPage">
+    <img src="@/assets/LoginBg.jpg" class="backgroundImg">
     <div class="loginPage">
-      <div class="loginLogoArea">
+      <!-- <div class="loginLogoArea">
         <div>此处放场地管理系统Logo</div>
-      </div>
+      </div> -->
       <div class="loginBox" v-loading="isLogging">
         <div class="loginTitle">登录</div>
         <form @submit.prevent="handleLogin">
@@ -123,25 +124,32 @@ export default {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  height: 100vh;
 }
 
 .loginPage {
+  z-index: 2;
   display: flex;
+  justify-content: center;
+  align-items: center;
   padding: 20px;
+  height: calc(100vh - 1px);
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.5);
+  margin: 0;
 }
 
-.loginLogoArea {
+/* .loginLogoArea {
   padding: 1em;
   width: calc(100% - 300px);
   border: 1px solid black;
-}
+} */
 
 .loginBox {
   width: 300px;
   padding: 1em;
   border-radius: 5px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  background-color: rgba(255, 255, 255, 0.9);
 }
 
 .loginTitle {
@@ -203,4 +211,12 @@ a:hover {
   color: #0056b3; /* 悬停时颜色稍微变深 */
   text-decoration: underline; 
 }
+
+.backgroundImg{
+  z-index: 1;
+  position: fixed;
+  width: 100%;
+  height: 100vh;
+}
+
 </style>

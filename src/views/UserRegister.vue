@@ -1,10 +1,12 @@
 <template>
+  <img src="@/assets/LoginBg.jpg" class="backgroundImg">
   <div class="registerOuterPage">
     <div class="registerPage">
-      <div class="registerLogoArea">
+      <!-- <div class="registerLogoArea">
         <div>此处放场地管理系统Logo</div>
-      </div>
+      </div> -->
       <div class="registerBox" v-loading="isRegistering">
+        <div class="registerContent">
         <div class="registerTitle">注册</div>
         <form>
           <div>
@@ -35,11 +37,12 @@
             </el-checkbox>
           </div>
           <div class="errDisplay">{{ errMsg }}</div>
-          <div>已有账号? <router-link to="/login">点此登录</router-link>
-            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp  申请注册管理员? <router-link to="/AdminRegister">点此前往</router-link></div>
-          <el-button class="registerButton" @click="validateInputs() && (registerConfirm = true)" 
+          </form>
+          </div>
+        <div>已有账号? <router-link to="/login">点此登录</router-link>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  申请注册管理员? <router-link to="/AdminRegister">点此前往</router-link></div>
+        <el-button class="registerButton" @click="validateInputs() && (registerConfirm = true)" 
           type="primary" size="large" :disabled="!agreePrivacy">注册</el-button>
-        </form>
       </div>
     </div>
   </div>
@@ -138,12 +141,15 @@ const handleSuccess = () => {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  height: 100vh;
 }
 
 .registerPage{
   display: flex;
   padding: 20px;
+  z-index: 2;
+  height: calc(100vh - 1px);
+  margin: 0;
+  background-color: rgba(255, 255, 255, 0.5);
 }
 
 .registerLogoArea{
@@ -153,11 +159,17 @@ const handleSuccess = () => {
 }
 
 .registerBox {
-  width: 400px;
+  width: max(400px, 30%);
   margin: auto;
   padding: 1em;
   border-radius: 5px;
+  background-color: rgba(255, 255, 255, 0.9);
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.registerContent{
+  height: calc(100vh - 80px - 2em - var(--el-component-large));
+  overflow: auto;
 }
 
 .registerTitle{
@@ -198,7 +210,7 @@ input {
 
 .errDisplay{
   color: red;
-  height: 2em;
+  height: 1.5em;
 }
 
 a, a:visited {
@@ -209,6 +221,13 @@ a, a:visited {
 a:hover {
   color: #0056b3; /* 悬停时颜色稍微变深 */
   text-decoration: underline; /* 悬停时加下划线 */
+}
+
+.backgroundImg{
+  z-index: 1;
+  position: fixed;
+  width: 100%;
+  height: 100vh;
 }
 
 </style>

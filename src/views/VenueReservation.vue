@@ -104,7 +104,7 @@
 
           <!-- 违约处理办法和违约次数显示 -->
           <div class="field">
-            <el-checkbox v-model="agreedToTerms">我已阅读并同意<a href="/terms" target="_blank">违约处理办法</a></el-checkbox>
+            <el-checkbox v-model="agreedToTerms">我已阅读并同意<a href="/Privacypolicy" target="_blank">违约处理办法</a></el-checkbox>
             <div class="penalty-info">本月违约次数：{{ userInfo.violationCount }}</div>
           </div>
 

@@ -9,10 +9,9 @@
       <el-card shadow="hover" class="card">
         <div class="card-header">
           <h2>管理员通知</h2>
-          <el-button type="primary" @click="showMore('team')">更多</el-button>
+          <!-- <el-button type="primary" @click="showMore('team')">更多</el-button> -->
         </div>
-        <!-- 限制显示前10条通知 -->
-        <el-table :data="filteredAdminNotifications.slice(0, 10)" style="width: 100%" 
+        <el-table :data="notifications" style="width: 100%" 
         :show-overflow-tooltip="{effect: 'light'}">
           <el-table-column prop="notificationId" label="通知编号" width="105" sortable></el-table-column>
           <el-table-column prop="title" label="标题" sortable></el-table-column>
@@ -21,12 +20,12 @@
               {{ convertTime(scope.row.notificationTime) }}
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="150">
+          <el-table-column label="操作" width="80">
             <template #default="scope">
               <el-button @click="viewAnnouncement(scope.row)" size="small">查看</el-button>
-              <el-button :disabled="scope.row.notificationType === 'team/adminCheck' ||
+              <!-- <el-button :disabled="scope.row.notificationType === 'team/adminCheck' ||
               scope.row.notificationType === 'team/userCheck'" @click="deleteAnnouncement(scope.row)"
-              size="small" type="danger">删除</el-button>
+              size="small" type="danger">删除</el-button> -->
             </template>
           </el-table-column>
         </el-table>
@@ -65,9 +64,9 @@
       </div>
       <!-- 对于 team/userCheck 和 team/adminCheck 类型的通知，显示“同意”和“拒绝”按钮 -->
       <template #footer>
-        <div v-if="isConfirmationType(selectedAnnouncement)" class="dialog-footer">
-          <el-button @click="handleDecision('accept')" type="primary">同意</el-button>
-          <el-button @click="handleDecision('reject')" type="danger">拒绝</el-button>
+        <div class="dialog-footer">
+          <el-button @click="handleAccept" type="primary">同意</el-button>
+          <el-button @click="handleReject" type="danger">拒绝</el-button>
         </div>
       </template>
     </el-dialog>
@@ -78,10 +77,11 @@
 import { ref, computed } from 'vue';
 import NotificationDetail from './components/NotificationDetail.vue';
 import { convertTime, timeSort } from '@/apis/utils';
-import { getUserNotice, deleteUserNotice } from '@/apis/requests';
+import { getUserNotice, deleteUserNotice, getAdminNotice, getAdminInfo, adminValidate } from '@/apis/requests';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
 import { ElCard, ElDialog, ElTable, ElTableColumn, ElButton, ElMessage } from 'element-plus';
+import { onMounted } from 'vue';
 
 const userStore = useUserStore();
 const { userId } = storeToRefs(userStore);
@@ -102,10 +102,24 @@ const notifications = ref([
   { notificationid: 12 , notificationtype: 'adminRequest', title: 'D申请注册成为管理员', notificationtime: ('2024-08-18'), content: 'F申请注册成为管理员。' },
 ]);
 
-const filteredAdminNotifications = computed(() =>
-  notifications.value.filter(notification => notification.notificationtype.startsWith('admin'))
-);
+// const filteredAdminNotifications = computed(() =>
+//   notifications.value.filter(notification => notification.notificationtype.startsWith('admin'))
+// );
 
+onMounted(async () => {
+  const adminData = {
+    adminId: userId.value,
+  }
+  await getAdminNotice(adminData, processNotifications, getNotificationErr);
+})
+
+const processNotifications = (res) => {
+  notifications.value = res;
+}
+
+const getNotificationErr = (msg) => {
+  ElMessage.error('获取管理员通知失败：' + msg);
+}
 
 const selectedAnnouncement = ref(null);
 const selectedNotifications = ref([]);
@@ -114,59 +128,41 @@ const isDetailModalVisible = ref(false);
 const isLoading = ref(false); // 用于处理加载状态
 const modalTitle = ref('');
 
-// 检查是否是需要确认的通知类型
-const isConfirmationType = (announcement) => {
-  return announcement && (announcement.type === 'team/userCheck' || announcement.type === 'team/adminCheck');
-};
-
 const viewAnnouncement = (announcement) => {
   selectedAnnouncement.value = announcement;
   isDetailModalVisible.value = true;
-};
-
-const showMore = () => {
-  selectedNotifications.value = filteredGroupNotifications.value;
-  modalTitle.value = '申请通知';
-  isModalVisible.value = true;
-};
-
-const closeModal = () => {
-  isModalVisible.value = false;
 };
 
 const closeDetailModal = () => {
   isDetailModalVisible.value = false;
 };
 
-const handleDecision = async (decision) => {
-  const action = decision === 'accept' ? '同意' : '拒绝';
-  isLoading.value = true; // 开始加载
-  try {
-    const response = await fetch('/api/update-group-status', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        notificationId: selectedAnnouncement.value.id,
-        decision: decision,
-      }),
-    });
+const handleAccept = async () => {
+  await getAdminInfo(handleValidate, validateErr)
+}
 
-    const result = await response.json();
-    if (result.success) {
-      ElMessage.success(`${action}操作成功`);
-      isDetailModalVisible.value = false;
-    } else {
-      ElMessage.error(`${action}操作失败`);
-    }
-  } catch (error) {
-    console.error(error);
-    ElMessage.error(`${action}操作出现错误`);
-  } finally {
-    isLoading.value = false; // 请求结束，停止加载
-  }
-};
+const handleValidate = async (res) => {
+  const adminInfo = res;
+  console.log(res);
+  adminInfo.adminType = res.adminType.split('/')[1];
+  adminValidate(handleValidate, deleteAnnouncement, validateErr)
+}
+
+const deleteAnnouncement = async () => {
+  await deleteUserNotice(selectedAnnouncement.announcementId, validateSuccess, validateErr);
+}
+
+const validateSuccess = () => {
+  ElMessage.info('操作成功');
+}
+
+const validateErr = (msg) => {
+  ElMessage.error('审核管理员失败：' + msg);
+}
+
+const handleReject = () => {
+  
+}
 </script>
 
 <style scoped>

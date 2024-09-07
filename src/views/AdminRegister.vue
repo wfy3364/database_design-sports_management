@@ -1,20 +1,22 @@
 <template>
+  <img src="@/assets/LoginBg.jpg" class="backgroundImg">
   <div class="registerOuterPage">
     <div class="registerPage">
-      <div class="registerLogoArea">
+      <!-- <div class="registerLogoArea">
         <div>此处放场地管理系统Logo</div>
-      </div>
+      </div> -->
       <div class="registerBox" v-loading="isRegistering">
         <div class="registerTitle">注册</div>
         <form>
+          <div class="registerContent">
           <div>
             <label for="fullName">真实姓名:</label>
             <el-input v-model="fullName" id="fullName" type="text" />
           </div>
-          <div>
+          <!-- <div>
             <label for="nickname">用户名:</label>
             <el-input v-model="nickname" id="nickname" type="text" />
-          </div>
+          </div> -->
           <div>
             <label for="password">密码:</label>
             <el-input v-model="password" id="password" type="password" show-password />
@@ -45,28 +47,37 @@
                 <el-radio-button value="device">设备</el-radio-button>
               </el-col>
               <el-col :span="6">
-                <el-radio-button value="venue/device">场地和设备</el-radio-button>
+                <el-radio-button value="venue-device">场地和设备</el-radio-button>
               </el-col>
             </el-row>
           </el-radio-group>
-          <el-select multiple filterable reserve-keyword placeholder="场地ID或名称" 
-            v-model="venueFilter">
-            <el-option v-for="venue in venueOptions" :label="venue.venueId + ' ' + venue.name"
-            :value="venue.venueId"></el-option>
-          </el-select>
+          <div v-if="selectedOption === 'venue' || selectedOption === 'venue-device'">
+            <label for="applyInfo">申请管理的场地:</label>
+            <el-select 
+              multiple filterable reserve-keyword placeholder="场地ID或名称" 
+              v-model="venueFilter">
+              <el-option v-for="venue in venueOptions" :label="venue.venueId + ' ' + venue.name"
+              :value="venue.venueId"></el-option>
+            </el-select>
+          </div>
           <!-- 新增的隐私协议多选框 -->
+          <label for="applyInfo">申请管理员说明:</label>
+          <el-input placeholder="输入申请说明" v-model="applyInfo" type="textarea"></el-input>
           <div>
             <el-checkbox v-model="agreePrivacy">
               已阅读并同意
               <router-link to="/Privacypolicy">隐私协议</router-link>
             </el-checkbox>
           </div>
+          </div>
+          </form>
+        <div class="controlArea">
           <div class="errDisplay">{{ errMsg }}</div>
           <div>已有账号? <router-link to="/login">点此登录</router-link>
-            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp  <router-link to="/UserRegister">点此返回普通用户注册</router-link></div>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <router-link to="/UserRegister">点此返回普通用户注册</router-link></div>
           <el-button class="registerButton" @click="validateInputs() && (registerConfirm = true)" 
           type="primary" size="large" :disabled="!agreePrivacy">注册</el-button>
-        </form>
+        </div>
       </div>
     </div>
   </div>
@@ -83,7 +94,7 @@
   </el-dialog>
   <el-dialog v-model="successConfirm" title="注册信息" :before-close="handleSuccess">
     <div>注册成功！</div>
-    <div>用户ID：{{ resUserId }}</div>
+    <div>管理员ID：{{ resUserId }}</div>
     <template #footer>
       <div class="dialog-footer">
         <el-button type="primary" @click="handleSuccess">确认</el-button>
@@ -100,9 +111,10 @@ import CryptoJS from 'crypto-js';
 
 onMounted(async () => {
   await getAllVenues(successHandler, errHandler);
-  console.log(1);
+  // console.log(1);
 })
 
+const applyInfo = ref('');
 const registerConfirm = ref(false);
 const successConfirm = ref(false);
 const isRegistering = ref(false);
@@ -137,21 +149,35 @@ const handleRegister = async () => {
   const encryptedPassword = CryptoJS.SHA256(password.value).toString();
 
   const registerData = {
-    UserName: nickname.value,
-    Password: encryptedPassword,
-    ContactNumber: phone.value,
-    UserType: selectedOption.value,
-    RealName: fullName.value,
+    adminDto: {
+      realName: fullName.value,
+      password: encryptedPassword,
+      contactNumber: phone.value,
+      adminType: 'validating/' + selectedOption.value,
+      applyDescription: applyInfo.value,
+    },
+    manageVenues: venueFilter.value,
+    systemAdminId: contactAdminId.value,
   };
 
-  await adminRegister(registerData, contactAdminId, isRegistering, successConfirm, resUserId, errMsg)
+  await adminRegister(registerData, registerSuccess, registerErr);
 };
+
+const registerSuccess = (res) => {
+  isRegistering.value = false;
+  resUserId.value = res;
+  successConfirm.value = true;
+}
+
+const registerErr = (msg) => {
+  isRegistering.value = false;
+  errMsg.value = '注册失败：' + msg;
+}
 
 const validateInputs = () => {
   errMsg.value = '';
   const requiredItems = [
     { item: fullName, name: "真实姓名"},
-    { item: nickname, name: "用户名"},
     { item: password, name: "密码"},
     { item: confirmPassword, name: "确认密码"},
     { item: phone, name: "电话号码"},
@@ -184,12 +210,14 @@ const handleSuccess = () => {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  height: 100vh;
+  height: calc(100vh - 16px);
 }
 
 .registerPage{
   display: flex;
   padding: 20px;
+  background-color: rgba(255, 255, 255, 0.5);
+  z-index: 2;
 }
 
 .registerLogoArea{
@@ -199,11 +227,17 @@ const handleSuccess = () => {
 }
 
 .registerBox {
+  display: flex;
+  flex-direction: column;
   width: 400px;
-  margin: auto;
+  margin-top: 10px;
+  margin-left: auto;
+  margin-right: auto;
   padding: 1em;
   border-radius: 5px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  background-color: rgba(255, 255, 255, 0.9);
+  
 }
 
 .registerTitle{
@@ -212,6 +246,16 @@ const handleSuccess = () => {
   font-size: 30px;
   font-weight: 700;
   margin-bottom: 5px;
+}
+
+.registerContent{
+  /* display: flex;
+  flex-direction: column; */
+  height: calc(100vh - 5.5em - 120px);
+  /* height: 300px; */
+  overflow: auto;
+  /* background-color: cyan; */
+  z-index: 3;
 }
 
 div {
@@ -255,6 +299,13 @@ a, a:visited {
 a:hover {
   color: #0056b3; /* 悬停时颜色稍微变深 */
   text-decoration: underline; /* 悬停时加下划线 */
+}
+
+.backgroundImg{
+  z-index: 1;
+  position: fixed;
+  width: 100%;
+  height: 100vh;
 }
 
 </style>

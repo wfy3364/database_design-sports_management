@@ -14,11 +14,12 @@
   align-items: center;
   width: 100%;
   height: 50px;
-  background-color: cyan;
+  border-bottom: 1px solid black;
 }
 
 .title{
   font-size: x-large;
+  /* font-weight: 700; */
   text-align: center;
 }
 
