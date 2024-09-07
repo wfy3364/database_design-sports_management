@@ -76,7 +76,7 @@
           </el-table-column>
           <el-table-column v-if="isAdminOrCreator" label="操作" width="240">
             <template #default="{ row }">
-              <div v-if="row.userRole === 'Validating/admin'">
+              <div v-if="row.userRole === Validating/admin">
                 <el-button size="small" type="primary" @click="handleValidate('accept', row.userId)">同意</el-button>
                 <el-button size="small" type="danger" @click="handleValidate('reject', row.userId)">拒绝</el-button>
               </div>
@@ -122,15 +122,15 @@
             <el-table-column prop="nickname" label="昵称"></el-table-column>
             <el-table-column label="操作" width="120">
               <template #default="{ row }">
-                <!-- <el-button
+                <el-button
                   :disabled="isMemberAlreadyInTeam(row.id)"
                   size="small" 
                   type="primary" 
                   @click="addMemberToTeam(row)"
                 >
                   添加
-                </el-button> -->
-                <div v-if="isMemberAlreadyInTeam(row.id)">添加</div>
+                </el-button>
+                <!-- <div v-if="isMemberAlreadyInTeam(row.id)">添加</div> -->
                 <!-- <div v-else>已在团体中</div> -->
               </template>
             </el-table-column>
@@ -257,7 +257,7 @@
     <el-dialog
       v-model="createTeamDialogVisible"
       title="创建团体"
-      width="50%"
+      width="70%"
       v-loading="isCreating"
       align-center
       :before-close="handleCloseCreateTeamDialog"
@@ -278,6 +278,36 @@
       </div>
 
       <!-- <div v-if="isAdminOrCreator" class="add-member-section">可以改成0，1试 -->
+      <h3>已有添加成员</h3>
+      <el-table :data="teamMembers" style="width: 100%; max-height: 70%; overflow-y: auto;">
+        <el-table-column prop="userId" label="成员ID" width="120"></el-table-column>
+        <el-table-column prop="userName" label="成员昵称"></el-table-column>
+        <el-table-column label="权限" width="120">
+          <template #default="{ row }">
+            <el-tag :type="getRoleTagType(row.userRole)">{{ userRoleMap[row.userRole] }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="240">
+            <template #default="{ row }">
+              <div v-if="row.userId !== userId">
+                <el-button 
+                  size="small" 
+                  :type="row.userRole ==='Admin' ? 'warning' : 'primary'" 
+                  @click="createTeamChangeRole(row)"
+                >
+                  {{ row.userRole === 'Admin' ? '撤销管理员' : '授予管理员' }}
+                </el-button>
+                <el-button 
+                  size="small" 
+                  type="danger" 
+                  @click="createTeamRemoveUser(row.userId)"
+                >
+                  移除
+                </el-button>
+              </div>
+            </template>
+          </el-table-column>
+      </el-table>
       <div class="add-member-section">
         <h3>添加成员</h3>
         <el-input
@@ -298,14 +328,13 @@
             <el-table-column label="操作" width="120">
               <template #default="{ row }">
                 <el-button
-                  v-if="row.id !== userId"
+                  :disabled="isMemberInCreateTeam(row.id)"
                   size="small" 
                   type="primary" 
-                  @click="addMemberToTeam(row)"
+                  @click="createTeamAddMember(row)"
                 >
                   添加
                 </el-button>
-                <div v-else>已加入团体</div>
               </template>
             </el-table-column>
           </el-table>
@@ -340,65 +369,6 @@
   import { useUserStore } from '@/stores/userStore';
   import { storeToRefs } from 'pinia';
   import { ElMessage } from 'element-plus';
-
-//------------------------测试数据----------------------------
-
-  // const team = ref([
-  //   { id: 1, name: '团体A', role: '创建者' },
-  //   { id: 2, name: '团体B', role: '管理员' },
-  //   { id: 3, name: '团体C', role: '普通成员' },
-  //   // 可以添加更多测试数据
-  // ]);
-
-  // const filteredTeam = ref([
-  //   { id: 1, name: '团体A', role: '创建者' },
-  //   { id: 2, name: '团体B', role: '管理员' },
-  //   { id: 3, name: '团体C', role: '普通成员' },
-  //   // 可以添加更多测试数据
-  // ]);
-
-  // const teamDetailsData = {
-  //   id: 1,
-  //   name: "技术创新小组",
-  //   description: "致力于探索和实现前沿技术的应用",
-  //   createdAt: "2023-01-15",
-  //   members: [
-  //     { id: 101, nickname: "张三", role: "创建者" },
-  //     { id: 102, nickname: "李四", role: "管理员" },
-  //     { id: 103, nickname: "王五", role: "普通成员" },
-  //     { id: 104, nickname: "赵六", role: "普通成员" },
-  //     { id: 105, nickname: "钱七", role: "管理员" },
-  //     { id: 106, nickname: "孙八", role: "普通成员" },
-  //     { id: 107, nickname: "周九", role: "普通成员" },
-  //     { id: 108, nickname: "吴十", role: "普通成员" },
-  //   ]
-  // };
-
-  // const currentTeamLite = {
-  //   id: 1,
-  //   name: "技术创新小组",
-  //   description: "致力于探索和实现前沿技术的应用",
-  //   createdAt: "2023-01-15",
-  //   members: [
-  //     { id: 101, nickname: "张三", role: "创建者" },
-  //     { id: 102, nickname: "李四", role: "管理员" },
-  //     { id: 103, nickname: "王五", role: "普通成员" },
-  //     { id: 104, nickname: "赵六", role: "普通成员" },
-  //     { id: 105, nickname: "钱七", role: "管理员" },
-  //     { id: 106, nickname: "孙八", role: "普通成员" },
-  //     { id: 107, nickname: "周九", role: "普通成员" },
-  //     { id: 108, nickname: "吴十", role: "普通成员" },
-  //   ]
-  // };
-
-  // const teamDataTest = ref([
-  //   { groupId: 1, groupName: '团体A', description: '创建者' },
-  //   { groupId: 2, groupName: '团体B', description: '管理员' },
-  //   { groupId: 3, groupName: '团体C', description: '普通成员' },
-  //   // 可以添加更多测试数据
-  // ]);
-
-//------------------------测试数据----------------------------
 
   const teamMembers = ref([])
   const showDetails = ref(false)
@@ -469,6 +439,7 @@
     });
     // console.log(allUsers.value);
     searchResults.value = allUsers.value;
+    // console.log('get users');
   }
 
   const getUserErr = (msg) => {
@@ -482,6 +453,7 @@
     'Admin': '管理员',
     'Validating/admin': '审核中',
     'Validating/user': '审核中',
+    'Validating/user/op': '审核中',
   }
 
   const getRoleTagType = (role) => {
@@ -491,6 +463,7 @@
       'Admin': 'warning',
       'Validating/admin': 'danger',
       'Validating/user': 'danger',
+      'Validating/user/op': 'danger',
     };
     return RoleTags[role] || 'info';
   }
@@ -571,7 +544,7 @@
         return item.notificationType === 'team/adminCheck' && item.targetTeam === targetGroup
         && item.targetUser === targetId;
       })?.notificationId;
-      await teamValidateAction(mode, targetId, targetGroup, resNotice, () => {
+      await teamValidateAction(mode, targetId, targetGroup, resNotice, false, () => {
         showTeamDetails(currentTeam.value.groupId)
       }, handleValidateErr);
     }
@@ -604,32 +577,14 @@
   };
 
   const isMemberAlreadyInTeam = (id) => {
-    // console.log(currentTeam.value.users.some(user => user.id === id));
-    console.log(currentTeam.value.users, id);
-    // return currentTeam.value.users.some(user => user.id === id);
-    return true;
-    // return currentTeam.value.users.map(user => user.id).includes(id);
+    if(id){
+      // console.log(currentTeam.value.users);
+      return currentTeam.value.users.map(user => user.userId).includes(id);
+    }
+    return false;
   };
 
   const addMemberToTeam = async (user) => {
-    // try {
-      // 这里应该是实际的API调用
-      // await axios.post(`/api/teams/${currentTeam.value.id}/members`, { userId: user.id });
-      
-      // 模拟API调用
-      // await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // currentTeam.value.members.push({
-      //   id: user.id,
-      //   nickname: user.nickname,
-      //   role: '普通成员'
-      // });
-    //   ElMessage.success(`已将 ${user.nickname} 添加到团队`);
-    // } catch (error) {
-    //   console.error('添加成员失败:', error);
-    //   ElMessage.error('添加成员失败，请稍后重试');
-    // }
-    
     // await addTeamUser();
     if(currentTeam.value){
       const joinData = {
@@ -774,21 +729,50 @@
     searchedTeam.value = allTeams.value;
   }
 
-  const joinTeam = async (team) => {
-    try {
-      await axios.post(`/api/teams/${team.id}/join`) // 替换为实际的API端点
-      ElMessage.success(`成功加入团体: ${team.name}`)
-      handleClose(() => {})
-    } catch (error) {
-      console.error('加入团体失败:', error)
-      ElMessage.error('加入团体失败，请稍后重试')
-    }
-  }
+  // const joinTeam = async (team) => {
+  //   try {
+  //     await axios.post(`/api/teams/${team.id}/join`) // 替换为实际的API端点
+  //     ElMessage.success(`成功加入团体: ${team.name}`)
+  //     handleClose(() => {})
+  //   } catch (error) {
+  //     console.error('加入团体失败:', error)
+  //     ElMessage.error('加入团体失败，请稍后重试')
+  //   }
+  // }
 
   //打开创建团体模态框
   const showCreateModal = () => {
-    createTeamDialogVisible.value = true
-    console.log('open sucessfully')
+    teamMembers.value = [{
+      userId: userId.value,
+      userName: userName.value,
+      userRole: 'Creator'
+    }]
+    createTeamDialogVisible.value = true;
+    // console.log('open sucessfully')
+  }
+
+  const createTeamAddMember = (user) => {
+    teamMembers.value.push({
+      userId: user.id,
+      userName: user.nickname,
+      userRole: 'Member'
+    });
+  }
+
+  const isMemberInCreateTeam = (id) => {
+    if(id){
+      return teamMembers.value.map(user => user.userId).includes(id);
+    }
+    return false;
+  }
+
+  const createTeamChangeRole = (user) => {
+    user.userRole = user.userRole === 'Admin' ? 'Member' : 'Admin';
+  }
+
+  const createTeamRemoveUser = (id) => {
+    // teamMembers.value.find((val, index) => val.userId === id)
+    teamMembers.value.splice(teamMembers.value.findIndex((val, index) => val.userId === id), 1);
   }
 
   //选择管理员
@@ -911,18 +895,38 @@
 
   const teamCreateSuccess = async (res) => {
     resTeamId.value = res;
-    const creatorData = {
-      userId: userId.value,
-      joinDate: new Date(),
-      roleInGroup: 'Creator',
-      notificationType: '',
+    let curIndex = -1;
+    const step = async () => {
+      curIndex++;
+      if(curIndex === teamMembers.value.length){
+        addUserSuccess();
+      }
+      const userData = {
+        userId: teamMembers.value[curIndex].userId,
+        joinDate: new Date(),
+        roleInGroup: teamMembers.value[curIndex].userRole,
+        notificationType: ''
+      }
+      if(teamMembers.value[curIndex].userId !== userId.value){
+        userData.notificationType = 'userCheck';
+        userData.adminId = userId.value;
+        userData.userName = userName.value;
+        if(teamMembers.value[curIndex].userRole === 'Admin'){
+          userData.roleInGroup = 'Validating/user/op';
+        }
+        else{
+          userData.roleInGroup = 'Validating/user';
+        }
+      }
+      await addTeamUser(resTeamId.value, userData, step, teamCreateErr);
     }
-    await addTeamUser(resTeamId.value, creatorData, () => {
+    const addUserSuccess = () => {
       createTeamDialogVisible.value = false;
       isCreating.value = false;
       successDialog.value = true;
       fetchTeam(fetchTeamSuccess, fetchTeamErr);
-    }, teamCreateErr);
+    }
+    step();
   }
 
   const teamCreateErr = (msg) => {
@@ -1068,5 +1072,9 @@
   .searchControl{
     margin-left: 10px;
   }
+
+  /* .search-results{
+    max-height: 50vh;
+  } */
 
   </style>

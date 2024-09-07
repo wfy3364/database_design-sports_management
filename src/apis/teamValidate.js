@@ -3,7 +3,7 @@ import { useUserStore } from "@/stores/userStore";
 import { ElMessage } from "element-plus";
 import { storeToRefs } from "pinia";
 
-const teamValidateAction = async (decision, user, group, notice, successHandler, errHandler) => {
+const teamValidateAction = async (decision, user, group, notice, isAdmin, successHandler, errHandler) => {
   const userStore = useUserStore();
   const { userId } = storeToRefs(userStore);
   const noticeDeleteSuccess = () => {
@@ -22,7 +22,7 @@ const teamValidateAction = async (decision, user, group, notice, successHandler,
     const updateData = {
       userId: user,
       groupId: group,
-      userRole: 'Member',
+      userRole: isAdmin ? 'Admin' : 'Member',
       notificationType: 'join',
     }
     await updateUserRole(updateData, handleNoticeDelete, errHandler);

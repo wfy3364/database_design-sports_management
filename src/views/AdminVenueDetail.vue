@@ -181,11 +181,12 @@ function getVenueAdminErr(msg){
   ElMessage.error('获取场地管理员失败：' + msg);
 }
 
-function viewMaintenanceDetail(id){
+function viewMaintenanceDetail(id, mode){
   router.push({
     path: '/AdminVenueMaintenance',
     query: {
       maintenanceId: id,
+      mode: mode,
     }
   })
 }
@@ -307,10 +308,10 @@ async function handleEditClose(){
               <div v-if="item.row.state === 2" style="color: red">待保养</div>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="80">
+          <el-table-column label="操作" width="140">
             <template #default="item">
-              <el-button size="small" type="primary" @click="viewMaintenanceDetail(item.row.id)">详情</el-button>
-              <!-- <el-button size="small" v-if="EditCheck">编辑</el-button> -->
+              <el-button size="small" type="primary" @click="viewMaintenanceDetail(item.row.id, 'view')">详情</el-button>
+              <el-button size="small" v-if="EditCheck" @click="viewMaintenanceDetail(item.row.id, 'edit')">编辑</el-button>
             </template>
           </el-table-column>
         </el-table>

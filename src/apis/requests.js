@@ -550,7 +550,12 @@ async function getAllUserReservation(successHandler, errHandler) {
     successHandler(res);
   }).catch((err) => {
     console.log(err);
-    errHandler(err.response?.data || '未知错误');
+    if (err.response?.data === '未找到该用户的预约记录。') {
+      successHandler([]);
+    }
+    else {
+      errHandler(err.response?.data || '未知错误');
+    }
   })
 }
 

@@ -23,7 +23,7 @@ const notificationDetailVisible = ref(true);
 
 const isConfirmationType = (announcement) => {
   console.log(announcement);
-  return announcement && (announcement.notificationType === 'team/userCheck' || 
+  return announcement && (announcement.notificationType.startsWith('team/userCheck') || 
   announcement.notificationType === 'team/adminCheck');
 };
 
@@ -33,7 +33,9 @@ const handleClose = () => {
 
 const handleDecision = async (decision) => {
   teamValidateAction(decision, props.selectedAnnouncement.targetUser, props.selectedAnnouncement.targetTeam,
-  props.selectedAnnouncement.notificationId, () => { emit('noticeUpdate') }, decisionErr);
+  props.selectedAnnouncement.notificationId, 
+  props.selectedAnnouncement.notificationType === 'team/userCheck/op',
+  () => { emit('noticeUpdate') }, decisionErr);
 }
 
 // const handleDecision = async (decision) => {

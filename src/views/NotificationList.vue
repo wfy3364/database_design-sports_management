@@ -15,17 +15,17 @@
         <el-table :data="filteredGroupNotifications.slice(0, 10)" style="width: 100%" 
         :show-overflow-tooltip="{effect: 'light'}">
           <el-table-column prop="notificationId" label="通知编号" width="105" sortable></el-table-column>
-          <el-table-column prop="title" label="标题" sortable></el-table-column>
+          <el-table-column prop="title" label="标题" width="120" sortable></el-table-column>
           <el-table-column label="时间" width="140" sortable>
             <template #default="scope">
               {{ convertTime(scope.row.notificationTime) }}
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="150">
+          <el-table-column label="操作" width="150" fixed="right">
             <template #default="scope">
               <el-button @click="viewAnnouncement(scope.row)" size="small">查看</el-button>
               <el-button :disabled="scope.row.notificationType === 'team/adminCheck' ||
-              scope.row.notificationType === 'team/userCheck'" @click="deleteAnnouncement(scope.row)"
+              scope.row.notificationType.startsWith('team/userCheck')" @click="deleteAnnouncement(scope.row)"
               size="small" type="danger">删除</el-button>
             </template>
           </el-table-column>
@@ -40,15 +40,15 @@
         </div>
         <!-- 限制显示前10条通知 -->
         <el-table :data="filteredBookingNotifications.slice(0, 10)" style="width: 100%"
-        :show-overflow-tooltip="{effect: 'light'}">
+        :show-overflow-tooltip="{effect: 'light'}" >
           <el-table-column prop="notificationId" label="通知编号" width="105" sortable></el-table-column>
-          <el-table-column prop="title" label="标题" sortable></el-table-column>
+          <el-table-column prop="title" label="标题" sortable width="120"></el-table-column>
           <el-table-column label="时间" width="140" sortable>
             <template #default="scope">
               {{ convertTime(scope.row.notificationTime) }}
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="150">
+          <el-table-column label="操作" width="150" fixed="right">
             <template #default="scope">
               <el-button @click="viewAnnouncement(scope.row)" size="small">查看</el-button>
               <el-button @click="deleteAnnouncement(scope.row)" size="small" type="danger">删除</el-button>
@@ -214,7 +214,7 @@ const deleteErr = (msg) => {
   border-radius: 5px;
   background-color: white;
   border: 1px solid lightgray;
-  margin: 20px auto;
+  /* margin: 20px auto; */
   max-width: 1200px;
 }
 
@@ -228,14 +228,17 @@ const deleteErr = (msg) => {
 }
 
 .sections {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  padding: 20px;
+  /* display: grid; */
+  /* grid-template-columns: repeat(2, 1fr); */
+  /* gap: 20px; */
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
 }
 
 .card {
   margin: 10px;
+  max-width: 48%;
 }
 
 .card-header {
