@@ -12,13 +12,14 @@
           </template>
         </el-input>
       </div>
-      <div class="FilterOption">
+      <!-- <div class="FilterOption">
         <el-checkbox v-model="enableDateFilter">开放日期筛选</el-checkbox>
         <el-date-picker v-if="enableDateFilter" v-model="filterDate" placeholder="选择日期"></el-date-picker>
-      </div>
+      </div> -->
       <div class="FilterControl">
         <el-button type="primary" @click="filterDevices">确认筛选</el-button>
         <el-button @click="filterReset">重置条件</el-button>
+        <el-button v-if="createCheck" @click="showCreateDevice">添加设备</el-button>
       </div>
     </div>
 
@@ -42,7 +43,7 @@
       </div>
     </div>
 
-    <el-dialog v-model="showDeviceDetail" align-center :title="selectedDevice?.name">
+    <!-- <el-dialog v-model="showDeviceDetail" align-center :title="selectedDevice?.name">
       <div class="detailContent">
         <div>ID: {{ selectedDevice.id }}</div>
         <div v-if="selectedDevice.state === 0" style="color: green">使用中</div>
@@ -59,15 +60,35 @@
       <template #footer>
         <el-button type="primary" @click="showDeviceDetail = false">确定</el-button>
       </template>
-    </el-dialog>
+    </el-dialog> -->
+    <DeviceEdit v-if="showEditModal" :dialogMode="dialogMode" :curRecord="selectedDevice" 
+    @closeModal="handleEditClose"></DeviceEdit>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref, reactive, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { Search } from '@element-plus/icons-vue';
 import dayjs from 'dayjs';
+import DeviceEdit from './components/DeviceEdit.vue';
+
+import { useUserStore } from '@/stores/userStore';
+import { storeToRefs } from 'pinia';
+
+import { addRepairRecord, getAllDevice } from '@/apis/requests';
+import { onMounted } from 'vue';
+import { ElMain, ElMessage } from 'element-plus';
+
+const userStore = useUserStore();
+const { adminType, adminPermission } = storeToRefs(userStore);
+
+const createCheck = computed(() => {
+  return adminType.value === 'system' || adminType.value === 'device' || adminType.value === 'venue-device';
+});
+
+const showEditModal = ref(false);
+const dialogMode = ref('create');
 
 const devices = ref([
   {
@@ -136,8 +157,26 @@ const router = useRouter();
 
 const filteredDevices = ref([]);
 
+onMounted(async () => {
+  await getAllDevice(initializeDevices, getDeviceErr)
+})
+
+const getDeviceErr = (msg) => {
+  ElMessage.error('获取设备信息失败：' + msg);
+}
+
 // 初始化场地列表
-const initializeDevices = () => {
+const initializeDevices = (res) => {
+  devices.value = res.map(item => {
+    return {
+      id: item.equipmentId,
+      name: item.equipmentName,
+      introTime: item.equipmentIntroTime,
+      venueid: item.venueId,
+      venuename: item.venueName,
+      repairRecords: item.repairRecords,
+    }
+  });
   filteredDevices.value = devices.value.sort((a, b) => a.name.localeCompare(b.name));
 };
 
@@ -164,8 +203,14 @@ const filterReset = () => {
 
 // 显示场地详情的函数
 const viewDeviceDetails = (device) => {
-  selectedDevice.value = device;
-  showDeviceDetail.value = true;
+  // selectedDevice.value = device;
+  // showDeviceDetail.value = true;
+  router.push({
+    path: '/AdmindeviceDetail',
+    query: {
+      deviceId: device.id,
+    }
+  });
 };
 
 const goToDeviceRecords = async (id) => {
@@ -189,6 +234,14 @@ const goToDeviceRecords = async (id) => {
 //   selectedDevice.value = null; 
 // };
 
+const showCreateDevice = () => {
+  showEditModal.value = true;
+}
+
+const handleEditClose = (update) => {
+  showEditModal.value = false;
+}
+
 // // 处理场地预约的函数
 // const bookVenue = (venue, slot) => {
 //   router.push({
@@ -207,9 +260,6 @@ const goToDeviceRecords = async (id) => {
 // const handleDateChange = () => {
 //   // 处理日期变更逻辑
 // };
-
-// 初始化
-initializeDevices();
 
 </script>
 

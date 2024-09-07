@@ -66,7 +66,7 @@ const adminMenuData = [
   },
   {
     path: '/AdminDevice',
-    title: '管理员设备',
+    title: '设备列表',
   },
   {
     path: '/ReservationList',

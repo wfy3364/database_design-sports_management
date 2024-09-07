@@ -813,6 +813,36 @@ async function getAdminManagedItems(successHandler, errHandler) {
   })
 }
 
+async function createDevice(deviceData, successHandler, errHandler) {
+  await httpInstance.post('api/Venue/AddDevice', deviceData).then((res) => {
+    if (res.state) {
+      successHandler(res.deviceId)
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
+  }).catch((err) => {
+    errHandler(err.response?.data?.info || '未知错误');
+  })
+}
+
+async function getDeviceInfo(deviceId, successHandler, errHandler) {
+  await httpInstance.get('api/Venue/GetEquipmentDetails', {
+    params: {
+      equipmentId: deviceId,
+    }
+  }).then((res) => {
+    if (res.state) {
+      successHandler(res.data);
+    }
+    else {
+      errHandler(res.info || '未知错误');
+    }
+  }).catch((err) => {
+    errHandler(err.response?.data?.info || '未知错误');
+  })
+}
+
 export {
   userLogin, userRegister, adminRegister, getUserInfo, getAllUsers, fetchTeam, createTeam, getAllTeams,
   getTeamName, getTeamDetail, addTeamUser, updateUserRole, removeTeamUser,
@@ -823,6 +853,6 @@ export {
   filterVenueByDate, createVenue, getVenueOpenTime, getAdminPermission, inidividualReservation,
   getAllUserReservation, getAllReservation, userModifiedInfo, getReservationMember,
   userModifiedPassword, getStatistics, getVenueStatistics, getMaintenanceList, addMaintenance,
-  modifyMaintenance, updateReservation, groupReservation
-  ,getAdminInfo, getAdminManagedItems
+  modifyMaintenance, updateReservation, groupReservation, getAdminInfo, getAdminManagedItems,
+  createDevice, getDeviceInfo
 };

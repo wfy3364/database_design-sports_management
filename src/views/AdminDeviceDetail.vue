@@ -5,6 +5,8 @@ import { convertTime, judgeState } from '@/apis/utils';
 import RepairDetail from './components/RepairDetail.vue';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
+import { ElMessage } from 'element-plus';
+import { getDeviceInfo } from '@/apis/requests';
 
 const route = useRoute(); // 初始化路由器
 const router = useRouter();
@@ -29,12 +31,12 @@ const EditCheck = computed(() => { //检查管理员权限
         record.deviceId in adminPermission.value.device
 });
 
-const deviceInfo = ref('');
+const deviceInfo = ref({});
 
-const tempDeviceInfo = ref({
-  name: deviceInfo.value.name,
-  venue: deviceInfo.value.venue,
-})
+// const tempDeviceInfo = ref({
+//   name: deviceInfo.value.name,
+//   venue: deviceInfo.value.venue,
+// })
 
 // const overviewDisplay = ref({
 //   "设备ID：": deviceInfo.value.id,
@@ -203,6 +205,42 @@ function goToDeviceList() {
   router.push('/AdminDevice'); // 设备列表页面的路由地址
 }
 
+// id: 1,
+//     name: '设备1',
+//     state: 0,
+//     introTime: '2024-08-12',
+//     venueid: 1,
+//     venuename: '篮球场',
+
+const processDeviceInfo = (res) => {
+  deviceInfo.value.id = res.equipmentId;
+  deviceInfo.value.name = res.equipmentName;
+  deviceInfo.value.introTime = res.equipmentIntroTime;
+  deviceInfo.value.venueid =  res.venueId;
+  deviceInfo.value.venuename = res.venueName;
+  recordDetails.value = res.repairRecords;
+}
+
+const getDeviceInfoErr = (msg) => {
+  ElMessage.error('未找到设备信息：' + msg);
+}
+
+const viewVenueDetail = () => {
+  console.log(deviceInfo.venueid);
+  router.push({
+    path: '/AdminVenueDetail',
+    query: {
+      venueId: deviceInfo.value.venueid,
+    }
+  })
+}
+
+const getDeviceState = () => {
+  for(const record of recordDetails){
+    
+  }
+}
+
 const value = ref('')
 
 const options = [
@@ -230,10 +268,16 @@ const options = [
 
 onMounted(async () => {
   const { deviceId } = route.query;
-  id.value = deviceId;
-  deviceInfo.value = devices.find(item => item.id == deviceId);
-  console.log(deviceInfo);
-  recordDetails.value = repairRecord.filter(item => item.deviceId == deviceId);
+  if(!deviceId){
+    getDeviceInfoErr('未传入设备ID');
+  }
+  else{
+    await getDeviceInfo(deviceId, processDeviceInfo, getDeviceInfoErr)
+  }
+  // id.value = deviceId;
+  // deviceInfo.value = devices.find(item => item.id == deviceId);
+  // console.log(deviceInfo);
+  // recordDetails.value = repairRecord.filter(item => item.deviceId == deviceId);
 })
 
 </script>
@@ -242,7 +286,7 @@ onMounted(async () => {
   <div class="AdminDeviceDetail">
     <div class="AdminDeviceHeader">
       <el-button class="BackButton" @click="goToDeviceList">&lt;&nbsp;&nbsp;设备总览</el-button>
-      <div class="AdminDeviceTitle">{{ deviceInfo.name }}</div>
+      <div class="AdminDeviceTitle">{{ deviceInfo?.name }}</div>
       <el-button class="EditButton" @click="showDeviceEdit">编辑</el-button>
     </div>
     <div class="DeviceOverview">
@@ -254,26 +298,26 @@ onMounted(async () => {
         </div> -->
         <div class="OverviewLine">
           <div class="OverviewDescription">设备ID：</div>
-          <div>{{ deviceInfo.id }}</div>
+          <div>{{ deviceInfo?.id }}</div>
         </div>
         <div class="OverviewLine">
           <div class="OverviewDescription">设备名称：</div>
-          <div>{{ deviceInfo.name }}</div>
+          <div>{{ deviceInfo?.name }}</div>
         </div>
         <div class="OverviewLine">
           <div class="OverviewDescription">设备引入时间：</div>
-          <div>{{ deviceInfo.introTime }}</div>
+          <div>{{ convertTime(deviceInfo?.introTime) }}</div>
         </div>
         <div class="OverviewLine">
           <div class="OverviewDescription">设备所在场地：</div>
-          <el-button size="small">{{ deviceInfo.venue }}</el-button>
+          <el-button size="small" @click="viewVenueDetail">{{ deviceInfo?.venuename }}</el-button>
         </div>
         <div class="OverviewLine">
           <div class="OverviewDescription">状态：</div>
-          <span v-if="deviceInfo.state === 0" style="color: green">使用中</span>
-          <span v-if="deviceInfo.state === 1" style="color: red">维修中</span>
-          <span v-if="deviceInfo.state === 2" style="color: orange">待维修</span>
-          <span v-if="deviceInfo.state === 3" style="color: gray">未使用</span>
+          <span v-if="deviceInfo?.state === 0" style="color: green">使用中</span>
+          <span v-if="deviceInfo?.state === 1" style="color: red">维修中</span>
+          <span v-if="deviceInfo?.state === 2" style="color: orange">待维修</span>
+          <span v-if="deviceInfo?.state === 3" style="color: gray">未使用</span>
         </div>
       </div>
     </div>

@@ -72,13 +72,14 @@
         <template #label>
           <div class="itemLabel">管理权限</div>
         </template>
-        {{ adminType }}
+        {{ adminTypeName[adminType] }}
       </el-descriptions-item>
       <el-descriptions-item width="">
         <template #label>
           <div class="itemLabel">管理场地</div>
         </template>
-        {{ adminPermission.venue }}
+        <!-- {{ adminPermission.venue }} -->
+        <el-tag v-for="venue in adminPermission.venue">{{ venue.name }}</el-tag>
       </el-descriptions-item>
     </el-descriptions>
     <div class="StatisticsContent" v-if="adminType == 'normal'">
@@ -227,6 +228,12 @@
   const editInformation = ref(null); //编辑信息界面
   const changePassword = ref(null); //修改密码界面
   const quitConfirm = ref(null); //登出确认界面
+
+  const adminTypeName = {
+    'system': '系统管理员',
+    'venue': '场地管理员',
+    'venue-device': '场地设备管理员'
+  }
 
 
   // onMounted ( () => {
@@ -699,4 +706,5 @@
     margin-top: 5%;
     padding: 10px;
   }
+
   </style>
