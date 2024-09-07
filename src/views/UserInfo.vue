@@ -45,7 +45,7 @@
         <template #label>
           <div class="itemLabel">预约权限与违约情况</div>
         </template>
-        <div v-if="userData.reservationPermission === 'y'">正常 (总违约次数:{{ userData.violationCount }})</div>
+        <div v-if="userData.violationCount <= 5">正常 (总违约次数:{{ userData.violationCount }})</div>
         <div v-else>封禁中 (总违约次数:{{ userData.violationCount }})</div>
       </el-descriptions-item>
     </el-descriptions>

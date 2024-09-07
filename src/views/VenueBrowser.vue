@@ -14,10 +14,11 @@
       </div>
       <div class="FilterOption">
         <div class="FilterLabel">运动类型：</div>
-        <el-radio-group v-model="selectedSport">
-          <el-radio-button value="">全部</el-radio-button>
-          <el-radio-button v-for="sport in sports" :value="sport" :key="sport">{{ sport }}</el-radio-button>
-        </el-radio-group>
+        
+          <el-radio-group v-model="selectedSport" style="max-width: 400px;">
+            <el-radio-button value="">全部</el-radio-button>
+            <el-radio-button v-for="sport in sports" :value="sport" :key="sport">{{ sport }}</el-radio-button>
+          </el-radio-group>
       </div>
       <div class="FilterOption">
         <el-checkbox v-model="enableDateFilter">开放日期筛选</el-checkbox>
@@ -141,73 +142,76 @@ import dayjs from 'dayjs';
 import { convertTime } from '@/apis/utils';
 import { getAllVenues, getVenueDetail, filterVenueByDate } from '@/apis/requests';
 import { ElMessage } from 'element-plus';
+import { useSportsStore } from '@/stores/sportsStore';
 
 // 场地数据示例，包括ID、名称、运动类型、图片、时间段、管理员信息和地址
-const venues = ref([
-  {
-    id: 1,
-    name: '体育场A',
-    sport: '足球',
-    totalCapacity: 100,
-    image: '',
-    timeslots: [
-      { id: 1, time: '2024-08-24 08:00-10:00', capacity: 10, price: 100 },
-      { id: 2, time: '2024-08-24 10:00-12:00', capacity: 8, price: 120 },
-    ],
-    manager: '张三',
-    address: '北京市朝阳区体育场路1号',
-    phone: '010-12345678',
-  },
-  {
-    id: 2,
-    name: '羽毛球馆C',
-    sport: '羽毛球',
-    totalCapacity: 30,
-    image: '',
-    timeslots: [
-      { id: 1, time: '2024-08-24 08:00-09:30', capacity: 3, price: 50 },
-      { id: 2, time: '2024-08-24 09:30-11:00', capacity: 4, price: 60 },
-    ],
-    manager: '王五',
-    address: '北京市东城区羽毛球馆路3号',
-    phone: '010-13579135',
-  },
-  {
-    id: 3,
-    name: '篮球馆B',
-    sport: '篮球',
-    totalCapacity: 50,
-    image: '',
-    timeslots: [
-      { id: 1, time: '2024-08-24 09:00-11:00', capacity: 5, price: 80 },
-      { id: 2, time: '2024-08-24 11:00-13:00', capacity: 5, price: 90 },
-    ],
-    manager: '李四',
-    address: '北京市海淀区篮球馆路2号',
-    phone: '010-87654321',
-  },
-  {
-    id: 4,
-    name: '游泳馆D',
-    sport: '网球',
-    totalCapacity: 70,
-    image: '',
-    timeslots: [
-      { id: 1, startTime: '2024-08-24 07:00-09:00', capacity: 10, price: 100 },
-      { id: 2, time: '2024-08-24 09:00-11:00', capacity: 12, price: 120 },
-    ],
-    manager: '赵六',
-    address: '北京市丰台区游泳馆路4号',
-    phone: '010-11223344',
-  },
-  // 更多场馆数据...
-]);
+// const venues = ref([
+//   {
+//     id: 1,
+//     name: '体育场A',
+//     sport: '足球',
+//     totalCapacity: 100,
+//     image: '',
+//     timeslots: [
+//       { id: 1, time: '2024-08-24 08:00-10:00', capacity: 10, price: 100 },
+//       { id: 2, time: '2024-08-24 10:00-12:00', capacity: 8, price: 120 },
+//     ],
+//     manager: '张三',
+//     address: '北京市朝阳区体育场路1号',
+//     phone: '010-12345678',
+//   },
+//   {
+//     id: 2,
+//     name: '羽毛球馆C',
+//     sport: '羽毛球',
+//     totalCapacity: 30,
+//     image: '',
+//     timeslots: [
+//       { id: 1, time: '2024-08-24 08:00-09:30', capacity: 3, price: 50 },
+//       { id: 2, time: '2024-08-24 09:30-11:00', capacity: 4, price: 60 },
+//     ],
+//     manager: '王五',
+//     address: '北京市东城区羽毛球馆路3号',
+//     phone: '010-13579135',
+//   },
+//   {
+//     id: 3,
+//     name: '篮球馆B',
+//     sport: '篮球',
+//     totalCapacity: 50,
+//     image: '',
+//     timeslots: [
+//       { id: 1, time: '2024-08-24 09:00-11:00', capacity: 5, price: 80 },
+//       { id: 2, time: '2024-08-24 11:00-13:00', capacity: 5, price: 90 },
+//     ],
+//     manager: '李四',
+//     address: '北京市海淀区篮球馆路2号',
+//     phone: '010-87654321',
+//   },
+//   {
+//     id: 4,
+//     name: '游泳馆D',
+//     sport: '网球',
+//     totalCapacity: 70,
+//     image: '',
+//     timeslots: [
+//       { id: 1, startTime: '2024-08-24 07:00-09:00', capacity: 10, price: 100 },
+//       { id: 2, time: '2024-08-24 09:00-11:00', capacity: 12, price: 120 },
+//     ],
+//     manager: '赵六',
+//     address: '北京市丰台区游泳馆路4号',
+//     phone: '010-11223344',
+//   },
+//   // 更多场馆数据...
+// ]);
+const venues = ref([]);
 
 // 运动类型选项
-const sports = ref(['足球', '篮球', '网球', '羽毛球']);
-
+// const sports = ref(['足球', '篮球', '网球', '羽毛球']);
+const sportsStore = useSportsStore();
 const userStore = useUserStore();
 const { adminType } = storeToRefs(userStore);
+const { sports } = storeToRefs(sportsStore);
 
 // 定义搜索和筛选相关的状态
 const searchQuery = ref('');

@@ -77,7 +77,7 @@
 import { ref, computed } from 'vue';
 import NotificationDetail from './components/NotificationDetail.vue';
 import { convertTime, timeSort } from '@/apis/utils';
-import { getUserNotice, deleteUserNotice, getAdminNotice, getAdminInfo, adminValidate } from '@/apis/requests';
+import { getUserNotice, deleteUserNotice, getAdminNotice, getAdminInfo, adminValidate, getAllAdmin } from '@/apis/requests';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
 import { ElCard, ElDialog, ElTable, ElTableColumn, ElButton, ElMessage } from 'element-plus';
@@ -133,19 +133,28 @@ const viewAnnouncement = (announcement) => {
   isDetailModalVisible.value = true;
 };
 
-const closeDetailModal = () => {
-  isDetailModalVisible.value = false;
-};
-
 const handleAccept = async () => {
-  await getAdminInfo(handleValidate, validateErr)
-}
-
-const handleValidate = async (res) => {
-  const adminInfo = res;
-  console.log(res);
-  adminInfo.adminType = res.adminType.split('/')[1];
-  adminValidate(handleValidate, deleteAnnouncement, validateErr)
+  const findAdmin = async (res) => {
+    // console.log(selectedAnnouncement.value);
+    const content = selectedAnnouncement.value.content.slice(5);
+    let targetName = '';
+    for(let i = 0; i < content.length; i++){
+      if(content[i] == ']'){
+        targetName = content.slice(0, i);
+        break;
+      }
+    }
+    // console.log(targetName);
+    const targetId = res.find((item) => item.realName === targetName).adminId;
+    const handleValidate = async (res) => {
+      const adminInfo = res.data;
+      // console.log();
+      adminInfo.adminType = res.data.adminType.split('/')[1];
+      adminValidate(targetId, adminInfo, validateSuccess, validateErr)
+    }
+    await getAdminInfo(handleValidate, validateErr, targetId);
+  }
+  await getAllAdmin(findAdmin, validateErr);
 }
 
 const deleteAnnouncement = async () => {
@@ -154,6 +163,7 @@ const deleteAnnouncement = async () => {
 
 const validateSuccess = () => {
   ElMessage.info('操作成功');
+  isDetailModalVisible.value = false;
 }
 
 const validateErr = (msg) => {

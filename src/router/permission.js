@@ -28,7 +28,7 @@ const userMenuData = [
   },
   {
     path: '/TeamManagement',
-    title: '团队管理',
+    title: '团体管理',
   },
   {
     path: '/NotificationList',

@@ -231,7 +231,12 @@ async function getUserReservationGroup(successHandler, errHandler) {
   await httpInstance.get(`api/UserGroupInfo/${userId.value}`).then((res) => {
     successHandler(res);
   }).catch((err) => {
-    errHandler(err.response?.data?.message || '未知错误');
+    if (err.response?.data?.message === '用户没有关联的团体信息') {
+      successHandler([]);
+    }
+    else {
+      errHandler(err.response?.data?.message || '未知错误');
+    }
   })
 }
 
@@ -790,10 +795,13 @@ async function filterVenueByDate(date, successHandler, errHandler) {
   })
 }
 
-async function getAdminInfo(successHandler, errHandler) {
+async function getAdminInfo(successHandler, errHandler, adminId = null) {
   const userStore = useUserStore();
   const { userId } = storeToRefs(userStore);
-  await httpInstance.get(`api/Admin/${userId.value}/info`).then((res) => {
+  if (!adminId) {
+    adminId = userId.value;
+  }
+  await httpInstance.get(`api/Admin/${adminId}/info`).then((res) => {
     successHandler(res.data);
   }).catch((err) => {
     errHandler(err.response?.data || '未知错误');
@@ -869,7 +877,7 @@ async function getAdminNotice(adminData, successHandler, errHandler) {
   });
 }
 
-async function adminValidate(adminData, successHandler, errHandler) {
+async function adminValidate(adminId, adminData, successHandler, errHandler) {
   await httpInstance.put(`api/Admin/updateAdminInfo/${adminId}`, adminData).then((res) => {
     console.log(res);
     if (res.state) {

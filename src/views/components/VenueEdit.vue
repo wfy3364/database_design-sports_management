@@ -9,6 +9,7 @@ import { storeToRefs } from 'pinia';
 import { createVenue, getVenueOpenTime, addVenueOpenTime, editVenueInfo, editVenueOpenTime, 
   deleteVenueOpenTime, updateVenueAdmin, getAllAdmin
 } from '@/apis/requests';
+import { useSportsStore } from '@/stores/sportsStore';
 
 const detailDialog = ref(true);
 const editingRecord = ref(null);
@@ -67,7 +68,10 @@ const dialogTitle = {
   'create': '添加新场地',
 }
 
-const sports = ref(['足球', '篮球', '网球', '羽毛球', '其它']);
+const sportsStore = useSportsStore();
+const { sports } = storeToRefs(sportsStore);
+
+// const sports = ref(['足球', '篮球', '网球', '羽毛球', '其它']);
 const customType = ref('');
 
 const adminOptions = ref([{

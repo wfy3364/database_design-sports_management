@@ -182,7 +182,7 @@ const validateInputs = () => {
     { item: confirmPassword, name: "确认密码"},
     { item: phone, name: "电话号码"},
     { item: contactAdminId, name: "联络管理员ID"},
-    { item: selectedOption, name: "类型"},
+    { item: selectedOption, name: "管理员类型"},
   ];
   for(const requiredItem of requiredItems){
     if(!requiredItem.item.value){
